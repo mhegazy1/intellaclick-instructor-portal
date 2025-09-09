@@ -1,0 +1,8 @@
+[phases.build]
+cmds = ["echo 'No build needed for static files'"]
+
+[staticDirs]
+"/" = "/"
+
+[start]
+cmd = "nginx -g 'daemon off;'"
