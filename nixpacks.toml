@@ -1,5 +1,12 @@
 [phases.build]
-cmds = ["mkdir -p dist", "cp *.html *.css *.js dist/ 2>/dev/null || true"]
+cmds = [
+    "mkdir -p dist",
+    "cp *.html dist/ || true",
+    "cp *.css dist/ 2>/dev/null || true",
+    "cp *.js dist/ 2>/dev/null || true",
+    "ls -la dist/",
+    "echo 'Build complete!'"
+]
 
 [start]
 cmd = "nginx -c /app/nginx.conf -g 'daemon off;'"
