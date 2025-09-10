@@ -152,7 +152,11 @@
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                errorDiv.textContent = 'Unable to connect to server. Please try again later.';
+                if (error.message.includes('Failed to fetch')) {
+                    errorDiv.innerHTML = 'Unable to connect to server. This may be due to CORS restrictions.<br><br>Please ensure the API at ' + API_URL + ' allows requests from instructor.intellaclick.com.';
+                } else {
+                    errorDiv.textContent = 'An error occurred. Please check the console for details.';
+                }
                 errorDiv.style.display = 'block';
             }
         });
