@@ -603,14 +603,23 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="classTerm">Term *</label>
-                    <select id="classTerm" required>
-                        <option value="">Select Term</option>
-                        <option value="Fall 2024">Fall 2024</option>
-                        <option value="Spring 2025">Spring 2025</option>
-                        <option value="Summer 2025">Summer 2025</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="termSeason">Term Season *</label>
+                        <select id="termSeason" required>
+                            <option value="">Select Season</option>
+                            <option value="Spring">Spring</option>
+                            <option value="Summer">Summer</option>
+                            <option value="Fall">Fall</option>
+                            <option value="Winter">Winter</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="termYear">Term Year *</label>
+                        <select id="termYear" required>
+                            <option value="">Select Year</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -649,7 +658,24 @@
             loadClasses();
             loadStats();
             setupEventListeners();
+            populateYearDropdown();
         });
+        
+        function populateYearDropdown() {
+            const yearSelect = document.getElementById('termYear');
+            const currentYear = new Date().getFullYear();
+            
+            // Add years from 2 years ago to 5 years in future
+            for (let year = currentYear - 2; year <= currentYear + 5; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            }
+        }
 
         function checkAuth() {
             const token = localStorage.getItem('token');
@@ -660,9 +686,18 @@
                 return;
             }
 
-            // Check if user is instructor
-            if (user.role !== 'instructor') {
-                window.location.href = '/dashboard.html';
+            // Debug user info
+            console.log('Current user:', user);
+            console.log('User role:', user.role);
+            
+            // Check if user is instructor or admin
+            if (user.role !== 'instructor' && user.role !== 'admin') {
+                console.error('User role:', user.role, 'Expected: instructor or admin');
+                alert(`Access denied. Your role is '${user.role}' but instructor privileges are required.`);
+                // Don't redirect yet so user can see the message
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 3000);
                 return;
             }
 
@@ -891,11 +926,14 @@
         async function handleCreateClass(e) {
             e.preventDefault();
             
+            const season = document.getElementById('termSeason').value;
+            const year = document.getElementById('termYear').value;
+            
             const formData = {
                 name: document.getElementById('className').value,
                 code: document.getElementById('classCode').value,
                 section: document.getElementById('classSection').value,
-                term: document.getElementById('classTerm').value,
+                term: `${season} ${year}`,
                 description: document.getElementById('classDescription').value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value
