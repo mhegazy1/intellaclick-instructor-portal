@@ -1,33 +1,26 @@
-# Build stage to prepare files
-FROM alpine:latest AS builder
-WORKDIR /build
-COPY . .
-# Create dist directory and copy files
-RUN mkdir -p dist && \
-    cp *.html dist/ 2>/dev/null || true && \
-    cp *.css dist/ 2>/dev/null || true && \
-    cp *.js dist/ 2>/dev/null || true && \
-    ls -la dist/
-
-# Final stage
 FROM nginx:alpine
 
-# Remove default nginx files
-RUN rm -rf /usr/share/nginx/html/*
+# Copy HTML files directly to nginx default location
+COPY *.html /usr/share/nginx/html/
+COPY *.css /usr/share/nginx/html/ 2>/dev/null || true
+COPY *.js /usr/share/nginx/html/ 2>/dev/null || true
 
-# Create app directory to match nginx.conf
-RUN mkdir -p /app/dist
-
-# Copy files to the correct location that nginx.conf expects
-COPY --from=builder /build/dist/ /app/dist/
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Add build arguments to bust cache
-ARG CACHEBUST=1
-ARG BUILD_DATE
-ENV BUILD_DATE=${BUILD_DATE:-unknown}
+# Use default nginx config with minor adjustments
+RUN echo 'server { \
+    listen 80; \
+    listen [::]:80; \
+    server_name _; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+    location /health { \
+        access_log off; \
+        return 200 "healthy"; \
+        add_header Content-Type text/plain; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
