@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Class Ownership Check</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #3b82f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Class Ownership Diagnostic</h1>
+    
+    <div class="info-box">
+        <h3>This page will help diagnose why you can't delete your class</h3>
+        <p>Click the button below to check:</p>
+        <ul>
+            <li>Your user ID from the JWT token</li>
+            <li>All classes you have access to</li>
+            <li>The instructor ID for each class</li>
+            <li>Whether the IDs match</li>
+        </ul>
+    </div>
+    
+    <button onclick="runDiagnostic()">Run Ownership Check</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        async function runDiagnostic() {
+            const resultsEl = document.getElementById('results');
+            resultsEl.innerHTML = '<pre>Running diagnostic...</pre>';
+            
+            try {
+                // 1. Get user info from token
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                
+                if (!token) {
+                    resultsEl.innerHTML = '<pre style="color: red;">Error: No authentication token found!</pre>';
+                    return;
+                }
+                
+                // Decode JWT
+                let tokenUserId = null;
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    tokenUserId = payload.userId || payload.id || payload._id;
+                } catch (e) {
+                    console.error('Failed to decode token:', e);
+                }
+                
+                // 2. Get classes
+                const response = await fetch('https://api.intellaclick.com/api/classes', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // 3. Analyze results
+                let html = '<pre>DIAGNOSTIC RESULTS\n' + '='.repeat(50) + '\n\n';
+                
+                html += 'USER INFORMATION:\n';
+                html += `  Token User ID: ${tokenUserId || 'NOT FOUND'}\n`;
+                html += `  Stored User ID: ${user.id || user._id || 'NOT FOUND'}\n`;
+                html += `  User Email: ${user.email || 'NOT FOUND'}\n`;
+                html += `  User Role: ${user.role || 'NOT FOUND'}\n`;
+                html += '\n';
+                
+                if (!response.ok) {
+                    html += `API ERROR: ${data.error || 'Failed to fetch classes'}\n`;
+                } else if (data.classes && data.classes.length > 0) {
+                    html += `CLASSES FOUND: ${data.classes.length}\n\n`;
+                    
+                    data.classes.forEach((cls, index) => {
+                        const isOwner = cls.instructorId === tokenUserId || 
+                                       cls.instructorId === user.id || 
+                                       cls.instructorId === user._id;
+                        
+                        html += `CLASS ${index + 1}: ${cls.name}\n`;
+                        html += `  Class ID: ${cls._id}\n`;
+                        html += `  Join Code: ${cls.joinCode}\n`;
+                        html += `  Instructor ID: ${cls.instructorId}\n`;
+                        html += `  Is Owner: ${isOwner ? 'YES ✓' : 'NO ✗'}\n`;
+                        html += `  Status: ${cls.status || 'active'}\n`;
+                        html += '\n';
+                    });
+                    
+                    html += 'ID COMPARISON:\n';
+                    html += `  Token User ID:     "${tokenUserId}"\n`;
+                    html += `  Stored User ID:    "${user.id || user._id}"\n`;
+                    if (data.classes.length > 0) {
+                        html += `  First Class Owner: "${data.classes[0].instructorId}"\n`;
+                        html += `  IDs Match: ${data.classes[0].instructorId === tokenUserId ? 'YES' : 'NO'}\n`;
+                    }
+                } else {
+                    html += 'NO CLASSES FOUND\n';
+                }
+                
+                html += '\n' + '='.repeat(50) + '\n';
+                html += 'DIAGNOSIS:\n';
+                
+                if (!tokenUserId) {
+                    html += '❌ Cannot determine user ID from token\n';
+                } else if (data.classes && data.classes.length > 0) {
+                    const ownedClasses = data.classes.filter(cls => 
+                        cls.instructorId === tokenUserId || 
+                        cls.instructorId === user.id || 
+                        cls.instructorId === user._id
+                    );
+                    
+                    if (ownedClasses.length === 0) {
+                        html += '❌ User ID mismatch - you are not the owner of any classes\n';
+                        html += '   This usually happens when:\n';
+                        html += '   - Classes were created with a different account\n';
+                        html += '   - User ID format changed (migration issue)\n';
+                        html += '   - Database was restored from backup\n';
+                    } else if (ownedClasses.length < data.classes.length) {
+                        html += '⚠️  You own some but not all classes shown\n';
+                    } else {
+                        html += '✅ You are the owner of all classes\n';
+                    }
+                }
+                
+                html += '</pre>';
+                resultsEl.innerHTML = html;
+                
+            } catch (error) {
+                resultsEl.innerHTML = `<pre style="color: red;">Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

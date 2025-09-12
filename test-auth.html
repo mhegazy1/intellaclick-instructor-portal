@@ -150,7 +150,29 @@
         async function testClasses() {
             resultsEl.textContent = '';
             log('Testing /api/classes...');
-            await makeRequest('/api/classes');
+            const result = await makeRequest('/api/classes');
+            
+            if (result.data && result.data.classes) {
+                log(`\nFound ${result.data.classes.length} classes:`);
+                result.data.classes.forEach((cls, index) => {
+                    log(`${index + 1}. ${cls.name} (ID: ${cls._id}, Code: ${cls.joinCode})`);
+                });
+                
+                // Also decode the JWT to see user ID
+                const token = localStorage.getItem('token');
+                if (token) {
+                    try {
+                        const payload = JSON.parse(atob(token.split('.')[1]));
+                        log(`\nYour user ID from token: ${payload.userId || payload.id || 'not found'}`);
+                        
+                        if (result.data.classes.length > 0) {
+                            log(`First class instructor ID: ${result.data.classes[0].instructorId}`);
+                        }
+                    } catch (e) {
+                        log('Could not decode token');
+                    }
+                }
+            }
         }
         
         async function testCreateClass() {
