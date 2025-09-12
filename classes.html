@@ -894,6 +894,11 @@
                                     <div class="enrollment-stat-label">Sessions</div>
                                 </div>
                             </div>
+                            
+                            <div style="background: #f3f4f6; padding: 8px; border-radius: 4px; margin-bottom: 16px; font-size: 11px; color: #666; font-family: monospace;">
+                                <strong>Class ID:</strong> <span style="user-select: all;">${classData._id}</span>
+                                <button class="copy-btn" style="float: right; font-size: 10px; padding: 2px 8px;" onclick="copyText(event, '${classData._id}')">Copy ID</button>
+                            </div>
 
                             <div class="class-actions">
                                 <button class="btn btn-secondary" onclick="manageRoster(event, '${classData._id}')">
@@ -1000,17 +1005,22 @@
 
         function copyJoinCode(event, code) {
             event.stopPropagation();
-            navigator.clipboard.writeText(code).then(() => {
-                showToast('Join code copied to clipboard!', 'success');
+            copyText(event, code, 'Join code');
+        }
+        
+        function copyText(event, text, label = 'Text') {
+            event.stopPropagation();
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`${label} copied to clipboard!`, 'success');
             }).catch(() => {
                 // Fallback for older browsers
                 const textArea = document.createElement('textarea');
-                textArea.value = code;
+                textArea.value = text;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                showToast('Join code copied!', 'success');
+                showToast(`${label} copied!`, 'success');
             });
         }
 
