@@ -52,10 +52,14 @@
     
     <div class="test-section">
         <h2>Test Endpoints</h2>
-        <button onclick="testProfile()">Test Profile Endpoint</button>
+        <button onclick="testProfile()">Test Current User</button>
         <button onclick="testClasses()">Test Classes Endpoint</button>
         <button onclick="testCreateClass()">Test Create Class</button>
         <button onclick="testDeleteClass()">Test Delete Class (Dummy ID)</button>
+        <br><br>
+        <label>Test delete specific class ID: </label>
+        <input type="text" id="classId" placeholder="Enter class ID" style="width: 300px; padding: 5px;">
+        <button onclick="testDeleteSpecificClass()">Test Delete This Class</button>
     </div>
     
     <div class="test-section">
@@ -123,8 +127,24 @@
         
         async function testProfile() {
             resultsEl.textContent = '';
-            log('Testing /api/users/profile...');
-            await makeRequest('/api/users/profile');
+            log('Testing /api/auth/me (checking current user)...');
+            
+            // First check if /api/auth/me exists
+            const { response, data } = await makeRequest('/api/auth/me');
+            
+            if (response && response.status === 404) {
+                log('Endpoint not found, trying to decode JWT token locally...');
+                const token = localStorage.getItem('token');
+                if (token) {
+                    try {
+                        // Decode JWT payload (base64)
+                        const payload = JSON.parse(atob(token.split('.')[1]));
+                        log('JWT payload: ' + JSON.stringify(payload, null, 2));
+                    } catch (e) {
+                        log('Failed to decode JWT: ' + e.message, 'error');
+                    }
+                }
+            }
         }
         
         async function testClasses() {
@@ -155,6 +175,27 @@
             await makeRequest('/api/classes/123456789012345678901234', {
                 method: 'DELETE'
             });
+        }
+        
+        async function testDeleteSpecificClass() {
+            const classId = document.getElementById('classId').value.trim();
+            if (!classId) {
+                alert('Please enter a class ID');
+                return;
+            }
+            
+            resultsEl.textContent = '';
+            log(`Testing DELETE /api/classes/${classId}...`);
+            
+            const result = await makeRequest(`/api/classes/${classId}`, {
+                method: 'DELETE'
+            });
+            
+            // If we get a 403, let's also try to GET the class to see ownership
+            if (result.response && result.response.status === 403) {
+                log('\nTrying to GET class details to check ownership...');
+                await makeRequest(`/api/classes/${classId}`);
+            }
         }
         
         // Initialize
