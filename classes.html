@@ -1096,6 +1096,8 @@
                 });
                 
                 console.log('Delete response status:', response.status);
+                console.log('Delete URL:', `https://api.intellaclick.com/api/classes/${classId}`);
+                console.log('Token being sent:', token ? 'Yes' : 'No');
                 
                 if (!response.ok) {
                     const data = await response.json();
@@ -1105,7 +1107,11 @@
                         statusText: response.statusText,
                         error: data.error,
                         userRole: data.userRole,
-                        requiredRoles: data.requiredRoles
+                        requiredRoles: data.requiredRoles,
+                        classId: classId,
+                        headers: {
+                            'Authorization': `Bearer ${token ? token.substring(0, 20) + '...' : 'NO TOKEN'}`,
+                        }
                     });
                     
                     // If there are active enrollments, ask for confirmation
