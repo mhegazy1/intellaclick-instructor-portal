@@ -783,6 +783,24 @@
                 const data = await response.json();
                 classes = data.classes || [];
                 
+                // Fix populated instructorId objects
+                classes = classes.map(cls => {
+                    if (typeof cls.instructorId === 'object' && cls.instructorId._id) {
+                        // Store the actual ID for deletion/comparison
+                        cls.instructorIdRaw = cls.instructorId._id;
+                        // Keep the object for display purposes (email, name)
+                    } else {
+                        cls.instructorIdRaw = cls.instructorId;
+                    }
+                    return cls;
+                });
+                
+                console.log('Loaded classes with instructor IDs:', classes.map(c => ({
+                    name: c.name,
+                    instructorId: c.instructorIdRaw,
+                    instructorEmail: typeof c.instructorId === 'object' ? c.instructorId.email : 'N/A'
+                })));
+                
                 // Update term filter options
                 await loadTerms();
                 

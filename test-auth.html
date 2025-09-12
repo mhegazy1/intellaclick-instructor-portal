@@ -54,6 +54,7 @@
         <h2>Test Endpoints</h2>
         <button onclick="testProfile()">Test Current User</button>
         <button onclick="testClasses()">Test Classes Endpoint</button>
+        <button onclick="testClassesRaw()">Test Classes (Raw IDs)</button>
         <button onclick="testCreateClass()">Test Create Class</button>
         <button onclick="testDeleteClass()">Test Delete Class (Dummy ID)</button>
         <br><br>
@@ -155,7 +156,10 @@
             if (result.data && result.data.classes) {
                 log(`\nFound ${result.data.classes.length} classes:`);
                 result.data.classes.forEach((cls, index) => {
-                    log(`${index + 1}. ${cls.name} (ID: ${cls._id}, Code: ${cls.joinCode})`);
+                    const instructorId = typeof cls.instructorId === 'object' 
+                        ? cls.instructorId._id 
+                        : cls.instructorId;
+                    log(`${index + 1}. ${cls.name} (ID: ${cls._id}, Code: ${cls.joinCode}, Instructor: ${instructorId})`);
                 });
                 
                 // Also decode the JWT to see user ID
@@ -166,11 +170,35 @@
                         log(`\nYour user ID from token: ${payload.userId || payload.id || 'not found'}`);
                         
                         if (result.data.classes.length > 0) {
-                            log(`First class instructor ID: ${result.data.classes[0].instructorId}`);
+                            const firstInstructorId = typeof result.data.classes[0].instructorId === 'object'
+                                ? result.data.classes[0].instructorId._id
+                                : result.data.classes[0].instructorId;
+                            log(`First class instructor ID: ${firstInstructorId}`);
                         }
                     } catch (e) {
                         log('Could not decode token');
                     }
+                }
+            }
+        }
+        
+        async function testClassesRaw() {
+            resultsEl.textContent = '';
+            log('Testing /api/debug-classes/raw (without population)...');
+            const result = await makeRequest('/api/debug-classes/raw');
+            
+            if (result.data) {
+                log(`Your user ID: ${result.data.userId}`);
+                log(`Found ${result.data.classCount} classes\n`);
+                
+                if (result.data.classes) {
+                    result.data.classes.forEach((cls, index) => {
+                        log(`${index + 1}. ${cls.name}`);
+                        log(`   ID: ${cls._id}`);
+                        log(`   Join Code: ${cls.joinCode}`);
+                        log(`   Instructor ID: ${cls.instructorId}`);
+                        log(`   Is Owner: ${cls.isOwner ? 'YES' : 'NO'}`);
+                    });
                 }
             }
         }
@@ -217,6 +245,9 @@
             if (result.response && result.response.status === 403) {
                 log('\nTrying to GET class details to check ownership...');
                 await makeRequest(`/api/classes/${classId}`);
+                
+                log('\nChecking ownership with debug endpoint...');
+                await makeRequest(`/api/debug-classes/check/${classId}`);
             }
         }
         

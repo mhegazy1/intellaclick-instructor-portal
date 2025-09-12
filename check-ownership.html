@@ -104,14 +104,22 @@
                     html += `CLASSES FOUND: ${data.classes.length}\n\n`;
                     
                     data.classes.forEach((cls, index) => {
-                        const isOwner = cls.instructorId === tokenUserId || 
-                                       cls.instructorId === user.id || 
-                                       cls.instructorId === user._id;
+                        // Handle populated instructorId (object) vs raw ID (string)
+                        const instructorId = typeof cls.instructorId === 'object' 
+                            ? (cls.instructorId._id || cls.instructorId.id) 
+                            : cls.instructorId;
+                        
+                        const isOwner = instructorId === tokenUserId || 
+                                       instructorId === user.id || 
+                                       instructorId === user._id;
                         
                         html += `CLASS ${index + 1}: ${cls.name}\n`;
                         html += `  Class ID: ${cls._id}\n`;
                         html += `  Join Code: ${cls.joinCode}\n`;
-                        html += `  Instructor ID: ${cls.instructorId}\n`;
+                        html += `  Instructor ID: ${instructorId}\n`;
+                        if (typeof cls.instructorId === 'object') {
+                            html += `  Instructor: ${cls.instructorId.email || 'Unknown'}\n`;
+                        }
                         html += `  Is Owner: ${isOwner ? 'YES ✓' : 'NO ✗'}\n`;
                         html += `  Status: ${cls.status || 'active'}\n`;
                         html += '\n';

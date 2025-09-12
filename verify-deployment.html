@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Verification Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .dashboard {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 { color: #333; margin-bottom: 30px; }
+        h2 { color: #666; margin-top: 30px; }
+        
+        .test-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ddd;
+        }
+        
+        .test-item.success { border-left-color: #28a745; }
+        .test-item.warning { border-left-color: #ffc107; }
+        .test-item.error { border-left-color: #dc3545; }
+        
+        .status { font-weight: bold; margin-right: 10px; }
+        .success .status { color: #28a745; }
+        .warning .status { color: #ffc107; }
+        .error .status { color: #dc3545; }
+        
+        .code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #4F46E5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover { background: #4338CA; }
+        
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Deployment Verification Dashboard</h1>
+        <p>Current Time: <span id="current-time"></span></p>
+        <p>Page Load Time: <span id="load-time"></span></p>
+        
+        <h2>Quick Tests</h2>
+        <button onclick="checkDeploymentTest()">Check Deployment Test File</button>
+        <button onclick="checkCacheHeaders()">Check Cache Headers</button>
+        <button onclick="checkClassesPage()">Check Classes Page</button>
+        <button onclick="clearBrowserCache()">Clear Browser Cache</button>
+        
+        <div id="results" class="results" style="display:none;"></div>
+        
+        <h2>Manual Verification Steps</h2>
+        
+        <div class="test-item">
+            <span class="status">1.</span>
+            <strong>Check deployment test file:</strong>
+            <br>Navigate to: <a href="/deployment-test.html" target="_blank">/deployment-test.html</a>
+            <br>You should see: <span class="code">DEPLOY-2025-09-12-TEST-001</span>
+        </div>
+        
+        <div class="test-item">
+            <span class="status">2.</span>
+            <strong>Verify cache headers (DevTools):</strong>
+            <br>Open DevTools → Network tab → Hard refresh (Ctrl+Shift+R)
+            <br>Check Response Headers for: <span class="code">Cache-Control: no-cache</span>
+        </div>
+        
+        <div class="test-item">
+            <span class="status">3.</span>
+            <strong>Check classes.html for updates:</strong>
+            <br>Navigate to: <a href="/classes.html" target="_blank">/classes.html</a>
+            <br>Look for: Delete button and enrollment count display
+        </div>
+        
+        <div class="test-item">
+            <span class="status">4.</span>
+            <strong>Test from incognito/private window:</strong>
+            <br>Open site in incognito mode to bypass local cache
+        </div>
+        
+        <div class="test-item">
+            <span class="status">5.</span>
+            <strong>Check deployment info endpoint:</strong>
+            <br>Navigate to: <a href="/deployment-info" target="_blank">/deployment-info</a>
+            <br>This should show current deployment timestamp
+        </div>
+        
+        <h2>Coolify Logs to Check</h2>
+        <div class="test-item">
+            <strong>Build Logs:</strong>
+            <ul>
+                <li>Look for: "Files copied to dist:"</li>
+                <li>Verify all HTML files are listed</li>
+                <li>Check for any error messages during copy</li>
+            </ul>
+        </div>
+        
+        <div class="test-item">
+            <strong>Deployment Logs:</strong>
+            <ul>
+                <li>Container start confirmation</li>
+                <li>Nginx startup messages</li>
+                <li>Health check responses</li>
+            </ul>
+        </div>
+        
+        <div class="test-item">
+            <strong>Runtime Logs:</strong>
+            <ul>
+                <li>404 errors (files not found)</li>
+                <li>Permission errors</li>
+                <li>Nginx access logs showing requests</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Set times
+        document.getElementById('current-time').textContent = new Date().toLocaleString();
+        document.getElementById('load-time').textContent = new Date().toISOString();
+        
+        // Update current time
+        setInterval(() => {
+            document.getElementById('current-time').textContent = new Date().toLocaleString();
+        }, 1000);
+        
+        function showResults(content) {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.textContent = content;
+        }
+        
+        async function checkDeploymentTest() {
+            try {
+                const response = await fetch('/deployment-test.html', { cache: 'no-cache' });
+                const text = await response.text();
+                
+                if (text.includes('DEPLOY-2025-09-12-TEST-001')) {
+                    showResults('✅ Deployment test file found!\nUnique ID verified: DEPLOY-2025-09-12-TEST-001');
+                } else {
+                    showResults('❌ Deployment test file exists but unique ID not found.\nThis might be an old version.');
+                }
+            } catch (error) {
+                showResults('❌ Error fetching deployment test file:\n' + error.message);
+            }
+        }
+        
+        async function checkCacheHeaders() {
+            try {
+                const response = await fetch(window.location.href, { cache: 'no-cache' });
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                
+                showResults('Response Headers:\n' + JSON.stringify(headers, null, 2));
+            } catch (error) {
+                showResults('❌ Error checking headers:\n' + error.message);
+            }
+        }
+        
+        async function checkClassesPage() {
+            try {
+                const response = await fetch('/classes.html', { cache: 'no-cache' });
+                const text = await response.text();
+                
+                const hasDeleteButton = text.includes('Delete');
+                const hasEnrollmentCount = text.includes('enrollment') || text.includes('Enrollment');
+                
+                let result = 'Classes.html Analysis:\n';
+                result += hasDeleteButton ? '✅ Delete button found\n' : '❌ Delete button NOT found\n';
+                result += hasEnrollmentCount ? '✅ Enrollment reference found\n' : '❌ Enrollment reference NOT found\n';
+                result += '\nNote: This checks for the text presence, verify visually for exact implementation.';
+                
+                showResults(result);
+            } catch (error) {
+                showResults('❌ Error checking classes page:\n' + error.message);
+            }
+        }
+        
+        function clearBrowserCache() {
+            showResults('To clear browser cache:\n\n' +
+                '1. Chrome/Edge: Ctrl+Shift+Delete (Cmd+Shift+Delete on Mac)\n' +
+                '2. Select "Cached images and files"\n' +
+                '3. Click "Clear data"\n' +
+                '4. Hard refresh: Ctrl+Shift+R (Cmd+Shift+R on Mac)\n\n' +
+                'Alternatively, test in incognito/private browsing mode.');
+        }
+    </script>
+</body>
+</html>
