@@ -2,8 +2,6 @@ FROM nginx:alpine
 
 # Copy HTML files directly to nginx default location
 COPY *.html /usr/share/nginx/html/
-COPY *.css /usr/share/nginx/html/ 2>/dev/null || true
-COPY *.js /usr/share/nginx/html/ 2>/dev/null || true
 
 # Use default nginx config with minor adjustments
 RUN echo 'server { \
