@@ -24,8 +24,10 @@ COPY --from=builder /build/dist/ /app/dist/
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Add a build argument to bust cache
+# Add build arguments to bust cache
 ARG CACHEBUST=1
+ARG BUILD_DATE
+ENV BUILD_DATE=${BUILD_DATE:-unknown}
 
 EXPOSE 80
 
