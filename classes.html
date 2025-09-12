@@ -1072,6 +1072,13 @@
                 if (!response.ok) {
                     const data = await response.json();
                     console.error('Delete error response:', data);
+                    console.error('Full error details:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        error: data.error,
+                        userRole: data.userRole,
+                        requiredRoles: data.requiredRoles
+                    });
                     
                     // If there are active enrollments, ask for confirmation
                     if (data.activeEnrollments && !response.url.includes('force=true')) {
