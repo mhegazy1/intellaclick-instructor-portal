@@ -792,17 +792,25 @@
             // Normalize question type for student interface compatibility
             const normalizedQuestion = {...question};
             
+            // Remove the original 'type' field to avoid confusion
+            delete normalizedQuestion.type;
+            
             // Map our types to what the student interface expects
             const typeMap = {
                 'mcq': 'multiple_choice',
-                'tf': 'true_false',
+                'tf': 'boolean',  // Try 'boolean' instead of 'true_false'
                 'matching': 'matching',
                 'ordering': 'ordering',
                 'fillblank': 'fill_blank'
             };
             
-            normalizedQuestion.questionType = typeMap[question.type] || question.type;
-            normalizedQuestion.questionText = normalizedQuestion.text || normalizedQuestion.questionText;
+            // Set both questionType and type to the mapped value
+            const mappedType = typeMap[question.type] || question.type;
+            normalizedQuestion.questionType = mappedType;
+            normalizedQuestion.type = mappedType;
+            
+            // Ensure questionText is set
+            normalizedQuestion.questionText = question.text || question.questionText;
             
             // For true/false, ensure options are properly formatted
             if (question.type === 'tf') {
