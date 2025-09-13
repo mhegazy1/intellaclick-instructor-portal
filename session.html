@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Session Management - IntellaClick</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <style>
         :root {
             --primary-color: #4F46E5;
@@ -236,6 +237,45 @@
         .toast.error {
             border-left: 4px solid var(--danger-color);
         }
+
+        .qr-container {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: var(--background);
+            border-radius: 8px;
+        }
+
+        .qr-code {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .qr-info {
+            flex: 1;
+        }
+
+        .qr-info h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .qr-info p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .qr-container {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -258,6 +298,13 @@
             </div>
             <div class="join-url" id="joinUrl">
                 Students can join at: https://join.intellaclick.com/session/XXXXX
+            </div>
+            <div class="qr-container">
+                <div class="qr-code" id="qrcode"></div>
+                <div class="qr-info">
+                    <h3>Scan to Join</h3>
+                    <p>Students can scan this QR code with their phone to join the session instantly. The code contains the direct link to join this session.</p>
+                </div>
             </div>
         </div>
 
@@ -359,7 +406,12 @@
         function updateSessionDisplay() {
             document.getElementById('sessionCode').textContent = sessionData.sessionCode;
             document.getElementById('participantCount').textContent = sessionData.participantCount || 0;
-            document.getElementById('joinUrl').textContent = `Students can join at: https://join.intellaclick.com/session/${sessionData.sessionCode}`;
+            
+            const joinUrl = `https://join.intellaclick.com/session/${sessionData.sessionCode}`;
+            document.getElementById('joinUrl').textContent = `Students can join at: ${joinUrl}`;
+            
+            // Generate QR code
+            generateQRCode(joinUrl);
             
             // Update status badge
             const statusEl = document.getElementById('sessionStatus');
@@ -372,6 +424,33 @@
                 document.getElementById('resultsBtn').disabled = false;
                 displayCurrentQuestion(sessionData.currentQuestion);
             }
+        }
+
+        function generateQRCode(url) {
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = ''; // Clear existing QR code
+            
+            // Create a canvas element
+            const canvas = document.createElement('canvas');
+            
+            QRCode.toCanvas(canvas, url, {
+                width: 400,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function(error) {
+                if (error) {
+                    console.error('QR Code generation error:', error);
+                    qrContainer.innerHTML = '<p style="color: var(--text-secondary);">QR Code generation failed</p>';
+                    return;
+                }
+                
+                canvas.style.width = '200px';
+                canvas.style.height = '200px';
+                qrContainer.appendChild(canvas);
+            });
         }
 
         async function sendQuestion() {
