@@ -569,13 +569,14 @@
                 return;
             }
             
+            // Generate a session code for students to join
+            const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            
             const sessionData = {
-                classId: classId,
-                name: document.getElementById('sessionName').value,
-                type: selectedType,
-                duration: parseInt(document.getElementById('duration').value),
-                allowAnonymous: document.getElementById('allowAnonymous').checked,
-                status: 'waiting'
+                sessionCode: sessionCode,
+                title: document.getElementById('sessionName').value,
+                description: `${selectedType === 'quick' ? 'Quick Poll' : 'Quiz Session'} for ${classData.name}`,
+                requireLogin: !document.getElementById('allowAnonymous').checked // Invert anonymous flag
             };
             
             if (selectedType === 'quick') {
@@ -692,13 +693,21 @@
                     throw new Error(error.error || 'Failed to create session');
                 }
 
-                const session = await response.json();
-                showToast('Session created successfully!', 'success');
+                const result = await response.json();
+                const session = result.session || result;
                 
-                // Redirect to session management page
+                // Show session code in toast for instructor to share
+                showToast(`Session created! Code: ${session.sessionCode || sessionCode}`, 'success');
+                
+                // Store question data in sessionStorage for the session page to use
+                if (selectedType === 'quick' && sessionData.questions) {
+                    sessionStorage.setItem('pendingQuestion', JSON.stringify(sessionData.questions[0]));
+                }
+                
+                // Redirect to session management page with session info
                 setTimeout(() => {
-                    window.location.href = `/session.html?id=${session._id || session.id}`;
-                }, 1000);
+                    window.location.href = `/session.html?id=${session.id || session._id}&code=${session.sessionCode || sessionCode}&type=${selectedType}`;
+                }, 2000); // Give more time to see the code
                 
             } catch (error) {
                 console.error('Error creating session:', error);
