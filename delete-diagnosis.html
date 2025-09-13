@@ -252,8 +252,10 @@
             
             if (meResult.response && meResult.response.ok) {
                 log('User profile endpoint works', 'success');
-                log(`Backend confirms role: ${meResult.data.role || 'NOT SET'}`);
-                log(`Backend user ID: ${meResult.data._id || meResult.data.id}`);
+                // The API returns user data nested in a 'user' object
+                const userData = meResult.data.user || meResult.data;
+                log(`Backend confirms role: ${userData.role || 'NOT SET'}`);
+                log(`Backend user ID: ${userData._id || userData.id}`);
             } else {
                 log('Could not verify user profile', 'warning');
             }
