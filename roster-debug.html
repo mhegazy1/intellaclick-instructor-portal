@@ -157,10 +157,15 @@
             
             if (classResult.response && classResult.response.ok) {
                 log('Class loaded successfully', 'success');
-                log(`Name: ${classResult.data.name}`);
-                log(`Join Code: ${classResult.data.joinCode}`);
-                log(`Enrollment Count: ${classResult.data.enrollmentCount || 0}`);
-                log(`Created: ${new Date(classResult.data.createdAt).toLocaleDateString()}`);
+                // Log the actual response structure
+                log(`Raw response: ${JSON.stringify(classResult.data, null, 2)}`);
+                
+                // Handle different possible response structures
+                const classData = classResult.data.class || classResult.data;
+                log(`Name: ${classData.name}`);
+                log(`Join Code: ${classData.joinCode}`);
+                log(`Enrollment Count: ${classData.enrollmentCount || 0}`);
+                log(`Created: ${classData.createdAt ? new Date(classData.createdAt).toLocaleDateString() : 'Unknown'}`);
             } else {
                 log('Failed to load class', 'error');
                 log(`Error: ${JSON.stringify(classResult.data)}`, 'error');
@@ -196,6 +201,13 @@
                 // Step 3: Try alternative endpoints
                 log('\n=== STEP 3: Alternative Endpoints ===');
                 
+                // Add more detail about the error
+                if (rosterResult.response && rosterResult.response.status === 403) {
+                    log('Access denied - checking authorization details...', 'warning');
+                    log(`Token exists: ${!!localStorage.getItem('token')}`);
+                    log(`User role from localStorage: ${JSON.parse(localStorage.getItem('user') || '{}').role}`);
+                }
+                
                 // Try getting enrollments directly
                 log('Trying: /api/enrollment/by-class/' + classId);
                 const altResult = await makeRequest(`/api/enrollment/by-class/${classId}`);
@@ -205,6 +217,9 @@
                     log(`Response: ${JSON.stringify(altResult.data, null, 2)}`);
                 } else {
                     log('Alternative endpoint also failed', 'error');
+                    if (altResult.response) {
+                        log(`Status: ${altResult.response.status}`, 'error');
+                    }
                 }
                 
                 // Try a simple enrollment count
