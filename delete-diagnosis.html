@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete Issue Diagnosis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: #f3f4f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .results {
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .error { color: #ef4444; }
+        .success { color: #10b981; }
+        .warning { color: #f59e0b; }
+        .info { color: #3b82f6; }
+        .step {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .conclusion {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Delete Issue Complete Diagnosis</h1>
+        
+        <div class="test-section">
+            <h2>What This Test Does</h2>
+            <p>This comprehensive test will:</p>
+            <ol>
+                <li>Check your authentication and user details</li>
+                <li>Verify the backend is receiving the correct user ID</li>
+                <li>Test if the middleware is working correctly</li>
+                <li>Check class ownership from multiple angles</li>
+                <li>Attempt a delete and provide detailed diagnostics</li>
+            </ol>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="runCompleteDiagnosis()">Run Complete Diagnosis</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div class="results" id="results">
+            Click "Run Complete Diagnosis" to begin...
+        </div>
+        
+        <div id="conclusion" style="display: none;"></div>
+    </div>
+
+    <script>
+        const resultsEl = document.getElementById('results');
+        const conclusionEl = document.getElementById('conclusion');
+        const API_URL = 'https://api.intellaclick.com';
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type;
+            resultsEl.innerHTML += `<span class="${typeClass}">${timestamp}: ${message}</span>\n`;
+            resultsEl.scrollTop = resultsEl.scrollHeight;
+        }
+        
+        function clearResults() {
+            resultsEl.innerHTML = 'Ready to run diagnosis...';
+            conclusionEl.style.display = 'none';
+        }
+        
+        async function makeRequest(endpoint, options = {}) {
+            const token = localStorage.getItem('token');
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    ...defaultOptions,
+                    ...options,
+                    headers: {
+                        ...defaultOptions.headers,
+                        ...options.headers
+                    }
+                });
+                
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    data = { rawResponse: text };
+                }
+                
+                return { response, data };
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+        
+        async function runCompleteDiagnosis() {
+            clearResults();
+            log('Starting comprehensive diagnosis...\n');
+            
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            // Step 1: Local Storage Check
+            log('=== STEP 1: Authentication Check ===');
+            log(`Token exists: ${!!token}`);
+            log(`User ID: ${user.id || user._id || 'NOT FOUND'}`);
+            log(`User Email: ${user.email || 'NOT FOUND'}`);
+            log(`User Role: ${user.role || 'NOT FOUND'}`);
+            
+            if (!token) {
+                log('CRITICAL: No authentication token found!', 'error');
+                showConclusion('not-authenticated');
+                return;
+            }
+            
+            // Decode token
+            let tokenPayload;
+            try {
+                tokenPayload = JSON.parse(atob(token.split('.')[1]));
+                log(`Token payload: ${JSON.stringify(tokenPayload, null, 2)}`);
+                log(`Token user ID: ${tokenPayload.userId || tokenPayload.id || tokenPayload.user?.id || 'NOT FOUND'}`);
+            } catch (e) {
+                log('Could not decode token', 'error');
+            }
+            
+            // Step 2: Get Classes
+            log('\n=== STEP 2: Fetch Your Classes ===');
+            const classesResult = await makeRequest('/api/classes');
+            
+            if (classesResult.error) {
+                log(`Network error: ${classesResult.error}`, 'error');
+                showConclusion('network-error');
+                return;
+            }
+            
+            if (!classesResult.response.ok) {
+                log(`Failed to get classes: ${classesResult.response.status}`, 'error');
+                log(`Error: ${JSON.stringify(classesResult.data, null, 2)}`, 'error');
+                showConclusion('auth-error');
+                return;
+            }
+            
+            const classes = classesResult.data.classes || [];
+            log(`Found ${classes.length} classes`, 'success');
+            
+            if (classes.length === 0) {
+                log('No classes found to test with', 'warning');
+                showConclusion('no-classes');
+                return;
+            }
+            
+            // Analyze first class
+            const testClass = classes[0];
+            const instructorId = typeof testClass.instructorId === 'object' 
+                ? (testClass.instructorId._id || testClass.instructorId.id)
+                : testClass.instructorId;
+            
+            log(`\nTest class: ${testClass.name}`);
+            log(`Class ID: ${testClass._id}`);
+            log(`Instructor ID (extracted): ${instructorId}`);
+            log(`Instructor ID type: ${typeof testClass.instructorId}`);
+            if (typeof testClass.instructorId === 'object') {
+                log(`Instructor object keys: ${Object.keys(testClass.instructorId).join(', ')}`);
+            }
+            
+            // Step 3: Check Debug Endpoint
+            log('\n=== STEP 3: Backend Debug Check ===');
+            const debugResult = await makeRequest('/api/debug-classes/raw');
+            
+            let backendUserId;
+            if (debugResult.response && debugResult.response.ok) {
+                log('Debug endpoint available!', 'success');
+                log(`Backend sees your user ID as: ${debugResult.data.userId}`);
+                backendUserId = debugResult.data.userId;
+                
+                if (debugResult.data.classes && debugResult.data.classes.length > 0) {
+                    const debugClass = debugResult.data.classes[0];
+                    log(`\nBackend class data:`);
+                    log(`- Name: ${debugClass.name}`);
+                    log(`- Instructor ID (raw): ${debugClass.instructorId}`);
+                    log(`- Is Owner: ${debugClass.isOwner ? 'YES' : 'NO'}`);
+                }
+            } else {
+                log('Debug endpoint not available (backend may not be updated)', 'warning');
+            }
+            
+            // Step 4: Role Verification
+            log('\n=== STEP 4: Role Verification ===');
+            const meResult = await makeRequest('/api/auth/me');
+            
+            if (meResult.response && meResult.response.ok) {
+                log('User profile endpoint works', 'success');
+                log(`Backend confirms role: ${meResult.data.role || 'NOT SET'}`);
+                log(`Backend user ID: ${meResult.data._id || meResult.data.id}`);
+            } else {
+                log('Could not verify user profile', 'warning');
+            }
+            
+            // Step 5: Delete Attempt
+            log('\n=== STEP 5: Delete Attempt ===');
+            log(`Attempting to delete: ${testClass.name}`);
+            
+            const deleteResult = await makeRequest(`/api/classes/${testClass._id}`, {
+                method: 'DELETE'
+            });
+            
+            log(`Delete response status: ${deleteResult.response.status}`);
+            
+            if (deleteResult.response.ok) {
+                log('DELETE SUCCESSFUL!', 'success');
+                log(`Response: ${JSON.stringify(deleteResult.data, null, 2)}`, 'success');
+                showConclusion('success');
+            } else {
+                log('DELETE FAILED', 'error');
+                log(`Error response: ${JSON.stringify(deleteResult.data, null, 2)}`, 'error');
+                
+                // Step 6: Detailed Ownership Check
+                if (deleteResult.response.status === 403) {
+                    log('\n=== STEP 6: Ownership Analysis ===');
+                    
+                    const ownershipResult = await makeRequest(`/api/debug-classes/check/${testClass._id}`);
+                    
+                    if (ownershipResult.response && ownershipResult.response.ok) {
+                        log('Ownership check details:');
+                        log(`Class instructor ID: ${ownershipResult.data.class?.instructorIdString}`);
+                        log(`Your user ID: ${ownershipResult.data.user?.userIdString}`);
+                        log(`Match: ${ownershipResult.data.ownership?.isOwner ? 'YES' : 'NO'}`);
+                        log(`Comparison: ${ownershipResult.data.ownership?.comparison}`);
+                        
+                        // Determine specific issue
+                        if (deleteResult.data.error === 'Instructor privileges required') {
+                            showConclusion('role-issue');
+                        } else if (deleteResult.data.error === 'Access denied') {
+                            showConclusion('ownership-issue');
+                        } else {
+                            showConclusion('unknown-403');
+                        }
+                    } else {
+                        log('Could not check ownership (backend not updated?)', 'error');
+                        showConclusion('backend-not-updated');
+                    }
+                } else {
+                    showConclusion('other-error');
+                }
+            }
+            
+            log('\n=== DIAGNOSIS COMPLETE ===');
+        }
+        
+        function showConclusion(type) {
+            conclusionEl.style.display = 'block';
+            conclusionEl.className = 'conclusion';
+            
+            const conclusions = {
+                'not-authenticated': `
+                    <h3>❌ Not Authenticated</h3>
+                    <p>You need to log in first. Go to the login page and sign in with your instructor account.</p>
+                `,
+                'network-error': `
+                    <h3>❌ Network Error</h3>
+                    <p>Could not connect to the API. Check your internet connection and make sure the API is running.</p>
+                `,
+                'auth-error': `
+                    <h3>❌ Authentication Error</h3>
+                    <p>Your token may be expired or invalid. Try logging out and logging back in.</p>
+                `,
+                'no-classes': `
+                    <h3>⚠️ No Classes Found</h3>
+                    <p>You don't have any classes yet. Create a class first, then run this test again.</p>
+                `,
+                'success': `
+                    <h3>✅ Delete Works!</h3>
+                    <p>The delete functionality is working correctly. The class was successfully deleted.</p>
+                `,
+                'role-issue': `
+                    <h3>❌ Role Permission Issue</h3>
+                    <p>The backend is not recognizing your instructor role. This suggests:</p>
+                    <ul>
+                        <li>Your account role might not be set to "instructor" in the database</li>
+                        <li>The middleware is not fetching your role correctly</li>
+                    </ul>
+                    <p><strong>Solution:</strong> Check the database to ensure your user account has role: "instructor"</p>
+                `,
+                'ownership-issue': `
+                    <h3>❌ Ownership Verification Issue</h3>
+                    <p>The backend cannot verify you own this class. This suggests:</p>
+                    <ul>
+                        <li>The backend is comparing IDs incorrectly</li>
+                        <li>The instructorId is stored as a populated object but not being handled</li>
+                    </ul>
+                    <p><strong>Solution:</strong> The backend needs to be updated to handle populated instructor IDs</p>
+                `,
+                'backend-not-updated': `
+                    <h3>⚠️ Backend Not Updated</h3>
+                    <p>The debug endpoints are not available, which strongly suggests the backend hasn't been deployed with the latest fixes.</p>
+                    <p><strong>Solution:</strong> Deploy the backend changes from the intellaclick-cloud-backend repository</p>
+                `,
+                'unknown-403': `
+                    <h3>❌ Unknown Authorization Issue</h3>
+                    <p>The delete failed with a 403 error but for an unknown reason.</p>
+                    <p>Check the server logs for more details.</p>
+                `,
+                'other-error': `
+                    <h3>❌ Unexpected Error</h3>
+                    <p>The delete failed with an unexpected error. Check the details above and server logs.</p>
+                `
+            };
+            
+            conclusionEl.innerHTML = conclusions[type] || conclusions['other-error'];
+        }
+    </script>
+</body>
+</html>
