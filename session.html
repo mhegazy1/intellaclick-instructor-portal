@@ -734,15 +734,13 @@
             const question = questionQueue[currentQuestionIndex];
 
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/send-question`, {
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     },
-                    body: JSON.stringify({
-                        question: question
-                    })
+                    body: JSON.stringify(question) // Send question fields directly, not wrapped
                 });
 
                 if (!response.ok) throw new Error('Failed to send question');
@@ -902,7 +900,10 @@
 
         async function stopQuestion() {
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/stop-question`, {
+                // Get current question ID from session data
+                const questionId = sessionData.currentQuestion?.questionId || 'current';
+                
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions/${questionId}/end`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -912,6 +913,7 @@
                 if (!response.ok) throw new Error('Failed to stop question');
 
                 showToast('Question stopped', 'success');
+                document.getElementById('currentQuestionSection').style.display = 'none';
                 await loadSession();
             } catch (error) {
                 console.error('Error stopping question:', error);
@@ -929,11 +931,13 @@
             if (!confirm('Are you sure you want to end this session?')) return;
 
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/end`, {
-                    method: 'POST',
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/status`, {
+                    method: 'PATCH',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
+                    },
+                    body: JSON.stringify({ status: 'ended' })
                 });
 
                 if (!response.ok) throw new Error('Failed to end session');
