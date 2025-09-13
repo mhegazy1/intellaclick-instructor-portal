@@ -164,8 +164,16 @@
                 const classData = classResult.data.class || classResult.data;
                 log(`Name: ${classData.name}`);
                 log(`Join Code: ${classData.joinCode}`);
-                log(`Enrollment Count: ${classData.enrollmentCount || 0}`);
+                log(`Enrollment Count: ${classData.enrollmentCount || classData.stats?.enrolledCount || 0}`);
                 log(`Created: ${classData.createdAt ? new Date(classData.createdAt).toLocaleDateString() : 'Unknown'}`);
+                
+                // Show enrollment summary if available
+                if (classData.enrollmentSummary) {
+                    log('\nEnrollment Summary:');
+                    log(`Total Enrolled: ${classData.enrollmentSummary.totalEnrolled}`);
+                    log(`Active Students: ${classData.enrollmentSummary.activeStudents}`);
+                    log(`Enrolled: ${classData.enrollmentSummary.enrolled}`);
+                }
             } else {
                 log('Failed to load class', 'error');
                 log(`Error: ${JSON.stringify(classResult.data)}`, 'error');
