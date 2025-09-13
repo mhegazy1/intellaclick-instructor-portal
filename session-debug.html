@@ -255,7 +255,13 @@
                 </div>
                 
                 <div class="test-card">
-                    <h3>6. Full System Test</h3>
+                    <h3>6. Simulate Student Poll</h3>
+                    <p>Poll like a student would</p>
+                    <button class="btn-warning" onclick="simulateStudentPolling()">Start Polling</button>
+                </div>
+                
+                <div class="test-card">
+                    <h3>7. Full System Test</h3>
                     <p>Run all tests in sequence</p>
                     <button class="btn-primary" onclick="runFullTest()">Run All Tests</button>
                 </div>
@@ -501,6 +507,59 @@
             } catch (error) {
                 log(`Student view error: ${error.message}`, 'error');
             }
+        }
+
+        let pollingInterval = null;
+        
+        async function simulateStudentPolling() {
+            if (!currentSessionCode) {
+                log('Please lookup a session first', 'error');
+                return;
+            }
+            
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                log('Stopped student polling', 'info');
+                document.querySelector('button[onclick="simulateStudentPolling()"]').textContent = 'Start Polling';
+                return;
+            }
+            
+            log('Starting student polling simulation (every 3 seconds)...', 'info');
+            document.querySelector('button[onclick="simulateStudentPolling()"]').textContent = 'Stop Polling';
+            
+            // Initial check
+            await checkStudentView();
+            
+            // Poll every 3 seconds like the student app would
+            pollingInterval = setInterval(async () => {
+                log('Polling for question updates...', 'info');
+                
+                try {
+                    const response = await fetch(`${API_URL}/api/sessions/code/${currentSessionCode}/current-question`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.question) {
+                        log(`Question received: "${data.question.questionText}"`, 'success');
+                        log(`Type: ${data.question.type} | Points: ${data.question.points}`, 'info');
+                        
+                        // Check for type field vs questionType
+                        if (data.question.type !== data.question.questionType) {
+                            log(`WARNING: type="${data.question.type}" but questionType="${data.question.questionType}"`, 'warning');
+                        }
+                    } else {
+                        log('No active question', 'info');
+                    }
+                } catch (error) {
+                    log(`Polling error: ${error.message}`, 'error');
+                }
+            }, 3000);
         }
 
         async function runFullTest() {
