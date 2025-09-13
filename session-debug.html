@@ -261,7 +261,13 @@
                 </div>
                 
                 <div class="test-card">
-                    <h3>7. Full System Test</h3>
+                    <h3>7. CORS Test</h3>
+                    <p>Test cross-origin access</p>
+                    <button class="btn-warning" onclick="testCORS()">Test CORS</button>
+                </div>
+                
+                <div class="test-card">
+                    <h3>8. Full System Test</h3>
                     <p>Run all tests in sequence</p>
                     <button class="btn-primary" onclick="runFullTest()">Run All Tests</button>
                 </div>
@@ -537,11 +543,24 @@
                 
                 try {
                     const response = await fetch(`${API_URL}/api/sessions/code/${currentSessionCode}/current-question`, {
+                        method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
                             'Cache-Control': 'no-cache'
-                        }
+                        },
+                        mode: 'cors'
                     });
+                    
+                    if (!response.ok) {
+                        log(`Polling HTTP error: ${response.status} ${response.statusText}`, 'error');
+                        try {
+                            const errorData = await response.json();
+                            log(`Error details: ${JSON.stringify(errorData)}`, 'error');
+                        } catch (e) {
+                            log(`Could not parse error response`, 'error');
+                        }
+                        return;
+                    }
                     
                     const data = await response.json();
                     
@@ -557,9 +576,116 @@
                         log('No active question', 'info');
                     }
                 } catch (error) {
-                    log(`Polling error: ${error.message}`, 'error');
+                    log(`Polling network error: ${error.name} - ${error.message}`, 'error');
+                    
+                    // Provide more detailed error information
+                    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                        log('Possible causes:', 'error');
+                        log('- CORS policy blocking the request', 'error');
+                        log('- Network connectivity issue', 'error');
+                        log('- API server not responding', 'error');
+                        log(`- Check browser console for more details`, 'error');
+                    }
+                    
+                    updateRawResponse({
+                        endpoint: 'Polling Error',
+                        error: {
+                            name: error.name,
+                            message: error.message,
+                            stack: error.stack
+                        }
+                    });
                 }
             }, 3000);
+        }
+
+        async function testCORS() {
+            log('=== Testing CORS Configuration ===', 'info');
+            
+            // Test 1: Basic fetch with no auth
+            log('Test 1: Basic fetch (no auth)...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/api/sessions/health`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    log('✓ Basic CORS test passed', 'success');
+                    const data = await response.json();
+                    log(`Health check response: ${JSON.stringify(data)}`, 'info');
+                } else {
+                    log(`✗ Basic CORS test failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Basic CORS test error: ${error.message}`, 'error');
+            }
+            
+            // Test 2: OPTIONS preflight
+            log('\nTest 2: OPTIONS preflight test...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/api/sessions/code/TEST123/current-question`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'content-type'
+                    }
+                });
+                
+                if (response.ok) {
+                    log('✓ OPTIONS preflight passed', 'success');
+                    log(`CORS headers:`, 'info');
+                    log(`- Access-Control-Allow-Origin: ${response.headers.get('Access-Control-Allow-Origin')}`, 'info');
+                    log(`- Access-Control-Allow-Methods: ${response.headers.get('Access-Control-Allow-Methods')}`, 'info');
+                    log(`- Access-Control-Allow-Headers: ${response.headers.get('Access-Control-Allow-Headers')}`, 'info');
+                } else {
+                    log(`✗ OPTIONS preflight failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ OPTIONS preflight error: ${error.message}`, 'error');
+            }
+            
+            // Test 3: Session endpoint without code
+            log('\nTest 3: Session endpoint (no auth, valid code)...', 'info');
+            if (currentSessionCode) {
+                try {
+                    const response = await fetch(`${API_URL}/api/sessions/code/${currentSessionCode}/current-question`, {
+                        method: 'GET',
+                        mode: 'cors',
+                        credentials: 'omit',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        log('✓ Session endpoint CORS test passed', 'success');
+                        const data = await response.json();
+                        log(`Response: ${JSON.stringify(data).substring(0, 100)}...`, 'info');
+                    } else {
+                        log(`✗ Session endpoint test failed: ${response.status} ${response.statusText}`, 'error');
+                        try {
+                            const errorData = await response.text();
+                            log(`Error response: ${errorData}`, 'error');
+                        } catch (e) {}
+                    }
+                } catch (error) {
+                    log(`✗ Session endpoint error: ${error.message}`, 'error');
+                    if (error.stack) {
+                        log(`Stack trace: ${error.stack}`, 'error');
+                    }
+                }
+            } else {
+                log('⚠️ No session code - lookup a session first', 'warning');
+            }
+            
+            log('\n=== CORS Test Complete ===', 'info');
+            log('Check browser console for additional CORS errors', 'info');
         }
 
         async function runFullTest() {

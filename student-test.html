@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student View Test - IntellaClick</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        .question-display {
+            background: #e8f4f8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 2px solid #007bff;
+        }
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student View Test</h1>
+        <p>This simulates exactly what a student would see when joining a session.</p>
+        
+        <div>
+            <input type="text" id="sessionCode" placeholder="Enter session code" value="QI023M">
+            <button onclick="startPolling()">Start Student View</button>
+            <button onclick="stopPolling()">Stop</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div id="currentQuestion" style="display: none;" class="question-display">
+            <h2>Current Question</h2>
+            <div id="questionContent"></div>
+        </div>
+
+        <div id="status" class="status info">
+            Enter a session code and click "Start Student View" to begin
+        </div>
+
+        <h3>Debug Log</h3>
+        <div id="log" class="log-container"></div>
+
+        <h3>Raw API Response</h3>
+        <pre id="rawResponse">No API calls made yet</pre>
+    </div>
+
+    <script>
+        let pollingInterval = null;
+        const API_URL = 'https://api.intellaclick.com';
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('rawResponse').textContent = 'No API calls made yet';
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        async function checkForQuestion(sessionCode) {
+            const endpoint = `/api/sessions/code/${sessionCode}/current-question`;
+            log(`Polling ${endpoint}...`);
+            
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+
+                const responseText = await response.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    log(`Failed to parse response: ${responseText}`, 'error');
+                    document.getElementById('rawResponse').textContent = `Raw response:\n${responseText}`;
+                    return;
+                }
+
+                document.getElementById('rawResponse').textContent = JSON.stringify(data, null, 2);
+
+                if (!response.ok) {
+                    log(`HTTP Error: ${response.status} ${response.statusText}`, 'error');
+                    updateStatus(`Error: ${data.error || 'Unknown error'}`, 'error');
+                    return;
+                }
+
+                if (data.question) {
+                    log('Question received!', 'success');
+                    log(`Question type: ${data.question.type || data.question.questionType}`, 'info');
+                    displayQuestion(data.question);
+                    updateStatus('Question active - displaying to student', 'success');
+                } else {
+                    log('No active question', 'info');
+                    hideQuestion();
+                    updateStatus(`Session ${data.sessionStatus || 'active'} - Waiting for question`, 'warning');
+                }
+
+            } catch (error) {
+                log(`Network error: ${error.message}`, 'error');
+                updateStatus(`Network error: ${error.message}`, 'error');
+                document.getElementById('rawResponse').textContent = `Error: ${error.toString()}`;
+            }
+        }
+
+        function displayQuestion(question) {
+            const questionDiv = document.getElementById('currentQuestion');
+            const contentDiv = document.getElementById('questionContent');
+            
+            questionDiv.style.display = 'block';
+            
+            let html = `<h3>${question.questionText || question.text || 'No question text'}</h3>`;
+            html += `<p><strong>Type:</strong> ${question.type || question.questionType}</p>`;
+            
+            if (question.options) {
+                html += '<h4>Options:</h4>';
+                if (Array.isArray(question.options)) {
+                    if (typeof question.options[0] === 'object') {
+                        // Options are objects with id and text
+                        html += '<ul>';
+                        question.options.forEach(opt => {
+                            html += `<li>${opt.id}: ${opt.text}</li>`;
+                        });
+                        html += '</ul>';
+                    } else {
+                        // Options are simple strings
+                        html += '<ul>';
+                        question.options.forEach((opt, idx) => {
+                            html += `<li>${String.fromCharCode(65 + idx)}: ${opt}</li>`;
+                        });
+                        html += '</ul>';
+                    }
+                }
+            }
+            
+            contentDiv.innerHTML = html;
+        }
+
+        function hideQuestion() {
+            document.getElementById('currentQuestion').style.display = 'none';
+        }
+
+        function startPolling() {
+            const sessionCode = document.getElementById('sessionCode').value.trim().toUpperCase();
+            
+            if (!sessionCode) {
+                updateStatus('Please enter a session code', 'error');
+                return;
+            }
+            
+            if (pollingInterval) {
+                stopPolling();
+            }
+            
+            log(`Starting student view for session ${sessionCode}`, 'info');
+            updateStatus('Polling for questions...', 'info');
+            
+            // Initial check
+            checkForQuestion(sessionCode);
+            
+            // Poll every 3 seconds (same as student app)
+            pollingInterval = setInterval(() => {
+                checkForQuestion(sessionCode);
+            }, 3000);
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                log('Stopped polling', 'info');
+                updateStatus('Polling stopped', 'warning');
+            }
+        }
+
+        // Auto-start if session code is provided
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                document.getElementById('sessionCode').value = code;
+            }
+        });
+    </script>
+</body>
+</html>

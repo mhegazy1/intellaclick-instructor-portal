@@ -870,7 +870,25 @@
                 await loadSession();
             } catch (error) {
                 console.error('Error sending question:', error);
-                showToast(error.message || 'Failed to send question', 'error');
+                
+                // Check if it's a CORS error
+                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                    showToast('Network error: Unable to reach the API server. This may be a CORS issue.', 'error');
+                    console.error('CORS Error Details:', {
+                        error: error,
+                        message: 'The API server may need to add instructor.intellaclick.com to its allowed origins',
+                        currentOrigin: window.location.origin,
+                        apiUrl: 'https://api.intellaclick.com'
+                    });
+                    
+                    // Show more detailed error in alert for debugging
+                    if (confirm('Network error detected. This is likely a CORS configuration issue.\n\nThe backend needs to add instructor.intellaclick.com to its allowed origins.\n\nClick OK to open the CORS test page for more details.')) {
+                        window.open('/cors-test.html', '_blank');
+                    }
+                } else {
+                    showToast(error.message || 'Failed to send question', 'error');
+                }
+                
                 currentQuestionIndex--; // Revert on error
             }
         }
