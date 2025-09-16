@@ -766,6 +766,21 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="customJoinCode">Custom Join Code (Optional)</label>
+                    <input type="text" 
+                           id="customJoinCode" 
+                           placeholder="Leave empty for auto-generated code"
+                           maxlength="12"
+                           pattern="[A-Za-z0-9]{4,12}"
+                           title="4-12 characters, letters and numbers only"
+                           style="text-transform: uppercase;"
+                           oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')">
+                    <small style="color: #6B7280; display: block; margin-top: 4px;">
+                        4-12 characters, letters and numbers only. Leave empty for auto-generated code.
+                    </small>
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="hideModal('classModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Class</button>
@@ -1121,6 +1136,7 @@
             const season = document.getElementById('termSeason').value;
             const year = document.getElementById('termYear').value;
             
+            const customCode = document.getElementById('customJoinCode').value.trim();
             const formData = {
                 name: document.getElementById('className').value,
                 code: document.getElementById('classCode').value,
@@ -1130,6 +1146,11 @@
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value
             };
+            
+            // Only include customJoinCode if provided
+            if (customCode) {
+                formData.customJoinCode = customCode;
+            }
 
             try {
                 const response = await fetch('https://api.intellaclick.com/api/classes', {
