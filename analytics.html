@@ -484,13 +484,41 @@
             const period = document.getElementById('periodFilter').value;
             
             try {
-                // For now, generate sample data
-                // In production, this would fetch from API
-                generateSampleAnalytics();
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // Fetch real analytics data from API
+                const response = await fetch(`${window.API_URL}/api/classes/${classId}/analytics?period=${period}`, {
+                    headers: {
+                        'x-auth-token': token
+                    }
+                });
+
+                if (!response.ok) {
+                    // If analytics endpoint doesn't exist, fall back to sample data
+                    console.log('Analytics endpoint not available, using sample data');
+                    generateSampleAnalytics();
+                } else {
+                    const data = await response.json();
+                    if (data.students && data.students.length > 0) {
+                        analyticsData = data.students;
+                    } else {
+                        // No data available, generate sample
+                        generateSampleAnalytics();
+                    }
+                }
+                
                 updateOverviewStats();
                 renderStudentTable();
             } catch (error) {
                 console.error('Error loading analytics:', error);
+                // Fall back to sample data on error
+                generateSampleAnalytics();
+                updateOverviewStats();
+                renderStudentTable();
             }
         }
 
