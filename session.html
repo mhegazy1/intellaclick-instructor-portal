@@ -1255,20 +1255,20 @@
         // Load and Import Quizzes
         async function loadQuizzes() {
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/quizzes/class/${classId}`, {
+                const response = await fetch(`https://api.intellaclick.com/api/quizzes`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to load quizzes');
-                
+
                 const data = await response.json();
                 const quizzes = data.quizzes || [];
-                
+
                 const quizList = document.getElementById('quizList');
                 if (quizzes.length === 0) {
-                    quizList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No quizzes found for this class</p>';
+                    quizList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No quizzes found. <a href="/quizzes.html" style="color: var(--primary-color);">Create your first quiz</a></p>';
                     document.getElementById('importBtn').disabled = true;
                 } else {
                     quizList.innerHTML = '';
@@ -1277,7 +1277,7 @@
                         item.className = 'quiz-item';
                         item.innerHTML = `
                             <strong>${quiz.title}</strong><br>
-                            <small style="color: var(--text-secondary);">${quiz.questions?.length || 0} questions</small>
+                            <small style="color: var(--text-secondary);">${quiz.questionCount || 0} questions • ${quiz.totalPoints || 0} points</small>
                         `;
                         item.onclick = () => selectQuiz(quiz._id, item);
                         quizList.appendChild(item);
@@ -1285,7 +1285,8 @@
                 }
             } catch (error) {
                 console.error('Error loading quizzes:', error);
-                showToast('Failed to load quizzes', 'error');
+                const quizList = document.getElementById('quizList');
+                quizList.innerHTML = '<p style="color: var(--danger-color); text-align: center; padding: 20px;">Failed to load quizzes. Please try again.</p>';
             }
         }
 
@@ -1306,33 +1307,33 @@
                 showToast('Please select a quiz', 'error');
                 return;
             }
-            
+
             try {
                 const response = await fetch(`https://api.intellaclick.com/api/quizzes/${selectedQuizId}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to load quiz');
-                
+
                 const data = await response.json();
                 const quiz = data.quiz || data;
-                
+
                 if (quiz.questions && quiz.questions.length > 0) {
                     // Add all quiz questions to the queue
                     quiz.questions.forEach(q => {
+                        // Get question data from snapshot if available
+                        const snapshot = q.questionSnapshot || q;
+
                         questionQueue.push({
-                            text: q.questionText || q.text,
-                            type: q.questionType || q.type || 'mcq',
-                            options: q.options,
-                            optionTexts: q.optionTexts,
-                            correctAnswer: q.correctAnswer,
-                            pairs: q.pairs,
-                            correctOrder: q.correctOrder
+                            text: snapshot.questionText || q.text || '',
+                            type: snapshot.type || 'mcq',
+                            options: snapshot.options || [],
+                            correctAnswer: snapshot.correctAnswer || 0
                         });
                     });
-                    
+
                     updateQueueDisplay();
                     closeImportModal();
                     showToast(`Imported ${quiz.questions.length} questions from ${quiz.title}`, 'success');
