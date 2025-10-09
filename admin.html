@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - IntellaClick</title>
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --danger-color: #EF4444;
+            --success-color: #10B981;
+            --warning-color: #F59E0B;
+            --background: #F9FAFB;
+            --surface: #FFFFFF;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: var(--surface);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--danger-color);
+        }
+
+        .section {
+            background-color: var(--surface);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="email"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .user-card {
+            background-color: #F9FAFB;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .user-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .info-item {
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+
+        .badge-warning {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-danger {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .diagnostic-result {
+            background-color: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .diagnostic-section {
+            margin-bottom: 16px;
+        }
+
+        .diagnostic-section h4 {
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .diagnostic-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .diagnostic-list li {
+            padding: 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+        }
+
+        .issue {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .warning {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+
+        .info {
+            background-color: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .back-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/classes.html" class="back-link">← Back to Classes</a>
+            <h1>🔒 Admin Panel</h1>
+            <p style="color: var(--text-secondary); margin-top: 8px;">System administrator tools</p>
+        </div>
+
+        <!-- User Lookup -->
+        <div class="section">
+            <h2>User Lookup</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Search for any user by email</p>
+
+            <div class="search-box">
+                <input type="email" id="searchEmail" placeholder="Enter email address">
+                <button class="btn btn-primary" onclick="searchUser()">Search</button>
+            </div>
+
+            <div id="userResults"></div>
+        </div>
+
+        <!-- Enrollment Diagnostic -->
+        <div class="section">
+            <h2>Enrollment Diagnostic</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Diagnose why a student can't join a class</p>
+
+            <div class="search-box">
+                <input type="email" id="diagEmail" placeholder="Student email">
+                <input type="text" id="diagJoinCode" placeholder="Join code">
+                <button class="btn btn-success" onclick="diagnoseEnrollment()">Diagnose</button>
+            </div>
+
+            <div id="diagnosticResults"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://api.intellaclick.com';
+
+        async function searchUser() {
+            const email = document.getElementById('searchEmail').value.trim();
+            if (!email) {
+                alert('Please enter an email address');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('userResults');
+            resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/user/${encodeURIComponent(email)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    resultsDiv.innerHTML = `<div class="user-card" style="background-color: #FEE2E2; color: #991B1B;">${data.error}</div>`;
+                    return;
+                }
+
+                let html = '';
+
+                // Instructor info
+                if (data.instructor) {
+                    const i = data.instructor;
+                    html += `
+                        <div class="user-card">
+                            <h3>👨‍🏫 Instructor Account</h3>
+                            <div class="user-info">
+                                <div class="info-item">
+                                    <div class="info-label">Name</div>
+                                    <strong>${i.firstName} ${i.lastName}</strong>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Email</div>
+                                    ${i.email}
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Role</div>
+                                    ${i.role}
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Email Verified</div>
+                                    <span class="badge ${i.emailVerified ? 'badge-success' : 'badge-danger'}">
+                                        ${i.emailVerified ? 'Yes' : 'No'}
+                                    </span>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Joined</div>
+                                    ${new Date(i.createdAt).toLocaleDateString()}
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Classes Created</div>
+                                    ${i.classesCreated?.length || 0}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Student info
+                if (data.student) {
+                    const s = data.student;
+                    html += `
+                        <div class="user-card">
+                            <h3>👤 Student Account</h3>
+                            <div class="user-info">
+                                <div class="info-item">
+                                    <div class="info-label">Name</div>
+                                    <strong>${s.firstName} ${s.lastName}</strong>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Email</div>
+                                    ${s.email}
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Email Verified</div>
+                                    <span class="badge ${s.emailVerified ? 'badge-success' : 'badge-danger'}">
+                                        ${s.emailVerified ? 'Yes' : 'No'}
+                                    </span>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Joined</div>
+                                    ${new Date(s.createdAt).toLocaleDateString()}
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Classes Enrolled</div>
+                                    ${s.enrollments?.length || 0}
+                                </div>
+                            </div>
+                            ${s.enrollments?.length > 0 ? `
+                                <div style="margin-top: 16px;">
+                                    <strong>Enrollments:</strong>
+                                    ${s.enrollments.map(e => `
+                                        <div style="padding: 8px; margin-top: 8px; background: white; border-radius: 4px;">
+                                            ${e.className} -
+                                            <span class="badge ${e.status === 'enrolled' ? 'badge-success' : 'badge-warning'}">
+                                                ${e.status}
+                                            </span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsDiv.innerHTML = '<div class="user-card" style="background-color: #FEE2E2; color: #991B1B;">Network error. Please try again.</div>';
+            }
+        }
+
+        async function diagnoseEnrollment() {
+            const email = document.getElementById('diagEmail').value.trim();
+            const joinCode = document.getElementById('diagJoinCode').value.trim();
+
+            if (!email || !joinCode) {
+                alert('Please enter both email and join code');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('diagnosticResults');
+            resultsDiv.innerHTML = '<div class="loading">Diagnosing...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/diagnose-enrollment`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, joinCode })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    resultsDiv.innerHTML = `<div class="diagnostic-result" style="background-color: #FEE2E2; color: #991B1B;">${data.error}</div>`;
+                    return;
+                }
+
+                const d = data.diagnosis;
+                let html = `
+                    <div class="diagnostic-result">
+                        <h3>${d.summary}</h3>
+
+                        ${d.issues?.length > 0 ? `
+                            <div class="diagnostic-section">
+                                <h4>❌ Issues (Prevent Enrollment)</h4>
+                                <ul class="diagnostic-list">
+                                    ${d.issues.map(issue => `<li class="issue">${issue}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+
+                        ${d.warnings?.length > 0 ? `
+                            <div class="diagnostic-section">
+                                <h4>⚠️ Warnings</h4>
+                                <ul class="diagnostic-list">
+                                    ${d.warnings.map(warning => `<li class="warning">${warning}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+
+                        ${d.info?.length > 0 ? `
+                            <div class="diagnostic-section">
+                                <h4>ℹ️ Information</h4>
+                                <ul class="diagnostic-list">
+                                    ${d.info.map(info => `<li class="info">${info}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('Diagnostic error:', error);
+                resultsDiv.innerHTML = '<div class="diagnostic-result" style="background-color: #FEE2E2; color: #991B1B;">Network error. Please try again.</div>';
+            }
+        }
+
+        // Check auth and admin status
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>
