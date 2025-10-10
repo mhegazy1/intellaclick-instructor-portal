@@ -597,12 +597,23 @@
             }
 
             // Check for pending question from create-session page
-            const questionData = sessionStorage.getItem('pendingQuestion');
-            if (questionData) {
-                const question = JSON.parse(questionData);
-                questionQueue.push(question);
-                sessionStorage.removeItem('pendingQuestion');
+            // Load multiple questions from sessionStorage (new format)
+            const questionsData = sessionStorage.getItem('pendingQuestions');
+            if (questionsData) {
+                const questions = JSON.parse(questionsData);
+                questionQueue.push(...questions); // Add all questions to queue
+                sessionStorage.removeItem('pendingQuestions');
+                sessionStorage.removeItem('currentQuestionIndex');
                 updateQueueDisplay();
+            } else {
+                // Fallback to single question format (legacy support)
+                const questionData = sessionStorage.getItem('pendingQuestion');
+                if (questionData) {
+                    const question = JSON.parse(questionData);
+                    questionQueue.push(question);
+                    sessionStorage.removeItem('pendingQuestion');
+                    updateQueueDisplay();
+                }
             }
 
             checkAuth();

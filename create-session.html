@@ -299,8 +299,11 @@
                 </div>
 
                 <div class="form-group" id="quickPollConfig" style="display: none;">
-                    <label for="questionText">Question</label>
-                    <textarea id="questionText" rows="3" placeholder="Enter your question here..." required></textarea>
+                    <!-- Questions List -->
+                    <div id="questionsList" style="margin-bottom: 20px;"></div>
+
+                    <label for="questionText">Add Question</label>
+                    <textarea id="questionText" rows="3" placeholder="Enter your question here..."></textarea>
                     
                     <label style="margin-top: 16px;">Question Type</label>
                     <select id="questionType" onchange="updateQuestionOptions()">
@@ -383,6 +386,11 @@
                         <input type="text" id="blankAnswer" placeholder="Enter the correct answer" style="margin-top: 8px;">
                         <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Use [blank] in your question text where the answer should go</small>
                     </div>
+
+                    <!-- Add Question Button -->
+                    <div style="margin-top: 16px;">
+                        <button type="button" class="btn btn-primary" onclick="addQuickPollQuestion()">+ Add This Question</button>
+                    </div>
                 </div>
 
                 <div class="form-group" id="quizConfig" style="display: none;">
@@ -438,6 +446,7 @@
         let classId;
         let classData;
         let selectedType = null;
+        let quickPollQuestions = []; // Store multiple questions for quick poll
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -486,36 +495,43 @@
 
         function selectSessionType(type) {
             selectedType = type;
-            
+
+            // Clear quick poll questions when switching session type
+            if (type !== 'quick') {
+                quickPollQuestions = [];
+            } else {
+                renderQuestionsList(); // Show existing questions if any
+            }
+
             // Update UI
             document.querySelectorAll('.option-card').forEach(card => {
                 card.classList.remove('selected');
             });
             document.getElementById(type + 'Option').classList.add('selected');
-            
+
             // Show configuration section
             document.getElementById('sessionConfig').style.display = 'block';
-            
+
             // Show/hide specific configs
             document.getElementById('quickPollConfig').style.display = type === 'quick' ? 'block' : 'none';
             document.getElementById('quizConfig').style.display = type === 'quiz' ? 'block' : 'none';
             document.getElementById('desktopInstructions').style.display = type === 'desktop' ? 'block' : 'none';
-            
+
             // Show/hide session settings based on type
             const showSettings = type !== 'desktop';
             document.getElementById('sessionSettings').style.display = showSettings ? 'block' : 'none';
             document.getElementById('sessionOptions').style.display = showSettings ? 'block' : 'none';
             document.getElementById('sessionName').parentElement.style.display = showSettings ? 'block' : 'none';
-            
+
             // Update start button
             document.getElementById('startButton').style.display = type === 'desktop' ? 'none' : 'inline-block';
-            
+
             if (type === 'quiz') {
                 loadQuizzes();
             } else if (type === 'desktop') {
                 showDesktopInstructions();
             }
-            
+
             // Set default session name
             const now = new Date();
             document.getElementById('sessionName').value = `${classData.name} - ${now.toLocaleDateString()}`;
@@ -535,14 +551,14 @@
         
         function updateQuestionOptions() {
             const questionType = document.getElementById('questionType').value;
-            
+
             // Hide all option divs
             document.getElementById('mcqOptions').style.display = 'none';
             document.getElementById('tfOptions').style.display = 'none';
             document.getElementById('matchingOptions').style.display = 'none';
             document.getElementById('orderingOptions').style.display = 'none';
             document.getElementById('fillblankOptions').style.display = 'none';
-            
+
             // Show the selected one
             switch(questionType) {
                 case 'mcq':
@@ -561,6 +577,171 @@
                     document.getElementById('fillblankOptions').style.display = 'block';
                     break;
             }
+        }
+
+        function addQuickPollQuestion() {
+            const questionType = document.getElementById('questionType').value;
+            const questionText = document.getElementById('questionText').value.trim();
+
+            if (!questionText) {
+                showToast('Please enter a question', 'error');
+                return;
+            }
+
+            let question = {
+                text: questionText,
+                type: questionType
+            };
+
+            // Validate and add question-specific data
+            try {
+                switch(questionType) {
+                    case 'mcq':
+                        const options = [];
+                        const optionTexts = [];
+                        let correctAnswer = null;
+
+                        ['A', 'B', 'C', 'D'].forEach(letter => {
+                            const optionInput = document.getElementById(`option${letter}`);
+                            if (optionInput && optionInput.value.trim()) {
+                                options.push(letter);
+                                optionTexts.push(optionInput.value.trim());
+                                const radioButton = document.querySelector(`input[name="correctAnswer"][value="${letter}"]`);
+                                if (radioButton && radioButton.checked) {
+                                    correctAnswer = letter;
+                                }
+                            }
+                        });
+
+                        if (options.length < 2) {
+                            showToast('Please provide at least 2 answer options', 'error');
+                            return;
+                        }
+
+                        question.options = options;
+                        question.optionTexts = optionTexts;
+                        question.correctAnswer = correctAnswer;
+                        break;
+
+                    case 'tf':
+                        question.options = ['True', 'False'];
+                        question.correctAnswer = document.querySelector('input[name="tfAnswer"]:checked').value;
+                        break;
+
+                    case 'matching':
+                        const pairs = [];
+                        for (let i = 1; i <= 4; i++) {
+                            const left = document.getElementById(`match${i}Left`).value.trim();
+                            const right = document.getElementById(`match${i}Right`).value.trim();
+                            if (left && right) {
+                                pairs.push({ left, right });
+                            }
+                        }
+
+                        if (pairs.length < 2) {
+                            showToast('Please provide at least 2 matching pairs', 'error');
+                            return;
+                        }
+
+                        question.pairs = pairs;
+                        break;
+
+                    case 'ordering':
+                        const items = [];
+                        for (let i = 1; i <= 4; i++) {
+                            const item = document.getElementById(`order${i}`).value.trim();
+                            if (item) {
+                                items.push(item);
+                            }
+                        }
+
+                        if (items.length < 2) {
+                            showToast('Please provide at least 2 items to order', 'error');
+                            return;
+                        }
+
+                        question.correctOrder = items;
+                        break;
+
+                    case 'fillblank':
+                        const blankAnswer = document.getElementById('blankAnswer').value.trim();
+                        if (!blankAnswer) {
+                            showToast('Please provide the correct answer', 'error');
+                            return;
+                        }
+
+                        if (!questionText.includes('[blank]')) {
+                            showToast('Please include [blank] in your question where the answer should go', 'error');
+                            return;
+                        }
+
+                        question.correctAnswer = blankAnswer;
+                        break;
+                }
+
+                // Add question to array
+                quickPollQuestions.push(question);
+
+                // Clear form
+                clearQuestionForm();
+
+                // Render questions list
+                renderQuestionsList();
+
+                showToast('Question added successfully!', 'success');
+
+            } catch (error) {
+                showToast('Error adding question: ' + error.message, 'error');
+            }
+        }
+
+        function clearQuestionForm() {
+            document.getElementById('questionText').value = '';
+            ['A', 'B', 'C', 'D'].forEach(letter => {
+                const input = document.getElementById(`option${letter}`);
+                if (input) input.value = '';
+            });
+            for (let i = 1; i <= 4; i++) {
+                const matchLeft = document.getElementById(`match${i}Left`);
+                const matchRight = document.getElementById(`match${i}Right`);
+                const order = document.getElementById(`order${i}`);
+                if (matchLeft) matchLeft.value = '';
+                if (matchRight) matchRight.value = '';
+                if (order) order.value = '';
+            }
+            const blankAnswer = document.getElementById('blankAnswer');
+            if (blankAnswer) blankAnswer.value = '';
+        }
+
+        function removeQuickPollQuestion(index) {
+            if (confirm('Remove this question?')) {
+                quickPollQuestions.splice(index, 1);
+                renderQuestionsList();
+            }
+        }
+
+        function renderQuestionsList() {
+            const container = document.getElementById('questionsList');
+
+            if (quickPollQuestions.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); font-size: 14px;">No questions added yet.</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="margin-bottom: 12px;">
+                    <strong>${quickPollQuestions.length} Question(s) Added:</strong>
+                </div>
+                ${quickPollQuestions.map((q, index) => `
+                    <div style="background-color: #F9FAFB; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; margin-bottom: 4px;">Q${index + 1}: ${q.text}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Type: ${q.type.toUpperCase()}</div>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-small" onclick="removeQuickPollQuestion(${index})" style="margin-left: 12px;">Remove</button>
+                    </div>
+                `).join('')}
+            `;
         }
 
         async function handleStartSession(e) {
@@ -589,102 +770,14 @@
             };
             
             if (selectedType === 'quick') {
-                const questionType = document.getElementById('questionType').value;
-                const questionText = document.getElementById('questionText').value;
-                
-                let question = {
-                    text: questionText,
-                    type: questionType
-                };
-                
-                // Add question-specific data based on type
-                switch(questionType) {
-                    case 'mcq':
-                        const options = [];
-                        const optionTexts = [];
-                        let correctAnswer = null;
-                        
-                        ['A', 'B', 'C', 'D'].forEach(letter => {
-                            const optionInput = document.getElementById(`option${letter}`);
-                            if (optionInput && optionInput.value.trim()) {
-                                options.push(letter);
-                                optionTexts.push(optionInput.value.trim());
-                                
-                                // Check if this is the correct answer
-                                const radioButton = document.querySelector(`input[name="correctAnswer"][value="${letter}"]`);
-                                if (radioButton && radioButton.checked) {
-                                    correctAnswer = letter;
-                                }
-                            }
-                        });
-                        
-                        if (options.length < 2) {
-                            showToast('Please provide at least 2 answer options', 'error');
-                            return;
-                        }
-                        
-                        question.options = options;
-                        question.optionTexts = optionTexts;
-                        question.correctAnswer = correctAnswer;
-                        break;
-                        
-                    case 'tf':
-                        question.options = ['True', 'False'];
-                        question.correctAnswer = document.querySelector('input[name="tfAnswer"]:checked').value;
-                        break;
-                        
-                    case 'matching':
-                        const pairs = [];
-                        for (let i = 1; i <= 4; i++) {
-                            const left = document.getElementById(`match${i}Left`).value.trim();
-                            const right = document.getElementById(`match${i}Right`).value.trim();
-                            if (left && right) {
-                                pairs.push({ left, right });
-                            }
-                        }
-                        
-                        if (pairs.length < 2) {
-                            showToast('Please provide at least 2 matching pairs', 'error');
-                            return;
-                        }
-                        
-                        question.pairs = pairs;
-                        break;
-                        
-                    case 'ordering':
-                        const items = [];
-                        for (let i = 1; i <= 4; i++) {
-                            const item = document.getElementById(`order${i}`).value.trim();
-                            if (item) {
-                                items.push(item);
-                            }
-                        }
-                        
-                        if (items.length < 2) {
-                            showToast('Please provide at least 2 items to order', 'error');
-                            return;
-                        }
-                        
-                        question.correctOrder = items;
-                        break;
-                        
-                    case 'fillblank':
-                        const blankAnswer = document.getElementById('blankAnswer').value.trim();
-                        if (!blankAnswer) {
-                            showToast('Please provide the correct answer', 'error');
-                            return;
-                        }
-                        
-                        if (!questionText.includes('[blank]')) {
-                            showToast('Please include [blank] in your question where the answer should go', 'error');
-                            return;
-                        }
-                        
-                        question.correctAnswer = blankAnswer;
-                        break;
+                // Check if there are questions added
+                if (quickPollQuestions.length === 0) {
+                    showToast('Please add at least one question to the quick poll', 'error');
+                    return;
                 }
-                
-                sessionData.questions = [question];
+
+                // Use all questions from the array
+                sessionData.questions = quickPollQuestions;
             }
             
             try {
@@ -707,10 +800,11 @@
                 
                 // Show session code in toast for instructor to share
                 showToast(`Session created! Code: ${session.sessionCode || sessionCode}`, 'success');
-                
-                // Store question data in sessionStorage for the session page to use
+
+                // Store all questions in sessionStorage for the session page to use
                 if (selectedType === 'quick' && sessionData.questions) {
-                    sessionStorage.setItem('pendingQuestion', JSON.stringify(sessionData.questions[0]));
+                    sessionStorage.setItem('pendingQuestions', JSON.stringify(sessionData.questions));
+                    sessionStorage.setItem('currentQuestionIndex', '0'); // Start with first question
                 }
                 
                 // Redirect to session management page with session info
