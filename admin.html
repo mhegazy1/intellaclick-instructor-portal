@@ -232,6 +232,19 @@
 
             <div id="diagnosticResults"></div>
         </div>
+
+        <!-- Verify Student Email -->
+        <div class="section">
+            <h2>Verify Student Email</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">Manually verify a student's email to allow enrollment</p>
+
+            <div class="search-box">
+                <input type="email" id="verifyEmail" placeholder="Student email">
+                <button class="btn btn-success" onclick="verifyStudentEmail()">Verify Email</button>
+            </div>
+
+            <div id="verifyResults"></div>
+        </div>
     </div>
 
     <script>
@@ -424,6 +437,63 @@
             } catch (error) {
                 console.error('Diagnostic error:', error);
                 resultsDiv.innerHTML = '<div class="diagnostic-result" style="background-color: #FEE2E2; color: #991B1B;">Network error. Please try again.</div>';
+            }
+        }
+
+        async function verifyStudentEmail() {
+            const email = document.getElementById('verifyEmail').value.trim();
+
+            if (!email) {
+                alert('Please enter a student email address');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('verifyResults');
+            resultsDiv.innerHTML = '<div class="loading">Verifying email...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/verify-student-email`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    resultsDiv.innerHTML = `<div class="user-card" style="background-color: #FEE2E2; color: #991B1B;">${data.error}</div>`;
+                    return;
+                }
+
+                resultsDiv.innerHTML = `
+                    <div class="user-card" style="background-color: #D1FAE5; border-color: #10B981;">
+                        <h3 style="color: #065F46;">✅ ${data.message}</h3>
+                        <div class="user-info">
+                            <div class="info-item">
+                                <div class="info-label">Student Name</div>
+                                <strong>${data.student.name}</strong>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Email</div>
+                                ${data.student.email}
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Status</div>
+                                <span class="badge badge-success">Email Verified</span>
+                            </div>
+                        </div>
+                        <p style="margin-top: 16px; color: #065F46;">
+                            The student can now join classes!
+                        </p>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Verification error:', error);
+                resultsDiv.innerHTML = '<div class="user-card" style="background-color: #FEE2E2; color: #991B1B;">Network error. Please try again.</div>';
             }
         }
 
