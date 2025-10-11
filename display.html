@@ -1010,6 +1010,9 @@
             document.getElementById('settingsPanel').classList.toggle('open');
         }
 
+        let questionQueue = [];
+        let currentQuestionIndex = -1;
+
         async function sendNextQuestion() {
             try {
                 const token = localStorage.getItem('token');
@@ -1018,32 +1021,56 @@
                     return;
                 }
 
-                // Get the session to access question queue
-                const sessionResponse = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                // Load question queue from sessionStorage (shared with session.html)
+                const queueData = sessionStorage.getItem('questionQueue_' + sessionCode);
+                const indexData = sessionStorage.getItem('questionIndex_' + sessionCode);
 
-                if (!sessionResponse.ok) {
-                    throw new Error('Failed to load session');
+                if (queueData) {
+                    questionQueue = JSON.parse(queueData);
+                    currentQuestionIndex = indexData ? parseInt(indexData) : -1;
                 }
 
-                const sessionData = await sessionResponse.json();
-
                 // Check if there are questions in the queue
-                if (!sessionData.session || !sessionData.session.questionQueue || sessionData.session.questionQueue.length === 0) {
+                if (!questionQueue || questionQueue.length === 0) {
                     alert('No questions in queue. Add questions from the session page first.');
                     return;
                 }
 
-                const currentIndex = sessionData.session.currentQuestionIndex || 0;
-                if (currentIndex >= sessionData.session.questionQueue.length) {
+                if (currentQuestionIndex + 1 >= questionQueue.length) {
                     alert('No more questions in queue.');
                     return;
                 }
 
-                const question = sessionData.session.questionQueue[currentIndex];
+                currentQuestionIndex++;
+                const question = questionQueue[currentQuestionIndex];
+
+                // Normalize question type for student interface compatibility
+                const normalizedQuestion = {...question};
+
+                // Remove the original 'type' field to avoid confusion
+                delete normalizedQuestion.type;
+
+                // Map our types to what the student interface expects
+                const typeMap = {
+                    'mcq': 'multiple_choice',
+                    'tf': 'boolean',
+                    'matching': 'matching',
+                    'ordering': 'ordering',
+                    'fillblank': 'fill_blank'
+                };
+
+                // Set both questionType and type to the mapped value
+                const mappedType = typeMap[question.type] || question.type;
+                normalizedQuestion.questionType = mappedType;
+                normalizedQuestion.type = mappedType;
+
+                // Ensure questionText is set
+                normalizedQuestion.questionText = question.text || question.questionText;
+
+                // For true/false, ensure options are properly formatted
+                if (question.type === 'tf') {
+                    normalizedQuestion.options = ['True', 'False'];
+                }
 
                 // Send the question
                 const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
@@ -1052,12 +1079,19 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(question)
+                    body: JSON.stringify(normalizedQuestion)
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to send question');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to send question');
                 }
+
+                // Save updated index
+                sessionStorage.setItem('questionIndex_' + sessionCode, currentQuestionIndex.toString());
+
+                // Update button state
+                document.getElementById('nextQuestionBtn').disabled = (currentQuestionIndex + 1 >= questionQueue.length);
 
                 // Question will be displayed via polling/socket
             } catch (error) {

@@ -813,6 +813,10 @@
             }
 
             currentQuestionIndex++;
+
+            // Save updated index to sessionStorage
+            sessionStorage.setItem('questionIndex_' + sessionCode, currentQuestionIndex.toString());
+
             const question = questionQueue[currentQuestionIndex];
 
             // Normalize question type for student interface compatibility
