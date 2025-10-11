@@ -98,16 +98,15 @@
         .question-area {
             position: fixed;
             top: 1.5rem;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 480px - 320px);
-            max-width: 900px;
+            left: calc(1.5rem + 240px + 1.5rem);
+            right: calc(1.5rem + 380px + 1.5rem);
             z-index: 50;
-            transition: opacity 0.3s, width 0.3s;
+            transition: opacity 0.3s, left 0.3s, right 0.3s;
         }
 
         .question-area.full-width {
-            width: calc(100% - 3rem);
+            left: 1.5rem;
+            right: 1.5rem;
         }
 
         .question-area.hidden {
@@ -1275,12 +1274,24 @@
             document.getElementById('analyticsPanel').classList.toggle('hidden', !showAnalytics);
             document.getElementById('controlBar').classList.toggle('hidden', !showControls);
 
-            // Adjust question area width based on what's visible
+            // Adjust question area positioning based on what's visible
             const questionArea = document.getElementById('questionArea');
             if (!showSessionInfo && !showAnalytics) {
-                questionArea.classList.add('full-width');
+                // Both panels hidden - full width
+                questionArea.style.left = '1.5rem';
+                questionArea.style.right = '1.5rem';
+            } else if (!showSessionInfo) {
+                // Only session info hidden - expand to left
+                questionArea.style.left = '1.5rem';
+                questionArea.style.right = 'calc(1.5rem + 380px + 1.5rem)';
+            } else if (!showAnalytics) {
+                // Only analytics hidden - expand to right
+                questionArea.style.left = 'calc(1.5rem + 240px + 1.5rem)';
+                questionArea.style.right = '1.5rem';
             } else {
-                questionArea.classList.remove('full-width');
+                // Both visible - normal spacing
+                questionArea.style.left = 'calc(1.5rem + 240px + 1.5rem)';
+                questionArea.style.right = 'calc(1.5rem + 380px + 1.5rem)';
             }
         }
     </script>
