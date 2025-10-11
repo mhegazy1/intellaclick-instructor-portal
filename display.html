@@ -1052,10 +1052,29 @@
             const chartContainer = document.getElementById('responseChart');
             chartContainer.innerHTML = '';
 
-            if (!currentQuestion || !currentQuestion.options) return;
+            if (!currentQuestion) return;
 
             console.log('Updating chart with responses:', responses);
+            console.log('Current question type:', currentQuestion.type);
             console.log('Current question options:', currentQuestion.options);
+
+            const questionType = currentQuestion.type || currentQuestion.questionType;
+
+            // Handle different question types
+            if (questionType === 'fill_blank' || questionType === 'fillblank') {
+                renderFillBlankResponses(responses, chartContainer);
+            } else if (questionType === 'matching') {
+                renderMatchingResponses(responses, chartContainer);
+            } else if (questionType === 'ordering') {
+                renderOrderingResponses(responses, chartContainer);
+            } else {
+                // Multiple choice, true/false - use bar chart
+                renderBarChart(responses, chartContainer);
+            }
+        }
+
+        function renderBarChart(responses, container) {
+            if (!currentQuestion.options) return;
 
             // Count responses per option - handle both letter-based (A, B) and text-based (True, False)
             const counts = {};
@@ -1112,7 +1131,121 @@
                     </div>
                     <span class="response-percent">${percent}%</span>
                 `;
-                chartContainer.appendChild(bar);
+                container.appendChild(bar);
+            });
+        }
+
+        function renderFillBlankResponses(responses, container) {
+            const title = document.createElement('div');
+            title.style.fontWeight = '600';
+            title.style.marginBottom = '1rem';
+            title.style.color = 'var(--text-primary)';
+            title.textContent = 'Student Responses:';
+            container.appendChild(title);
+
+            if (responses.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.color = 'var(--text-secondary)';
+                empty.style.fontStyle = 'italic';
+                empty.textContent = 'No responses yet';
+                container.appendChild(empty);
+                return;
+            }
+
+            responses.forEach((response, idx) => {
+                const responseDiv = document.createElement('div');
+                responseDiv.style.padding = '0.75rem';
+                responseDiv.style.marginBottom = '0.5rem';
+                responseDiv.style.background = 'rgba(248, 249, 250, 0.6)';
+                responseDiv.style.borderRadius = '8px';
+                responseDiv.style.fontSize = '0.9rem';
+                responseDiv.innerHTML = `<strong>${idx + 1}.</strong> ${response.answer}`;
+                container.appendChild(responseDiv);
+            });
+        }
+
+        function renderMatchingResponses(responses, container) {
+            const title = document.createElement('div');
+            title.style.fontWeight = '600';
+            title.style.marginBottom = '1rem';
+            title.style.color = 'var(--text-primary)';
+            title.textContent = 'Student Matches:';
+            container.appendChild(title);
+
+            if (responses.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.color = 'var(--text-secondary)';
+                empty.style.fontStyle = 'italic';
+                empty.textContent = 'No responses yet';
+                container.appendChild(empty);
+                return;
+            }
+
+            responses.forEach((response, idx) => {
+                const responseDiv = document.createElement('div');
+                responseDiv.style.padding = '0.75rem';
+                responseDiv.style.marginBottom = '0.5rem';
+                responseDiv.style.background = 'rgba(248, 249, 250, 0.6)';
+                responseDiv.style.borderRadius = '8px';
+                responseDiv.style.fontSize = '0.9rem';
+
+                // Try to parse and display matching pairs
+                let displayText = response.answer;
+                try {
+                    const matches = JSON.parse(response.answer);
+                    if (Array.isArray(matches)) {
+                        displayText = matches.map(m => `${m.left} → ${m.right}`).join(', ');
+                    }
+                } catch (e) {
+                    // If not JSON, display as-is
+                }
+
+                responseDiv.innerHTML = `<strong>${idx + 1}.</strong> ${displayText}`;
+                container.appendChild(responseDiv);
+            });
+        }
+
+        function renderOrderingResponses(responses, container) {
+            const title = document.createElement('div');
+            title.style.fontWeight = '600';
+            title.style.marginBottom = '1rem';
+            title.style.color = 'var(--text-primary)';
+            title.textContent = 'Student Order:';
+            container.appendChild(title);
+
+            if (responses.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.color = 'var(--text-secondary)';
+                empty.style.fontStyle = 'italic';
+                empty.textContent = 'No responses yet';
+                container.appendChild(empty);
+                return;
+            }
+
+            responses.forEach((response, idx) => {
+                const responseDiv = document.createElement('div');
+                responseDiv.style.padding = '0.75rem';
+                responseDiv.style.marginBottom = '0.5rem';
+                responseDiv.style.background = 'rgba(248, 249, 250, 0.6)';
+                responseDiv.style.borderRadius = '8px';
+                responseDiv.style.fontSize = '0.9rem';
+
+                // Format ordering response (usually comma-separated or array)
+                let displayText = response.answer;
+                try {
+                    const order = JSON.parse(response.answer);
+                    if (Array.isArray(order)) {
+                        displayText = order.join(' → ');
+                    }
+                } catch (e) {
+                    // If not JSON, check if comma-separated
+                    if (typeof response.answer === 'string' && response.answer.includes(',')) {
+                        displayText = response.answer.split(',').join(' → ');
+                    }
+                }
+
+                responseDiv.innerHTML = `<strong>${idx + 1}.</strong> ${displayText}`;
+                container.appendChild(responseDiv);
             });
         }
 
@@ -1179,6 +1312,15 @@
         function highlightCorrectAnswer() {
             if (!currentQuestion || !currentQuestion.correctAnswer) {
                 console.log('Cannot highlight - no question or no correct answer');
+                return;
+            }
+
+            const questionType = currentQuestion.type || currentQuestion.questionType;
+
+            // Only highlight for MCQ and True/False
+            if (questionType === 'fill_blank' || questionType === 'fillblank' ||
+                questionType === 'matching' || questionType === 'ordering') {
+                console.log('Skipping highlight for question type:', questionType);
                 return;
             }
 
