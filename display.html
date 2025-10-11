@@ -945,6 +945,7 @@
 
         function displayQuestion(question) {
             currentQuestion = question;
+            questionEnded = false; // Reset the ended flag for new question
 
             // Hide waiting, show question
             document.getElementById('waitingMessage').style.display = 'none';
@@ -1053,33 +1054,60 @@
 
             if (!currentQuestion || !currentQuestion.options) return;
 
-            // Count responses per option
+            console.log('Updating chart with responses:', responses);
+            console.log('Current question options:', currentQuestion.options);
+
+            // Count responses per option - handle both letter-based (A, B) and text-based (True, False)
             const counts = {};
-            currentQuestion.options.forEach((_, index) => {
-                counts[String.fromCharCode(65 + index)] = 0;
+            currentQuestion.options.forEach((option, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const optionText = typeof option === 'string' ? option : (option.text || option.id);
+
+                counts[index] = {
+                    letter: letter,
+                    text: optionText,
+                    count: 0
+                };
             });
 
+            console.log('Initialized counts:', counts);
+
             responses.forEach(response => {
-                if (counts[response.answer] !== undefined) {
-                    counts[response.answer]++;
+                console.log('Processing response:', response.answer);
+
+                // Try to match by letter (A, B, C), by text (True, False), or by index
+                for (let i = 0; i < currentQuestion.options.length; i++) {
+                    const letter = String.fromCharCode(65 + i);
+                    const optionText = typeof currentQuestion.options[i] === 'string'
+                        ? currentQuestion.options[i]
+                        : (currentQuestion.options[i].text || currentQuestion.options[i].id);
+
+                    if (response.answer === letter ||
+                        response.answer === optionText ||
+                        response.answer === optionText.toLowerCase() ||
+                        response.answer === optionText.toUpperCase()) {
+                        counts[i].count++;
+                        console.log(`Matched answer "${response.answer}" to option ${i} (${optionText})`);
+                        break;
+                    }
                 }
             });
+
+            console.log('Final counts:', counts);
 
             const total = responses.length || 1;
 
             // Render bars
-            currentQuestion.options.forEach((option, index) => {
-                const letter = String.fromCharCode(65 + index);
-                const count = counts[letter] || 0;
-                const percent = Math.round((count / total) * 100);
+            Object.values(counts).forEach(item => {
+                const percent = Math.round((item.count / total) * 100);
 
                 const bar = document.createElement('div');
                 bar.className = 'response-bar';
                 bar.innerHTML = `
-                    <div class="response-option">${letter}</div>
+                    <div class="response-option">${item.letter}</div>
                     <div class="response-bar-container">
                         <div class="response-bar-fill" style="width: ${percent}%">
-                            ${count > 0 ? `<span class="response-count">${count}</span>` : ''}
+                            ${item.count > 0 ? `<span class="response-count">${item.count}</span>` : ''}
                         </div>
                     </div>
                     <span class="response-percent">${percent}%</span>
@@ -1149,7 +1177,13 @@
         }
 
         function highlightCorrectAnswer() {
-            if (!currentQuestion || !currentQuestion.correctAnswer) return;
+            if (!currentQuestion || !currentQuestion.correctAnswer) {
+                console.log('Cannot highlight - no question or no correct answer');
+                return;
+            }
+
+            console.log('Highlighting correct answer:', currentQuestion.correctAnswer);
+            console.log('Question options:', currentQuestion.options);
 
             const optionsGrid = document.getElementById('optionsGrid');
             const options = optionsGrid.querySelectorAll('.option');
@@ -1157,11 +1191,20 @@
             // Find and highlight the correct answer
             options.forEach((optionEl, index) => {
                 const optionLetter = String.fromCharCode(65 + index);
-                const correctAnswer = currentQuestion.correctAnswer.toUpperCase();
+                const optionText = typeof currentQuestion.options[index] === 'string'
+                    ? currentQuestion.options[index]
+                    : (currentQuestion.options[index].text || currentQuestion.options[index].id);
 
-                // Check if this is the correct answer
-                if (optionLetter === correctAnswer ||
-                    currentQuestion.options[index] === currentQuestion.correctAnswer) {
+                const correctAnswerUpper = String(currentQuestion.correctAnswer).toUpperCase();
+                const optionTextUpper = String(optionText).toUpperCase();
+
+                console.log(`Checking option ${index}: letter=${optionLetter}, text=${optionText}, correct=${currentQuestion.correctAnswer}`);
+
+                // Check if this is the correct answer - match by letter OR by text
+                if (optionLetter === correctAnswerUpper ||
+                    optionTextUpper === correctAnswerUpper ||
+                    optionText === currentQuestion.correctAnswer) {
+                    console.log(`Match found! Highlighting option ${index}`);
                     optionEl.classList.add('correct');
                 }
             });
