@@ -301,8 +301,8 @@
                 <div class="form-group" id="quickPollConfig" style="display: none;">
                     <!-- Load Saved Questions Button -->
                     <div style="margin-bottom: 16px;">
-                        <button type="button" class="btn btn-secondary" onclick="loadSavedQuestions()" style="width: 100%;">
-                            📂 Load Saved Question Set
+                        <button type="button" class="btn btn-secondary" onclick="window.location.href='/saved-questions.html'" style="width: 100%;">
+                            📂 Manage Saved Question Sets
                         </button>
                     </div>
 
@@ -510,6 +510,20 @@
             if (type !== 'quick') {
                 quickPollQuestions = [];
             } else {
+                // Check if there are saved questions to load
+                const fromSavedSet = sessionStorage.getItem('fromSavedSet');
+                const pendingQuestions = sessionStorage.getItem('pendingQuestions');
+
+                if (fromSavedSet === 'true' && pendingQuestions) {
+                    try {
+                        quickPollQuestions = JSON.parse(pendingQuestions);
+                        sessionStorage.removeItem('fromSavedSet'); // Clear flag
+                        showToast(`Loaded ${quickPollQuestions.length} questions from saved set`, 'success');
+                    } catch (e) {
+                        console.error('Error loading saved questions:', e);
+                    }
+                }
+
                 renderQuestionsList(); // Show existing questions if any
             }
 

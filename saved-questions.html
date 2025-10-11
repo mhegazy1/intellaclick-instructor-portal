@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Question Sets - IntellaClick</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .question-sets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .question-set-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .question-set-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .question-set-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .question-set-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .question-set-meta {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .question-count-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .question-preview {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .question-preview-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 0.9rem;
+        }
+
+        .question-preview-item:last-child {
+            border-bottom: none;
+        }
+
+        .question-type-badge {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            background: #6c757d;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+
+        .question-set-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg {
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .search-box {
+            margin-bottom: 2rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Saved Question Sets</h1>
+            <button class="btn btn-secondary" onclick="window.history.back()">
+                ← Back
+            </button>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalSets">0</div>
+                <div class="stat-label">Question Sets</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalQuestions">0</div>
+                <div class="stat-label">Total Questions</div>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search question sets..." oninput="filterQuestionSets()">
+        </div>
+
+        <div id="questionSetsContainer" class="question-sets-grid">
+            <!-- Question sets will be loaded here -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg width="64" height="64" fill="currentColor">
+                <path d="M6 9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9Zm2-1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H8Z"/>
+            </svg>
+            <p style="font-size: 1.125rem; margin-bottom: 0.5rem;">No saved question sets yet</p>
+            <p>Create a session with questions and they'll be automatically saved here</p>
+        </div>
+    </div>
+
+    <script>
+        let allQuestionSets = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadQuestionSets();
+        });
+
+        function loadQuestionSets() {
+            allQuestionSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
+
+            // Update stats
+            document.getElementById('totalSets').textContent = allQuestionSets.length;
+            const totalQ = allQuestionSets.reduce((sum, set) => sum + set.questionCount, 0);
+            document.getElementById('totalQuestions').textContent = totalQ;
+
+            renderQuestionSets(allQuestionSets);
+        }
+
+        function renderQuestionSets(sets) {
+            const container = document.getElementById('questionSetsContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            if (sets.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = sets.map((set, index) => {
+                const date = new Date(set.createdAt).toLocaleDateString();
+                const time = new Date(set.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                // Show first 3 questions as preview
+                const preview = set.questions.slice(0, 3).map(q => {
+                    const typeLabel = getTypeLabel(q.type);
+                    const questionText = q.text || q.questionText || 'Question';
+                    return `<div class="question-preview-item">
+                        <span class="question-type-badge">${typeLabel}</span>
+                        ${questionText.substring(0, 60)}${questionText.length > 60 ? '...' : ''}
+                    </div>`;
+                }).join('');
+
+                return `
+                    <div class="question-set-card">
+                        <div class="question-set-header">
+                            <div>
+                                <div class="question-set-title">${set.name}</div>
+                                <div class="question-set-meta">${date} at ${time}</div>
+                            </div>
+                            <span class="question-count-badge">${set.questionCount} Q's</span>
+                        </div>
+
+                        <div class="question-preview">
+                            ${preview}
+                            ${set.questions.length > 3 ? `<div style="text-align: center; padding: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">+ ${set.questions.length - 3} more questions</div>` : ''}
+                        </div>
+
+                        <div class="question-set-actions">
+                            <button class="btn btn-primary" onclick="loadQuestionSet(${index})">
+                                Use These Questions
+                            </button>
+                            <button class="btn btn-secondary" onclick="viewQuestionSet(${index})">
+                                View All
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteQuestionSet(${index})">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getTypeLabel(type) {
+            const labels = {
+                'mcq': 'Multiple Choice',
+                'tf': 'True/False',
+                'matching': 'Matching',
+                'ordering': 'Put in Order',
+                'fillblank': 'Fill Blank'
+            };
+            return labels[type] || type;
+        }
+
+        function filterQuestionSets() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            if (!search) {
+                renderQuestionSets(allQuestionSets);
+                return;
+            }
+
+            const filtered = allQuestionSets.filter(set =>
+                set.name.toLowerCase().includes(search) ||
+                set.questions.some(q =>
+                    (q.text || q.questionText || '').toLowerCase().includes(search)
+                )
+            );
+
+            renderQuestionSets(filtered);
+        }
+
+        function loadQuestionSet(index) {
+            const set = allQuestionSets[index];
+
+            // Store in sessionStorage
+            sessionStorage.setItem('pendingQuestions', JSON.stringify(set.questions));
+            sessionStorage.setItem('fromSavedSet', 'true');
+
+            alert(`Loaded "${set.name}" with ${set.questionCount} questions!\n\nGo to Classes → Create Session → Quick Poll to use them.`);
+        }
+
+        function viewQuestionSet(index) {
+            const set = allQuestionSets[index];
+
+            let details = `<div style="max-width: 600px; text-align: left;">
+                <h3>${set.name}</h3>
+                <p><strong>Created:</strong> ${new Date(set.createdAt).toLocaleString()}</p>
+                <p><strong>Questions:</strong> ${set.questionCount}</p>
+                <hr style="margin: 1rem 0;">`;
+
+            set.questions.forEach((q, i) => {
+                const typeLabel = getTypeLabel(q.type);
+                details += `<div style="margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                    <strong>${i + 1}. [${typeLabel}]</strong><br>
+                    ${q.text || q.questionText}
+                </div>`;
+            });
+
+            details += '</div>';
+
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 2rem;';
+            modal.innerHTML = `<div style="background: white; padding: 2rem; border-radius: 12px; max-height: 80vh; overflow-y: auto; max-width: 800px;">${details}<button class="btn btn-primary" onclick="this.closest('div[style*=fixed]').remove()" style="margin-top: 1rem; width: 100%;">Close</button></div>`;
+            document.body.appendChild(modal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
+        function deleteQuestionSet(index) {
+            const set = allQuestionSets[index];
+
+            if (!confirm(`Delete "${set.name}"?\n\nThis cannot be undone.`)) return;
+
+            allQuestionSets.splice(index, 1);
+            localStorage.setItem('savedQuestionSets', JSON.stringify(allQuestionSets));
+
+            loadQuestionSets();
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
