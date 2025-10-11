@@ -36,19 +36,20 @@
         /* Session Info Card */
         .session-info-card {
             position: fixed;
-            top: 2rem;
-            left: 2rem;
+            top: 1rem;
+            left: 1rem;
             background: white;
-            padding: 1.5rem;
+            padding: 1rem;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            min-width: 280px;
+            max-width: 220px;
             z-index: 100;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
         }
 
         .session-info-card.hidden {
             opacity: 0;
+            transform: translateX(-100%);
             pointer-events: none;
         }
 
@@ -94,23 +95,28 @@
         /* Question Display Area */
         .question-area {
             position: fixed;
-            top: 50%;
+            top: 1rem;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            max-width: 900px;
+            transform: translateX(-50%);
+            width: calc(100% - 400px - 280px);
+            max-width: 800px;
             z-index: 50;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, width 0.3s;
+        }
+
+        .question-area.full-width {
+            width: calc(100% - 2rem);
         }
 
         .question-area.hidden {
             opacity: 0;
+            pointer-events: none;
         }
 
         .question-card {
             background: white;
-            border-radius: 20px;
-            padding: 3rem;
+            border-radius: 16px;
+            padding: 2rem;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
 
@@ -146,30 +152,29 @@
         }
 
         .question-text {
-            font-size: 2rem;
+            font-size: 1.75rem;
             line-height: 1.4;
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
             color: var(--text-primary);
         }
 
         .options-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            gap: 1rem;
         }
 
         .option {
             background: #f8f9fa;
             border: 3px solid #e9ecef;
-            padding: 1.5rem;
+            padding: 1rem 1rem 1rem 3.5rem;
             border-radius: 12px;
             text-align: left;
-            font-size: 1.25rem;
+            font-size: 1.125rem;
             transition: all 0.2s;
             position: relative;
-            min-height: 80px;
+            min-height: 60px;
             display: flex;
             align-items: center;
         }
@@ -191,7 +196,6 @@
         }
 
         .option-text {
-            margin-left: 3.5rem;
             flex: 1;
         }
 
@@ -208,10 +212,10 @@
         /* Analytics Panel */
         .analytics-panel {
             position: fixed;
-            top: 2rem;
-            right: 2rem;
-            width: 350px;
-            max-height: calc(100vh - 4rem);
+            top: 1rem;
+            right: 1rem;
+            width: 360px;
+            max-height: calc(100vh - 100px);
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
@@ -220,11 +224,12 @@
             flex-direction: column;
             overflow-y: auto;
             z-index: 100;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
         }
 
         .analytics-panel.hidden {
             opacity: 0;
+            transform: translateX(100%);
             pointer-events: none;
         }
 
@@ -333,19 +338,21 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 80px;
+            height: 70px;
             background: white;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            gap: 1rem;
             padding: 0 2rem;
             z-index: 100;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
         }
 
         .control-bar.hidden {
             opacity: 0;
+            transform: translateY(100%);
             pointer-events: none;
         }
 
@@ -412,8 +419,8 @@
         /* Settings Button */
         .settings-btn {
             position: fixed;
-            top: 2rem;
-            right: 400px;
+            bottom: 80px;
+            right: 1rem;
             background: white;
             border: none;
             width: 48px;
@@ -636,23 +643,25 @@
 
     <!-- Control Bar -->
     <div class="control-bar" id="controlBar">
-        <div class="control-section">
-            <button class="btn btn-secondary" onclick="window.location.href='/session.html?id=' + sessionId + '&code=' + sessionCode">
-                ← Back to Session
-            </button>
-        </div>
+        <button class="btn btn-secondary" onclick="window.location.href='/session.html?id=' + sessionId + '&code=' + sessionCode">
+            ← Back
+        </button>
 
-        <div class="control-section">
-            <button class="btn btn-success" onclick="addTime(10)" id="addTimeBtn" disabled>
-                + 10 sec
-            </button>
-            <button class="btn btn-success" onclick="addTime(30)" id="addTime30Btn" disabled>
-                + 30 sec
-            </button>
-            <button class="btn btn-danger" onclick="endQuestion()" id="endBtn" disabled>
-                End Question
-            </button>
-        </div>
+        <button class="btn btn-primary" onclick="sendNextQuestion()" id="nextQuestionBtn" style="font-size: 1.125rem; padding: 1rem 2rem;">
+            ▶ Next Question
+        </button>
+
+        <button class="btn btn-success" onclick="addTime(10)" id="addTimeBtn" disabled>
+            + 10s
+        </button>
+
+        <button class="btn btn-success" onclick="addTime(30)" id="addTime30Btn" disabled>
+            + 30s
+        </button>
+
+        <button class="btn btn-danger" onclick="endQuestion()" id="endBtn" disabled>
+            End Question
+        </button>
     </div>
 
     <!-- Settings Panel -->
@@ -794,11 +803,18 @@
                     showWaiting();
                 }
 
-                // Update participant count
+                // Update participant count and responses
                 const sessionResponse = await fetch(`https://api.intellaclick.com/api/sessions/code/${sessionCode}`);
                 const sessionData = await sessionResponse.json();
                 if (sessionData.session) {
                     document.getElementById('participantCount').textContent = sessionData.session.participantCount || 0;
+
+                    // Update response count and chart if there's a current question
+                    if (currentQuestion && sessionData.session.responses) {
+                        const questionResponses = sessionData.session.responses.filter(r => r.questionId === currentQuestion.id);
+                        document.getElementById('responseCount').textContent = questionResponses.length;
+                        updateResponseChart(questionResponses);
+                    }
                 }
             } catch (error) {
                 console.error('Error polling session:', error);
@@ -994,6 +1010,62 @@
             document.getElementById('settingsPanel').classList.toggle('open');
         }
 
+        async function sendNextQuestion() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Please log in first');
+                    return;
+                }
+
+                // Get the session to access question queue
+                const sessionResponse = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!sessionResponse.ok) {
+                    throw new Error('Failed to load session');
+                }
+
+                const sessionData = await sessionResponse.json();
+
+                // Check if there are questions in the queue
+                if (!sessionData.session || !sessionData.session.questionQueue || sessionData.session.questionQueue.length === 0) {
+                    alert('No questions in queue. Add questions from the session page first.');
+                    return;
+                }
+
+                const currentIndex = sessionData.session.currentQuestionIndex || 0;
+                if (currentIndex >= sessionData.session.questionQueue.length) {
+                    alert('No more questions in queue.');
+                    return;
+                }
+
+                const question = sessionData.session.questionQueue[currentIndex];
+
+                // Send the question
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(question)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to send question');
+                }
+
+                // Question will be displayed via polling/socket
+            } catch (error) {
+                console.error('Error sending question:', error);
+                alert('Failed to send question: ' + error.message);
+            }
+        }
+
         function applySettings() {
             const showSessionInfo = document.getElementById('showSessionInfo').checked;
             const showQuestion = document.getElementById('showQuestion').checked;
@@ -1006,6 +1078,14 @@
             document.getElementById('timer').style.visibility = showTimer ? 'visible' : 'hidden';
             document.getElementById('analyticsPanel').classList.toggle('hidden', !showAnalytics);
             document.getElementById('controlBar').classList.toggle('hidden', !showControls);
+
+            // Adjust question area width based on what's visible
+            const questionArea = document.getElementById('questionArea');
+            if (!showSessionInfo && !showAnalytics) {
+                questionArea.classList.add('full-width');
+            } else {
+                questionArea.classList.remove('full-width');
+            }
         }
     </script>
 </body>
