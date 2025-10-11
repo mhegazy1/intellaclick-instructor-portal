@@ -977,23 +977,14 @@
 
             if (questionType === 'ordering') {
                 // For ordering questions, show items to be ordered
-                if (question.items && question.items.length > 0) {
-                    question.items.forEach((item, index) => {
+                // Check for items, correctOrder, or options
+                const itemsToDisplay = question.items || question.correctOrder || question.options || [];
+
+                if (itemsToDisplay.length > 0) {
+                    itemsToDisplay.forEach((item, index) => {
                         const optionDiv = document.createElement('div');
                         optionDiv.className = 'option';
-                        const optionLetter = String.fromCharCode(65 + index);
-                        optionDiv.innerHTML = `
-                            <div class="option-label">${optionLetter}</div>
-                            <div class="option-text">${item}</div>
-                        `;
-                        optionsGrid.appendChild(optionDiv);
-                    });
-                } else if (question.options && question.options.length > 0) {
-                    // Fallback to options if items not present
-                    question.options.forEach((option, index) => {
-                        const optionDiv = document.createElement('div');
-                        optionDiv.className = 'option';
-                        const optionText = typeof option === 'string' ? option : option.text;
+                        const optionText = typeof item === 'string' ? item : (item.text || item);
                         const optionLetter = String.fromCharCode(65 + index);
                         optionDiv.innerHTML = `
                             <div class="option-label">${optionLetter}</div>
@@ -1003,8 +994,39 @@
                     });
                 }
             } else if (questionType === 'matching') {
-                // For matching questions, show left and right columns
-                if (question.leftColumn && question.rightColumn) {
+                // For matching questions - handle both formats
+                if (question.pairs && Array.isArray(question.pairs)) {
+                    // Format: pairs: [{ left, right }]
+                    const matchDiv = document.createElement('div');
+                    matchDiv.style.display = 'grid';
+                    matchDiv.style.gridTemplateColumns = '1fr 1fr';
+                    matchDiv.style.gap = '2rem';
+
+                    const leftCol = document.createElement('div');
+                    const rightCol = document.createElement('div');
+
+                    const leftItems = question.pairs.map(p => p.left);
+                    const rightItems = question.pairs.map(p => p.right);
+
+                    leftCol.innerHTML = '<h3 style="margin-bottom: 1rem;">Match:</h3>' +
+                        leftItems.map((item, i) =>
+                            `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
+                                ${String.fromCharCode(65 + i)}. ${item}
+                            </div>`
+                        ).join('');
+
+                    rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
+                        rightItems.map((item, i) =>
+                            `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
+                                ${i + 1}. ${item}
+                            </div>`
+                        ).join('');
+
+                    matchDiv.appendChild(leftCol);
+                    matchDiv.appendChild(rightCol);
+                    optionsGrid.appendChild(matchDiv);
+                } else if (question.leftColumn && question.rightColumn) {
+                    // Alternative format: leftColumn[], rightColumn[]
                     const matchDiv = document.createElement('div');
                     matchDiv.style.display = 'grid';
                     matchDiv.style.gridTemplateColumns = '1fr 1fr';
@@ -1032,13 +1054,13 @@
                     optionsGrid.appendChild(matchDiv);
                 }
             } else if (questionType === 'fill_blank' || questionType === 'fillblank') {
-                // For fill blank, just show the question text (blanks are in the question)
+                // For fill blank, show instruction
                 const infoDiv = document.createElement('div');
                 infoDiv.style.textAlign = 'center';
                 infoDiv.style.color = 'var(--text-secondary)';
                 infoDiv.style.fontStyle = 'italic';
                 infoDiv.style.padding = '2rem';
-                infoDiv.textContent = 'Students will type their answers';
+                infoDiv.textContent = 'Students will type their answer where [blank] appears';
                 optionsGrid.appendChild(infoDiv);
             } else {
                 // Standard multiple choice or true/false
@@ -1500,18 +1522,30 @@
                     normalizedQuestion.options = ['True', 'False'];
                 }
 
-                // For matching questions, ensure columns are included
+                // For matching questions, convert pairs format to left/right columns
                 if (question.type === 'matching') {
-                    if (question.leftColumn) normalizedQuestion.leftColumn = question.leftColumn;
-                    if (question.rightColumn) normalizedQuestion.rightColumn = question.rightColumn;
-                    if (question.pairs) normalizedQuestion.pairs = question.pairs;
+                    if (question.pairs && Array.isArray(question.pairs)) {
+                        // Convert pairs to separate columns
+                        normalizedQuestion.leftColumn = question.pairs.map(p => p.left);
+                        normalizedQuestion.rightColumn = question.pairs.map(p => p.right);
+                        normalizedQuestion.pairs = question.pairs; // Keep pairs too
+                    } else if (question.leftColumn && question.rightColumn) {
+                        normalizedQuestion.leftColumn = question.leftColumn;
+                        normalizedQuestion.rightColumn = question.rightColumn;
+                    }
                     if (question.correctPairs) normalizedQuestion.correctPairs = question.correctPairs;
                 }
 
-                // For ordering questions, ensure items are included
+                // For ordering questions, ensure items field is present
                 if (question.type === 'ordering') {
-                    if (question.items) normalizedQuestion.items = question.items;
-                    if (question.correctOrder) normalizedQuestion.correctOrder = question.correctOrder;
+                    // Send as items (what display expects) and also correctOrder (what was saved)
+                    if (question.correctOrder) {
+                        normalizedQuestion.items = question.correctOrder;
+                        normalizedQuestion.correctOrder = question.correctOrder;
+                    } else if (question.items) {
+                        normalizedQuestion.items = question.items;
+                        normalizedQuestion.correctOrder = question.items;
+                    }
                 }
 
                 console.log('Sending question to backend:', normalizedQuestion);

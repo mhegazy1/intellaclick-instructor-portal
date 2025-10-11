@@ -311,7 +311,10 @@
 
                     <label for="questionText">Add Question</label>
                     <textarea id="questionText" rows="3" placeholder="Enter your question here..."></textarea>
-                    
+                    <button type="button" class="btn btn-secondary" onclick="insertBlank()" style="margin-top: 8px; font-size: 0.9rem; padding: 0.5rem 1rem;">
+                        Insert [blank] at cursor
+                    </button>
+
                     <label style="margin-top: 16px;">Question Type</label>
                     <select id="questionType" onchange="updateQuestionOptions()">
                         <option value="mcq">Multiple Choice</option>
@@ -804,7 +807,7 @@
 
                 const result = await response.json();
                 const session = result.session || result;
-                
+
                 // Show session code in toast for instructor to share
                 showToast(`Session created! Code: ${session.sessionCode || sessionCode}`, 'success');
 
@@ -812,8 +815,11 @@
                 if (selectedType === 'quick' && sessionData.questions) {
                     sessionStorage.setItem('pendingQuestions', JSON.stringify(sessionData.questions));
                     sessionStorage.setItem('currentQuestionIndex', '0'); // Start with first question
+
+                    // AUTO-SAVE: Save questions for reuse
+                    autoSaveQuestions(sessionData.title, sessionData.questions);
                 }
-                
+
                 // Redirect to session management page with session info
                 setTimeout(() => {
                     window.location.href = `/session.html?id=${session.id || session._id}&code=${session.sessionCode || sessionCode}&type=${selectedType}`;
@@ -845,7 +851,7 @@
             const savedSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
 
             if (savedSets.length === 0) {
-                alert('No saved question sets found.\n\nCreate a session, add questions, then use the "Save Questions for Reuse" button in the display view settings.');
+                alert('No saved question sets found.\n\nQuestions are automatically saved when you create a session.');
                 return;
             }
 
@@ -872,6 +878,61 @@
             renderQuestionsList();
 
             showToast(`Loaded "${selectedSet.name}" with ${selectedSet.questionCount} questions`, 'success');
+        }
+
+        function insertBlank() {
+            const textarea = document.getElementById('questionText');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+
+            // Insert [blank] at cursor position
+            const newText = text.substring(0, start) + '[blank]' + text.substring(end);
+            textarea.value = newText;
+
+            // Move cursor after [blank]
+            textarea.selectionStart = textarea.selectionEnd = start + 7;
+            textarea.focus();
+        }
+
+        function autoSaveQuestions(sessionName, questions) {
+            if (!questions || questions.length === 0) return;
+
+            // Load existing saved question sets
+            const savedSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
+
+            // Check if this exact set already exists (to avoid duplicates)
+            const isDuplicate = savedSets.some(set =>
+                set.name === sessionName &&
+                JSON.stringify(set.questions) === JSON.stringify(questions)
+            );
+
+            if (isDuplicate) {
+                console.log('Questions already saved, skipping duplicate');
+                return;
+            }
+
+            // Create new save entry
+            const newSet = {
+                id: 'qset_' + Date.now(),
+                name: sessionName,
+                questions: questions,
+                createdAt: new Date().toISOString(),
+                questionCount: questions.length
+            };
+
+            // Add to beginning of array (most recent first)
+            savedSets.unshift(newSet);
+
+            // Keep only last 20 question sets to avoid cluttering storage
+            if (savedSets.length > 20) {
+                savedSets.splice(20);
+            }
+
+            // Save to localStorage
+            localStorage.setItem('savedQuestionSets', JSON.stringify(savedSets));
+
+            console.log(`Auto-saved "${sessionName}" with ${questions.length} questions`);
         }
     </script>
 </body>
