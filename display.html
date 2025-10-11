@@ -26,7 +26,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             width: 100vw;
             height: 100vh;
             overflow: hidden;
@@ -36,15 +36,17 @@
         /* Session Info Card */
         .session-info-card {
             position: fixed;
-            top: 1rem;
-            left: 1rem;
-            background: white;
-            padding: 1rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            max-width: 220px;
+            top: 1.5rem;
+            left: 1.5rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 240px;
             z-index: 100;
             transition: opacity 0.3s, transform 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .session-info-card.hidden {
@@ -95,17 +97,17 @@
         /* Question Display Area */
         .question-area {
             position: fixed;
-            top: 1rem;
+            top: 1.5rem;
             left: 50%;
             transform: translateX(-50%);
-            width: calc(100% - 400px - 280px);
-            max-width: 800px;
+            width: calc(100% - 480px - 320px);
+            max-width: 900px;
             z-index: 50;
             transition: opacity 0.3s, width 0.3s;
         }
 
         .question-area.full-width {
-            width: calc(100% - 2rem);
+            width: calc(100% - 3rem);
         }
 
         .question-area.hidden {
@@ -114,10 +116,12 @@
         }
 
         .question-card {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .question-header {
@@ -209,22 +213,39 @@
             font-size: 1.5rem;
         }
 
+        .option.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            animation: correctPulse 0.5s ease;
+        }
+
+        .option.correct .option-label {
+            background: #28a745;
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
         /* Analytics Panel */
         .analytics-panel {
             position: fixed;
-            top: 1rem;
-            right: 1rem;
-            width: 360px;
-            max-height: calc(100vh - 100px);
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            padding: 1.5rem;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 380px;
+            max-height: calc(100vh - 120px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
             z-index: 100;
             transition: opacity 0.3s, transform 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .analytics-panel.hidden {
@@ -309,13 +330,31 @@
 
         .response-bar-fill {
             height: 100%;
-            background: var(--primary-color);
+            background: linear-gradient(90deg, var(--primary-color), #667eea);
             border-radius: 1.25rem;
-            transition: width 0.3s ease;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: flex-end;
             padding-right: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .response-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         .response-count {
@@ -335,24 +374,26 @@
         /* Control Bar */
         .control-bar {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
-            background: white;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 1rem;
-            padding: 0 2rem;
+            padding: 1rem 2rem;
             z-index: 100;
             transition: opacity 0.3s, transform 0.3s;
         }
 
         .control-bar.hidden {
             opacity: 0;
-            transform: translateY(100%);
+            transform: translateX(-50%) translateY(150%);
             pointer-events: none;
         }
 
@@ -419,26 +460,27 @@
         /* Settings Button */
         .settings-btn {
             position: fixed;
-            bottom: 80px;
-            right: 1rem;
-            background: white;
-            border: none;
-            width: 48px;
-            height: 48px;
+            top: 1.5rem;
+            right: calc(1.5rem + 380px + 1rem);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            transition: all 0.2s;
+            transition: all 0.3s;
             z-index: 101;
         }
 
         .settings-btn:hover {
-            transform: rotate(90deg);
-            background: #f8f9fa;
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
         }
 
         /* Settings Panel */
@@ -722,6 +764,24 @@
                     </label>
                 </div>
             </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Question End Behavior</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Correct Answer</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showCorrectAnswer" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">Keep Results on Screen</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="keepResults" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -758,8 +818,8 @@
             // Connect to Socket.IO
             connectSocket();
 
-            // Poll for updates
-            setInterval(pollSession, 2000);
+            // Poll for updates - every 1 second for real-time feel
+            setInterval(pollSession, 1000);
             pollSession();
         });
 
@@ -787,7 +847,16 @@
                 });
 
                 socket.on('response-update', (data) => {
+                    console.log('Response update received:', data);
                     updateAnalytics(data);
+                    // Force immediate poll to get latest data
+                    pollSession();
+                });
+
+                socket.on('new-response', (data) => {
+                    console.log('New response received:', data);
+                    // Force immediate poll to get latest data
+                    pollSession();
                 });
 
                 socket.on('question-ended', () => {
@@ -1024,7 +1093,7 @@
         }
 
         async function endQuestion() {
-            if (!currentQuestion || !confirm('End this question now?')) return;
+            if (!currentQuestion) return;
 
             try {
                 const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions/${currentQuestion.id}/end`, {
@@ -1035,11 +1104,48 @@
                 });
 
                 if (response.ok) {
-                    showWaiting();
+                    const keepResults = document.getElementById('keepResults').checked;
+                    if (!keepResults) {
+                        showWaiting();
+                    } else {
+                        // Keep results visible, just stop the timer
+                        if (timerInterval) {
+                            clearInterval(timerInterval);
+                        }
+                        // Disable timer controls
+                        document.getElementById('addTimeBtn').disabled = true;
+                        document.getElementById('addTime30Btn').disabled = true;
+                        document.getElementById('endBtn').disabled = true;
+
+                        // Show correct answer if setting is enabled
+                        const showCorrect = document.getElementById('showCorrectAnswer').checked;
+                        if (showCorrect && currentQuestion.correctAnswer) {
+                            highlightCorrectAnswer();
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error ending question:', error);
             }
+        }
+
+        function highlightCorrectAnswer() {
+            if (!currentQuestion || !currentQuestion.correctAnswer) return;
+
+            const optionsGrid = document.getElementById('optionsGrid');
+            const options = optionsGrid.querySelectorAll('.option');
+
+            // Find and highlight the correct answer
+            options.forEach((optionEl, index) => {
+                const optionLetter = String.fromCharCode(65 + index);
+                const correctAnswer = currentQuestion.correctAnswer.toUpperCase();
+
+                // Check if this is the correct answer
+                if (optionLetter === correctAnswer ||
+                    currentQuestion.options[index] === currentQuestion.correctAnswer) {
+                    optionEl.classList.add('correct');
+                }
+            });
         }
 
         function toggleSettings() {
