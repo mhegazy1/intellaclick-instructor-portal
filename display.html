@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Display - IntellaClick</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #4F46E5;
+            --secondary-color: #10B981;
+            --danger-color: #EF4444;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+            --background: #F3F4F6;
+            --surface: #FFFFFF;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #2c3e50;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Session Info Card */
+        .session-info-card {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            min-width: 280px;
+            z-index: 100;
+            transition: opacity 0.3s;
+        }
+
+        .session-info-card.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .session-code-display {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .session-code-label {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .session-code {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            letter-spacing: 0.1em;
+        }
+
+        .join-url {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+
+        .qr-code-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        #qrcode {
+            max-width: 200px;
+        }
+
+        /* Question Display Area */
+        .question-area {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 900px;
+            z-index: 50;
+            transition: opacity 0.3s;
+        }
+
+        .question-area.hidden {
+            opacity: 0;
+        }
+
+        .question-card {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .question-number {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .timer {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .timer.warning {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .question-text {
+            font-size: 2rem;
+            line-height: 1.4;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--text-primary);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .option {
+            background: #f8f9fa;
+            border: 3px solid #e9ecef;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 1.25rem;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-label {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.125rem;
+        }
+
+        .option-text {
+            margin-left: 3.5rem;
+            flex: 1;
+        }
+
+        .option.true-false {
+            grid-column: span 2;
+            justify-content: center;
+        }
+
+        .option.true-false .option-text {
+            margin-left: 3.5rem;
+            font-size: 1.5rem;
+        }
+
+        /* Analytics Panel */
+        .analytics-panel {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            width: 350px;
+            max-height: calc(100vh - 4rem);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 100;
+            transition: opacity 0.3s;
+        }
+
+        .analytics-panel.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .analytics-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .response-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .response-chart {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .response-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .response-option {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .response-bar-container {
+            flex: 1;
+            background: #e9ecef;
+            height: 2.5rem;
+            border-radius: 1.25rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .response-bar-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 1.25rem;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 0.75rem;
+        }
+
+        .response-count {
+            color: white;
+            font-weight: bold;
+            font-size: 0.875rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .response-percent {
+            margin-left: 0.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        /* Control Bar */
+        .control-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 100;
+            transition: opacity 0.3s;
+        }
+
+        .control-bar.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .control-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338CA;
+        }
+
+        .btn-success {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+
+        .btn-secondary {
+            background: #E5E7EB;
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: #D1D5DB;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Settings Button */
+        .settings-btn {
+            position: fixed;
+            top: 2rem;
+            right: 400px;
+            background: white;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.2s;
+            z-index: 101;
+        }
+
+        .settings-btn:hover {
+            transform: rotate(90deg);
+            background: #f8f9fa;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+            transition: right 0.3s;
+            z-index: 200;
+            overflow-y: auto;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .settings-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .settings-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close-settings {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .settings-body {
+            padding: 1.5rem;
+        }
+
+        .setting-group {
+            margin-bottom: 2rem;
+        }
+
+        .setting-group-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+        }
+
+        .setting-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .waiting-message {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .waiting-message .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Settings Button -->
+    <button class="settings-btn" onclick="toggleSettings()">
+        ⚙️
+    </button>
+
+    <!-- Session Info Card -->
+    <div class="session-info-card" id="sessionInfo">
+        <div class="session-code-display">
+            <div class="session-code-label">Session Code</div>
+            <div class="session-code" id="sessionCode">Loading...</div>
+            <div class="join-url" id="joinUrl">join.intellaclick.com</div>
+        </div>
+        <div class="qr-code-container" id="qrCodeContainer">
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <!-- Question Display -->
+    <div class="question-area" id="questionArea">
+        <div id="waitingMessage" class="waiting-message">
+            <div class="spinner"></div>
+            <div>Waiting for question...</div>
+        </div>
+
+        <div class="question-card" id="questionCard" style="display: none;">
+            <div class="question-header">
+                <div class="question-number" id="questionNumber">Question 1</div>
+                <div class="timer" id="timer">
+                    <span>⏱️</span>
+                    <span id="timeLeft">30</span>
+                </div>
+            </div>
+
+            <div class="question-text" id="questionText"></div>
+
+            <div class="options-grid" id="optionsGrid"></div>
+        </div>
+    </div>
+
+    <!-- Analytics Panel -->
+    <div class="analytics-panel" id="analyticsPanel">
+        <div class="analytics-header">
+            <div class="analytics-title">Live Results</div>
+        </div>
+
+        <div class="response-stats">
+            <div class="stat">
+                <div class="stat-value" id="responseCount">0</div>
+                <div class="stat-label">Responses</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="participantCount">0</div>
+                <div class="stat-label">Participants</div>
+            </div>
+        </div>
+
+        <div class="response-chart" id="responseChart"></div>
+    </div>
+
+    <!-- Control Bar -->
+    <div class="control-bar" id="controlBar">
+        <div class="control-section">
+            <button class="btn btn-secondary" onclick="window.location.href='/session.html?id=' + sessionId + '&code=' + sessionCode">
+                ← Back to Session
+            </button>
+        </div>
+
+        <div class="control-section">
+            <button class="btn btn-success" onclick="addTime(10)" id="addTimeBtn" disabled>
+                + 10 sec
+            </button>
+            <button class="btn btn-success" onclick="addTime(30)" id="addTime30Btn" disabled>
+                + 30 sec
+            </button>
+            <button class="btn btn-danger" onclick="endQuestion()" id="endBtn" disabled>
+                End Question
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <div class="settings-title">Display Settings</div>
+            <button class="close-settings" onclick="toggleSettings()">×</button>
+        </div>
+
+        <div class="settings-body">
+            <div class="setting-group">
+                <div class="setting-group-title">Session Information</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Session Code & QR</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showSessionInfo" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Question Display</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Question Text</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showQuestion" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Timer</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showTimer" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Live Analytics</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Analytics Panel</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showAnalytics" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Controls</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Control Bar</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showControls" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sessionId;
+        let sessionCode;
+        let socket;
+        let currentQuestion = null;
+        let timerInterval = null;
+        let timeRemaining = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            sessionId = urlParams.get('id');
+            sessionCode = urlParams.get('code');
+
+            if (!sessionId || !sessionCode) {
+                alert('Invalid session parameters');
+                window.location.href = '/classes.html';
+                return;
+            }
+
+            document.getElementById('sessionCode').textContent = sessionCode;
+            document.getElementById('joinUrl').textContent = `join.intellaclick.com/session/${sessionCode}`;
+
+            // Generate QR code
+            new QRCode(document.getElementById('qrcode'), {
+                text: `https://join.intellaclick.com/session/${sessionCode}`,
+                width: 180,
+                height: 180
+            });
+
+            // Connect to Socket.IO
+            connectSocket();
+
+            // Poll for updates
+            setInterval(pollSession, 2000);
+            pollSession();
+        });
+
+        function connectSocket() {
+            socket = io('https://api.intellaclick.com', {
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                console.log('Connected to Socket.IO');
+                socket.emit('join-session', { sessionCode });
+            });
+
+            socket.on('question-sent', (data) => {
+                console.log('New question received:', data);
+                displayQuestion(data.question);
+            });
+
+            socket.on('response-update', (data) => {
+                updateAnalytics(data);
+            });
+
+            socket.on('question-ended', () => {
+                console.log('Question ended');
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+            });
+        }
+
+        async function pollSession() {
+            try {
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/code/${sessionCode}/current-question`);
+                const data = await response.json();
+
+                if (data.question) {
+                    if (!currentQuestion || currentQuestion.id !== data.question.id) {
+                        displayQuestion(data.question);
+                    }
+                } else {
+                    showWaiting();
+                }
+
+                // Update participant count
+                const sessionResponse = await fetch(`https://api.intellaclick.com/api/sessions/code/${sessionCode}`);
+                const sessionData = await sessionResponse.json();
+                if (sessionData.session) {
+                    document.getElementById('participantCount').textContent = sessionData.session.participantCount || 0;
+                }
+            } catch (error) {
+                console.error('Error polling session:', error);
+            }
+        }
+
+        function displayQuestion(question) {
+            currentQuestion = question;
+
+            // Hide waiting, show question
+            document.getElementById('waitingMessage').style.display = 'none';
+            document.getElementById('questionCard').style.display = 'block';
+
+            // Set question text
+            document.getElementById('questionText').textContent = question.questionText;
+
+            // Set question number (if available)
+            document.getElementById('questionNumber').textContent = `Question ${question.questionNumber || 1}`;
+
+            // Display options
+            const optionsGrid = document.getElementById('optionsGrid');
+            optionsGrid.innerHTML = '';
+
+            if (question.options && question.options.length > 0) {
+                question.options.forEach((option, index) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
+                    if (question.type === 'boolean' || question.type === 'true_false') {
+                        optionDiv.classList.add('true-false');
+                    }
+
+                    const optionText = typeof option === 'string' ? option : option.text;
+                    const optionLetter = String.fromCharCode(65 + index);
+
+                    optionDiv.innerHTML = `
+                        <div class="option-label">${optionLetter}</div>
+                        <div class="option-text">${optionText}</div>
+                    `;
+
+                    optionsGrid.appendChild(optionDiv);
+                });
+            }
+
+            // Start timer
+            if (question.timeLimit) {
+                startTimer(question.timeLimit, question.startedAt);
+            }
+
+            // Enable controls
+            document.getElementById('addTimeBtn').disabled = false;
+            document.getElementById('addTime30Btn').disabled = false;
+            document.getElementById('endBtn').disabled = false;
+
+            // Reset analytics
+            document.getElementById('responseCount').textContent = '0';
+            updateResponseChart([]);
+        }
+
+        function showWaiting() {
+            currentQuestion = null;
+            document.getElementById('waitingMessage').style.display = 'block';
+            document.getElementById('questionCard').style.display = 'none';
+
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            // Disable controls
+            document.getElementById('addTimeBtn').disabled = true;
+            document.getElementById('addTime30Btn').disabled = true;
+            document.getElementById('endBtn').disabled = true;
+        }
+
+        function startTimer(duration, startedAt) {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            const start = new Date(startedAt);
+            const end = new Date(start.getTime() + duration * 1000);
+
+            timerInterval = setInterval(() => {
+                const now = new Date();
+                timeRemaining = Math.max(0, Math.floor((end - now) / 1000));
+
+                document.getElementById('timeLeft').textContent = timeRemaining;
+
+                const timerEl = document.getElementById('timer');
+                if (timeRemaining <= 10) {
+                    timerEl.classList.add('warning');
+                } else {
+                    timerEl.classList.remove('warning');
+                }
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                }
+            }, 100);
+        }
+
+        function updateAnalytics(data) {
+            if (!data) return;
+
+            document.getElementById('responseCount').textContent = data.responseCount || 0;
+
+            if (data.responses) {
+                updateResponseChart(data.responses);
+            }
+        }
+
+        function updateResponseChart(responses) {
+            const chartContainer = document.getElementById('responseChart');
+            chartContainer.innerHTML = '';
+
+            if (!currentQuestion || !currentQuestion.options) return;
+
+            // Count responses per option
+            const counts = {};
+            currentQuestion.options.forEach((_, index) => {
+                counts[String.fromCharCode(65 + index)] = 0;
+            });
+
+            responses.forEach(response => {
+                if (counts[response.answer] !== undefined) {
+                    counts[response.answer]++;
+                }
+            });
+
+            const total = responses.length || 1;
+
+            // Render bars
+            currentQuestion.options.forEach((option, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const count = counts[letter] || 0;
+                const percent = Math.round((count / total) * 100);
+
+                const bar = document.createElement('div');
+                bar.className = 'response-bar';
+                bar.innerHTML = `
+                    <div class="response-option">${letter}</div>
+                    <div class="response-bar-container">
+                        <div class="response-bar-fill" style="width: ${percent}%">
+                            ${count > 0 ? `<span class="response-count">${count}</span>` : ''}
+                        </div>
+                    </div>
+                    <span class="response-percent">${percent}%</span>
+                `;
+                chartContainer.appendChild(bar);
+            });
+        }
+
+        async function addTime(seconds) {
+            if (!currentQuestion) return;
+
+            try {
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions/${currentQuestion.id}/timer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ addSeconds: seconds })
+                });
+
+                if (response.ok) {
+                    timeRemaining += seconds;
+                }
+            } catch (error) {
+                console.error('Error adding time:', error);
+            }
+        }
+
+        async function endQuestion() {
+            if (!currentQuestion || !confirm('End this question now?')) return;
+
+            try {
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions/${currentQuestion.id}/end`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    showWaiting();
+                }
+            } catch (error) {
+                console.error('Error ending question:', error);
+            }
+        }
+
+        function toggleSettings() {
+            document.getElementById('settingsPanel').classList.toggle('open');
+        }
+
+        function applySettings() {
+            const showSessionInfo = document.getElementById('showSessionInfo').checked;
+            const showQuestion = document.getElementById('showQuestion').checked;
+            const showTimer = document.getElementById('showTimer').checked;
+            const showAnalytics = document.getElementById('showAnalytics').checked;
+            const showControls = document.getElementById('showControls').checked;
+
+            document.getElementById('sessionInfo').classList.toggle('hidden', !showSessionInfo);
+            document.getElementById('questionArea').classList.toggle('hidden', !showQuestion);
+            document.getElementById('timer').style.visibility = showTimer ? 'visible' : 'hidden';
+            document.getElementById('analyticsPanel').classList.toggle('hidden', !showAnalytics);
+            document.getElementById('controlBar').classList.toggle('hidden', !showControls);
+        }
+    </script>
+</body>
+</html>
