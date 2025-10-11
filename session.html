@@ -765,7 +765,11 @@
         // Question Queue Management
         function updateQueueDisplay() {
             const queueList = document.getElementById('queueList');
-            
+
+            // Save queue to sessionStorage for display view
+            sessionStorage.setItem('questionQueue_' + sessionCode, JSON.stringify(questionQueue));
+            sessionStorage.setItem('questionIndex_' + sessionCode, currentQuestionIndex.toString());
+
             if (questionQueue.length === 0) {
                 queueList.innerHTML = '<p style="color: var(--text-secondary); font-size: 14px;">No questions in queue. Create a new question or import from a quiz.</p>';
                 document.getElementById('sendBtn').disabled = true;
