@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Templates - IntellaClick</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .template-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .template-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .template-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .template-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .template-type {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .template-preview {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .template-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .option-preview {
+            padding: 0.5rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        .template-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn-icon {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .create-template-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .create-template-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Question Templates</h1>
+            <button class="btn btn-secondary" onclick="window.location.href='/classes.html'">
+                ← Back to Classes
+            </button>
+        </div>
+
+        <div class="card">
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Save frequently used questions as templates for quick reuse in any session.
+            </p>
+
+            <div id="templatesList" class="templates-grid">
+                <!-- Templates will be loaded here -->
+            </div>
+
+            <div id="emptyState" style="text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
+                <svg width="64" height="64" fill="currentColor" style="margin-bottom: 1rem; opacity: 0.5;">
+                    <path d="M6 9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9Zm2-1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H8Z"/>
+                    <path d="M9 5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H9Zm0 1h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"/>
+                </svg>
+                <p style="font-size: 1.125rem; margin-bottom: 0.5rem;">No templates yet</p>
+                <p>Click the + button to create your first question template</p>
+            </div>
+        </div>
+    </div>
+
+    <button class="create-template-btn" onclick="createTemplate()">+</button>
+
+    <script>
+        let templates = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTemplates();
+        });
+
+        function loadTemplates() {
+            const stored = localStorage.getItem('questionTemplates');
+            templates = stored ? JSON.parse(stored) : [];
+
+            if (templates.length === 0) {
+                // Add some default templates
+                templates = [
+                    {
+                        id: 'template1',
+                        name: 'Yes/No Question',
+                        questionText: 'Do you understand?',
+                        type: 'mcq',
+                        options: ['A', 'B'],
+                        optionTexts: ['Yes', 'No'],
+                        correctAnswer: 'A'
+                    },
+                    {
+                        id: 'template2',
+                        name: 'True/False',
+                        questionText: 'True or False?',
+                        type: 'tf',
+                        options: ['True', 'False'],
+                        correctAnswer: 'True'
+                    },
+                    {
+                        id: 'template3',
+                        name: 'Multiple Choice (A-D)',
+                        questionText: 'Which answer is correct?',
+                        type: 'mcq',
+                        options: ['A', 'B', 'C', 'D'],
+                        optionTexts: ['Option A', 'Option B', 'Option C', 'Option D'],
+                        correctAnswer: 'A'
+                    }
+                ];
+                saveTemplates();
+            }
+
+            renderTemplates();
+        }
+
+        function renderTemplates() {
+            const container = document.getElementById('templatesList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (templates.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = templates.map(template => `
+                <div class="template-card">
+                    <div class="template-header">
+                        <div class="template-title">${template.name}</div>
+                        <span class="template-type">${template.type}</span>
+                    </div>
+
+                    <div class="template-preview">${template.questionText}</div>
+
+                    <div class="template-options">
+                        ${(template.optionTexts || template.options || []).slice(0, 4).map((opt, idx) => `
+                            <div class="option-preview">
+                                ${String.fromCharCode(65 + idx)}. ${opt}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="template-actions">
+                        <button class="btn btn-primary btn-icon" onclick="useTemplate('${template.id}')">
+                            Use Template
+                        </button>
+                        <button class="btn btn-secondary btn-icon" onclick="editTemplate('${template.id}')">
+                            Edit
+                        </button>
+                        <button class="btn btn-danger btn-icon" onclick="deleteTemplate('${template.id}')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveTemplates() {
+            localStorage.setItem('questionTemplates', JSON.stringify(templates));
+        }
+
+        function createTemplate() {
+            const name = prompt('Template name:');
+            if (!name) return;
+
+            const questionText = prompt('Question text:');
+            if (!questionText) return;
+
+            const type = prompt('Question type (mcq/tf):') || 'mcq';
+
+            let template = {
+                id: 'template_' + Date.now(),
+                name: name,
+                questionText: questionText,
+                type: type
+            };
+
+            if (type === 'tf') {
+                template.options = ['True', 'False'];
+                template.correctAnswer = 'True';
+            } else {
+                const optionsCount = parseInt(prompt('Number of options (2-4):', '4')) || 4;
+                template.options = [];
+                template.optionTexts = [];
+
+                for (let i = 0; i < optionsCount; i++) {
+                    const letter = String.fromCharCode(65 + i);
+                    const optionText = prompt(`Option ${letter}:`) || `Option ${letter}`;
+                    template.options.push(letter);
+                    template.optionTexts.push(optionText);
+                }
+
+                template.correctAnswer = prompt('Correct answer (A, B, C, D):', 'A') || 'A';
+            }
+
+            templates.push(template);
+            saveTemplates();
+            renderTemplates();
+        }
+
+        function editTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            const name = prompt('Template name:', template.name);
+            if (name) template.name = name;
+
+            const questionText = prompt('Question text:', template.questionText);
+            if (questionText) template.questionText = questionText;
+
+            saveTemplates();
+            renderTemplates();
+        }
+
+        function deleteTemplate(id) {
+            if (!confirm('Delete this template?')) return;
+
+            templates = templates.filter(t => t.id !== id);
+            saveTemplates();
+            renderTemplates();
+        }
+
+        function useTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            // Store in sessionStorage to be picked up by create-session page
+            const questions = [template];
+            sessionStorage.setItem('pendingQuestions', JSON.stringify(questions));
+            sessionStorage.setItem('fromTemplates', 'true');
+
+            alert('Template loaded! Go to create a session and the question will be ready.');
+            window.location.href = '/classes.html';
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
