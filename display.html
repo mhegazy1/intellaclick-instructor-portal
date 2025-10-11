@@ -784,6 +784,18 @@
                     </label>
                 </div>
             </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Session Questions</div>
+                <div style="padding: 0.5rem 0;">
+                    <button class="btn btn-primary" onclick="saveSessionQuestions()" style="width: 100%; margin-bottom: 0.5rem;">
+                        💾 Save Questions for Reuse
+                    </button>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">
+                        Save current question queue to use in future sessions
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -957,28 +969,98 @@
             // Set question number (if available)
             document.getElementById('questionNumber').textContent = `Question ${question.questionNumber || 1}`;
 
-            // Display options
+            // Display options based on question type
             const optionsGrid = document.getElementById('optionsGrid');
             optionsGrid.innerHTML = '';
 
-            if (question.options && question.options.length > 0) {
-                question.options.forEach((option, index) => {
-                    const optionDiv = document.createElement('div');
-                    optionDiv.className = 'option';
-                    if (question.type === 'boolean' || question.type === 'true_false') {
-                        optionDiv.classList.add('true-false');
-                    }
+            const questionType = question.type || question.questionType;
 
-                    const optionText = typeof option === 'string' ? option : option.text;
-                    const optionLetter = String.fromCharCode(65 + index);
+            if (questionType === 'ordering') {
+                // For ordering questions, show items to be ordered
+                if (question.items && question.items.length > 0) {
+                    question.items.forEach((item, index) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'option';
+                        const optionLetter = String.fromCharCode(65 + index);
+                        optionDiv.innerHTML = `
+                            <div class="option-label">${optionLetter}</div>
+                            <div class="option-text">${item}</div>
+                        `;
+                        optionsGrid.appendChild(optionDiv);
+                    });
+                } else if (question.options && question.options.length > 0) {
+                    // Fallback to options if items not present
+                    question.options.forEach((option, index) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'option';
+                        const optionText = typeof option === 'string' ? option : option.text;
+                        const optionLetter = String.fromCharCode(65 + index);
+                        optionDiv.innerHTML = `
+                            <div class="option-label">${optionLetter}</div>
+                            <div class="option-text">${optionText}</div>
+                        `;
+                        optionsGrid.appendChild(optionDiv);
+                    });
+                }
+            } else if (questionType === 'matching') {
+                // For matching questions, show left and right columns
+                if (question.leftColumn && question.rightColumn) {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.style.display = 'grid';
+                    matchDiv.style.gridTemplateColumns = '1fr 1fr';
+                    matchDiv.style.gap = '2rem';
 
-                    optionDiv.innerHTML = `
-                        <div class="option-label">${optionLetter}</div>
-                        <div class="option-text">${optionText}</div>
-                    `;
+                    const leftCol = document.createElement('div');
+                    const rightCol = document.createElement('div');
 
-                    optionsGrid.appendChild(optionDiv);
-                });
+                    leftCol.innerHTML = '<h3 style="margin-bottom: 1rem;">Match:</h3>' +
+                        question.leftColumn.map((item, i) =>
+                            `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
+                                ${String.fromCharCode(65 + i)}. ${item}
+                            </div>`
+                        ).join('');
+
+                    rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
+                        question.rightColumn.map((item, i) =>
+                            `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
+                                ${i + 1}. ${item}
+                            </div>`
+                        ).join('');
+
+                    matchDiv.appendChild(leftCol);
+                    matchDiv.appendChild(rightCol);
+                    optionsGrid.appendChild(matchDiv);
+                }
+            } else if (questionType === 'fill_blank' || questionType === 'fillblank') {
+                // For fill blank, just show the question text (blanks are in the question)
+                const infoDiv = document.createElement('div');
+                infoDiv.style.textAlign = 'center';
+                infoDiv.style.color = 'var(--text-secondary)';
+                infoDiv.style.fontStyle = 'italic';
+                infoDiv.style.padding = '2rem';
+                infoDiv.textContent = 'Students will type their answers';
+                optionsGrid.appendChild(infoDiv);
+            } else {
+                // Standard multiple choice or true/false
+                if (question.options && question.options.length > 0) {
+                    question.options.forEach((option, index) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'option';
+                        if (question.type === 'boolean' || question.type === 'true_false') {
+                            optionDiv.classList.add('true-false');
+                        }
+
+                        const optionText = typeof option === 'string' ? option : option.text;
+                        const optionLetter = String.fromCharCode(65 + index);
+
+                        optionDiv.innerHTML = `
+                            <div class="option-label">${optionLetter}</div>
+                            <div class="option-text">${optionText}</div>
+                        `;
+
+                        optionsGrid.appendChild(optionDiv);
+                    });
+                }
             }
 
             // Start timer
@@ -1418,6 +1500,22 @@
                     normalizedQuestion.options = ['True', 'False'];
                 }
 
+                // For matching questions, ensure columns are included
+                if (question.type === 'matching') {
+                    if (question.leftColumn) normalizedQuestion.leftColumn = question.leftColumn;
+                    if (question.rightColumn) normalizedQuestion.rightColumn = question.rightColumn;
+                    if (question.pairs) normalizedQuestion.pairs = question.pairs;
+                    if (question.correctPairs) normalizedQuestion.correctPairs = question.correctPairs;
+                }
+
+                // For ordering questions, ensure items are included
+                if (question.type === 'ordering') {
+                    if (question.items) normalizedQuestion.items = question.items;
+                    if (question.correctOrder) normalizedQuestion.correctOrder = question.correctOrder;
+                }
+
+                console.log('Sending question to backend:', normalizedQuestion);
+
                 // Send the question
                 const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
                     method: 'POST',
@@ -1444,6 +1542,50 @@
                 console.error('Error sending question:', error);
                 alert('Failed to send question: ' + error.message);
             }
+        }
+
+        function saveSessionQuestions() {
+            // Load current question queue
+            const queueData = sessionStorage.getItem('questionQueue_' + sessionCode);
+
+            if (!queueData) {
+                alert('No questions to save. Add questions to the session first.');
+                return;
+            }
+
+            const questions = JSON.parse(queueData);
+
+            if (questions.length === 0) {
+                alert('No questions to save.');
+                return;
+            }
+
+            // Prompt for template name
+            const templateName = prompt('Enter a name for this question set:', `Session ${sessionCode} Questions`);
+
+            if (!templateName) return; // User cancelled
+
+            // Load existing saved question sets
+            const savedSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
+
+            // Add new set
+            const newSet = {
+                id: 'qset_' + Date.now(),
+                name: templateName,
+                questions: questions,
+                createdAt: new Date().toISOString(),
+                questionCount: questions.length
+            };
+
+            savedSets.push(newSet);
+
+            // Save to localStorage
+            localStorage.setItem('savedQuestionSets', JSON.stringify(savedSets));
+
+            alert(`✅ Saved "${templateName}" with ${questions.length} questions!\n\nYou can load this question set from the session creation page.`);
+
+            // Close settings panel
+            document.getElementById('settingsPanel').classList.remove('open');
         }
 
         function applySettings() {

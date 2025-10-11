@@ -299,6 +299,13 @@
                 </div>
 
                 <div class="form-group" id="quickPollConfig" style="display: none;">
+                    <!-- Load Saved Questions Button -->
+                    <div style="margin-bottom: 16px;">
+                        <button type="button" class="btn btn-secondary" onclick="loadSavedQuestions()" style="width: 100%;">
+                            📂 Load Saved Question Set
+                        </button>
+                    </div>
+
                     <!-- Questions List -->
                     <div id="questionsList" style="margin-bottom: 20px;"></div>
 
@@ -828,10 +835,43 @@
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = `toast ${type} show`;
-            
+
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
+        }
+
+        function loadSavedQuestions() {
+            const savedSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
+
+            if (savedSets.length === 0) {
+                alert('No saved question sets found.\n\nCreate a session, add questions, then use the "Save Questions for Reuse" button in the display view settings.');
+                return;
+            }
+
+            // Create selection dialog
+            let options = savedSets.map((set, index) =>
+                `${index + 1}. ${set.name} (${set.questionCount} questions) - ${new Date(set.createdAt).toLocaleDateString()}`
+            ).join('\n');
+
+            const choice = prompt(`Select a question set to load:\n\n${options}\n\nEnter the number (1-${savedSets.length}):`, '1');
+
+            if (!choice) return; // User cancelled
+
+            const index = parseInt(choice) - 1;
+
+            if (isNaN(index) || index < 0 || index >= savedSets.length) {
+                alert('Invalid selection');
+                return;
+            }
+
+            const selectedSet = savedSets[index];
+
+            // Load questions into current session
+            quickPollQuestions = [...selectedSet.questions];
+            renderQuestionsList();
+
+            showToast(`Loaded "${selectedSet.name}" with ${selectedSet.questionCount} questions`, 'success');
         }
     </script>
 </body>
