@@ -86,8 +86,8 @@
             align-items: center;
             margin-top: 1rem;
             padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 8px;
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 12px;
         }
 
         #qrcode {
@@ -170,25 +170,27 @@
         }
 
         .option {
-            background: #f8f9fa;
-            border: 3px solid #e9ecef;
-            padding: 1rem 1rem 1rem 3.5rem;
-            border-radius: 12px;
+            background: rgba(248, 249, 250, 0.8);
+            border: 2px solid rgba(233, 236, 239, 0.8);
+            padding: 1.25rem 1.25rem 1.25rem 4rem;
+            border-radius: 16px;
             text-align: left;
             font-size: 1.125rem;
-            transition: all 0.2s;
+            transition: all 0.3s;
             position: relative;
-            min-height: 60px;
+            min-height: 70px;
             display: flex;
             align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .option-label {
             position: absolute;
-            top: 0.5rem;
-            left: 0.5rem;
-            width: 2.5rem;
-            height: 2.5rem;
+            top: 50%;
+            left: 0.75rem;
+            transform: translateY(-50%);
+            width: 2.75rem;
+            height: 2.75rem;
             background: var(--primary-color);
             color: white;
             border-radius: 50%;
@@ -196,7 +198,8 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 1.125rem;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
 
         .option-text {
@@ -272,9 +275,9 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
             margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 8px;
+            padding: 1.25rem;
+            background: rgba(248, 249, 250, 0.6);
+            border-radius: 12px;
         }
 
         .stat {
@@ -792,6 +795,7 @@
         let currentQuestion = null;
         let timerInterval = null;
         let timeRemaining = 0;
+        let questionEnded = false; // Track if we manually ended the question
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -889,11 +893,17 @@
                 const questionData = await questionResponse.json();
 
                 if (questionData.question) {
+                    // New question available
+                    questionEnded = false; // Reset the flag
                     if (!currentQuestion || currentQuestion.id !== questionData.question.id) {
                         displayQuestion(questionData.question);
                     }
                 } else {
-                    showWaiting();
+                    // No current question - only show waiting if we're not keeping results
+                    const keepResults = document.getElementById('keepResults').checked;
+                    if (!questionEnded || !keepResults) {
+                        showWaiting();
+                    }
                 }
 
                 // Fetch session info (no auth needed - public endpoint)
@@ -915,7 +925,15 @@
 
                     // Update response count and chart if there's a current question
                     if (currentQuestion && sessionData.session.responses) {
-                        const questionResponses = sessionData.session.responses.filter(r => r.questionId === currentQuestion.id);
+                        console.log('Current question ID:', currentQuestion.id);
+                        console.log('All responses:', sessionData.session.responses);
+
+                        const questionResponses = sessionData.session.responses.filter(r => {
+                            console.log('Checking response:', r, 'questionId:', r.questionId);
+                            return r.questionId === currentQuestion.id || r.questionId === currentQuestion.questionId;
+                        });
+
+                        console.log('Filtered responses for current question:', questionResponses);
                         document.getElementById('responseCount').textContent = questionResponses.length;
                         updateResponseChart(questionResponses);
                     }
@@ -1104,7 +1122,9 @@
                 });
 
                 if (response.ok) {
+                    questionEnded = true; // Mark that we ended the question
                     const keepResults = document.getElementById('keepResults').checked;
+
                     if (!keepResults) {
                         showWaiting();
                     } else {
