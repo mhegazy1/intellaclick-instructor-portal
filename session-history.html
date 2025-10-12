@@ -300,9 +300,9 @@
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                const participantCount = session.participants?.length || 0;
-                const questionCount = session.questions?.length || 0;
-                const responseCount = session.responses?.length || 0;
+                const participantCount = session.participantCount || 0;
+                const questionCount = session.totalQuestions || 0;
+                const responseCount = session.responseCount || 0;
 
                 return `
                     <div class="session-card ${session.status}" onclick="viewSession('${session._id}')">
