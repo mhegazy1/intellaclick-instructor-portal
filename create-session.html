@@ -912,6 +912,16 @@
         function autoSaveQuestions(sessionName, questions) {
             if (!questions || questions.length === 0) return;
 
+            // Check if localStorage is available
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+            } catch (e) {
+                console.error('localStorage not available:', e);
+                alert('Warning: Question auto-save is disabled.\n\nYour browser may be in private/incognito mode or localStorage is disabled.\n\nQuestions will only be available during this session.');
+                return;
+            }
+
             // Load existing saved question sets
             const savedSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
 
@@ -944,9 +954,13 @@
             }
 
             // Save to localStorage
-            localStorage.setItem('savedQuestionSets', JSON.stringify(savedSets));
-
-            console.log(`Auto-saved "${sessionName}" with ${questions.length} questions`);
+            try {
+                localStorage.setItem('savedQuestionSets', JSON.stringify(savedSets));
+                console.log(`✅ Auto-saved "${sessionName}" with ${questions.length} questions`);
+            } catch (e) {
+                console.error('Failed to save questions:', e);
+                alert('Failed to save questions. Storage may be full.');
+            }
         }
     </script>
 </body>
