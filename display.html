@@ -996,12 +996,15 @@
             const questionType = question.type || question.questionType;
 
             if (questionType === 'ordering') {
-                // For ordering questions, show items to be ordered
+                // For ordering questions, show items shuffled
                 // Check for items, correctOrder, or options
                 const itemsToDisplay = question.items || question.correctOrder || question.options || [];
 
                 if (itemsToDisplay.length > 0) {
-                    itemsToDisplay.forEach((item, index) => {
+                    // Shuffle the items using Fisher-Yates
+                    const shuffledItems = shuffleArray(itemsToDisplay);
+
+                    shuffledItems.forEach((item, index) => {
                         const optionDiv = document.createElement('div');
                         optionDiv.className = 'option';
                         const optionText = typeof item === 'string' ? item : (item.text || item);
@@ -1295,44 +1298,19 @@
         }
 
         function renderMatchingResponses(responses, container) {
+            // Just show response count for matching questions
             const title = document.createElement('div');
             title.style.fontWeight = '600';
             title.style.marginBottom = '1rem';
             title.style.color = 'var(--text-primary)';
-            title.textContent = 'Student Matches:';
+            title.textContent = `${responses.length} student${responses.length === 1 ? '' : 's'} answered`;
             container.appendChild(title);
 
-            if (responses.length === 0) {
-                const empty = document.createElement('div');
-                empty.style.color = 'var(--text-secondary)';
-                empty.style.fontStyle = 'italic';
-                empty.textContent = 'No responses yet';
-                container.appendChild(empty);
-                return;
-            }
-
-            responses.forEach((response, idx) => {
-                const responseDiv = document.createElement('div');
-                responseDiv.style.padding = '0.75rem';
-                responseDiv.style.marginBottom = '0.5rem';
-                responseDiv.style.background = 'rgba(248, 249, 250, 0.6)';
-                responseDiv.style.borderRadius = '8px';
-                responseDiv.style.fontSize = '0.9rem';
-
-                // Try to parse and display matching pairs
-                let displayText = response.answer;
-                try {
-                    const matches = JSON.parse(response.answer);
-                    if (Array.isArray(matches)) {
-                        displayText = matches.map(m => `${m.left} → ${m.right}`).join(', ');
-                    }
-                } catch (e) {
-                    // If not JSON, display as-is
-                }
-
-                responseDiv.innerHTML = `<strong>${idx + 1}.</strong> ${displayText}`;
-                container.appendChild(responseDiv);
-            });
+            const note = document.createElement('div');
+            note.style.color = 'var(--text-secondary)';
+            note.style.fontStyle = 'italic';
+            note.textContent = 'Detailed matching results available after question ends';
+            container.appendChild(note);
         }
 
         function renderOrderingResponses(responses, container) {
@@ -1440,17 +1418,28 @@
         }
 
         function highlightCorrectAnswer() {
-            if (!currentQuestion || !currentQuestion.correctAnswer) {
-                console.log('Cannot highlight - no question or no correct answer');
+            if (!currentQuestion) {
+                console.log('Cannot highlight - no question');
                 return;
             }
 
             const questionType = currentQuestion.type || currentQuestion.questionType;
 
-            // Only highlight for MCQ and True/False
-            if (questionType === 'fill_blank' || questionType === 'fillblank' ||
-                questionType === 'matching' || questionType === 'ordering') {
+            // Handle matching questions with colored pairs
+            if (questionType === 'matching') {
+                highlightMatchingCorrectAnswer();
+                return;
+            }
+
+            // Skip for fill_blank and ordering (for now)
+            if (questionType === 'fill_blank' || questionType === 'fillblank' || questionType === 'ordering') {
                 console.log('Skipping highlight for question type:', questionType);
+                return;
+            }
+
+            // For MCQ and True/False
+            if (!currentQuestion.correctAnswer) {
+                console.log('No correct answer to highlight');
                 return;
             }
 
@@ -1479,6 +1468,44 @@
                     console.log(`Match found! Highlighting option ${index}`);
                     optionEl.classList.add('correct');
                 }
+            });
+        }
+
+        function highlightMatchingCorrectAnswer() {
+            const colors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#00bcd4', '#ff5722', '#3f51b5'];
+
+            const pairs = currentQuestion.pairs || [];
+            if (pairs.length === 0) return;
+
+            const optionsGrid = document.getElementById('optionsGrid');
+            const matchDiv = optionsGrid.querySelector('div[style*="grid-template-columns"]');
+            if (!matchDiv) return;
+
+            const leftCol = matchDiv.children[0];
+            const rightCol = matchDiv.children[1];
+
+            // Color code each pair
+            pairs.forEach((pair, index) => {
+                const color = colors[index % colors.length];
+
+                // Find and highlight left item
+                const leftItems = leftCol.querySelectorAll('div[style*="padding"]');
+                leftItems[index].style.background = color;
+                leftItems[index].style.color = 'white';
+                leftItems[index].style.fontWeight = '600';
+
+                // Find and highlight matching right item
+                const rightItems = rightCol.querySelectorAll('div[style*="padding"]');
+                rightItems.forEach(rightItem => {
+                    const text = rightItem.textContent.trim();
+                    // Remove number prefix (e.g., "1. ")
+                    const rightText = text.replace(/^\d+\.\s*/, '');
+                    if (rightText === pair.right) {
+                        rightItem.style.background = color;
+                        rightItem.style.color = 'white';
+                        rightItem.style.fontWeight = '600';
+                    }
+                });
             });
         }
 
