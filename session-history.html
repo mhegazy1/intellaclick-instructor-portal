@@ -383,6 +383,13 @@
                 console.log('Session data:', data);
                 currentSession = data.session;
 
+                // Debug: Log the structure of questions and responses
+                console.log('Questions:', currentSession.questions);
+                console.log('Responses:', currentSession.responses);
+                if (currentSession.responses && currentSession.responses.length > 0) {
+                    console.log('First response structure:', currentSession.responses[0]);
+                }
+
                 displaySessionDetails(currentSession);
                 document.getElementById('sessionModal').classList.add('active');
             } catch (error) {

@@ -687,7 +687,7 @@
 
     <!-- Control Bar -->
     <div class="control-bar" id="controlBar">
-        <button class="btn btn-secondary" onclick="window.location.href='/session.html?id=' + sessionId + '&code=' + sessionCode">
+        <button class="btn btn-secondary" onclick="if (window.opener) { window.close(); } else { window.location.href='/session.html?id=' + sessionId + '&code=' + sessionCode; }">
             ← Back
         </button>
 

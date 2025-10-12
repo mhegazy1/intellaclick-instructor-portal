@@ -890,19 +890,30 @@
         }
 
         async function autoSaveQuestions(sessionName, questions) {
+            console.log('=== AUTO-SAVE CALLED ===');
+            console.log('Session name:', sessionName);
+            console.log('Questions array:', questions);
+            console.log('Questions length:', questions?.length);
+
             if (!questions || questions.length === 0) {
-                console.log('No questions to save - skipping auto-save');
+                console.log('❌ No questions to save - skipping auto-save');
                 return;
             }
 
             const token = localStorage.getItem('token');
             if (!token) {
                 console.warn('⚠️ No authentication token - skipping auto-save (silent)');
-                // Don't alert - this is auto-save, not user-initiated
                 return;
             }
 
             console.log(`🔄 Auto-saving "${sessionName}" with ${questions.length} questions to cloud...`);
+
+            const payload = {
+                name: sessionName,
+                questions: questions,
+                classId: null
+            };
+            console.log('Payload being sent:', JSON.stringify(payload, null, 2));
 
             try {
                 const response = await fetch('https://api.intellaclick.com/api/question-sets', {
@@ -911,27 +922,24 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({
-                        name: sessionName,
-                        questions: questions,
-                        classId: null
-                    })
+                    body: JSON.stringify(payload)
                 });
+
+                console.log('Response status:', response.status);
 
                 if (!response.ok) {
                     const errorData = await response.json();
                     console.error('❌ Cloud API save failed:', errorData);
-                    // Silent failure for auto-save - don't block session creation
+                    console.error('Response status:', response.status);
                     console.warn('⚠️ Question set auto-save failed, but session will continue');
                     return;
                 }
 
                 const data = await response.json();
                 console.log('✅ Question set auto-saved to cloud successfully:', data);
-                // Silent success - no toast needed for auto-save
             } catch (error) {
                 console.error('❌ Error auto-saving question set:', error);
-                // Silent failure for auto-save - don't block session creation
+                console.error('Error stack:', error.stack);
                 console.warn('⚠️ Question set auto-save failed, but session will continue');
             }
         }
