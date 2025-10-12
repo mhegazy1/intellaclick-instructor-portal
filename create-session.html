@@ -868,36 +868,8 @@
         }
 
         function loadSavedQuestions() {
-            const savedSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
-
-            if (savedSets.length === 0) {
-                alert('No saved question sets found.\n\nQuestions are automatically saved when you create a session.');
-                return;
-            }
-
-            // Create selection dialog
-            let options = savedSets.map((set, index) =>
-                `${index + 1}. ${set.name} (${set.questionCount} questions) - ${new Date(set.createdAt).toLocaleDateString()}`
-            ).join('\n');
-
-            const choice = prompt(`Select a question set to load:\n\n${options}\n\nEnter the number (1-${savedSets.length}):`, '1');
-
-            if (!choice) return;
-
-            const index = parseInt(choice) - 1;
-
-            if (isNaN(index) || index < 0 || index >= savedSets.length) {
-                alert('Invalid selection');
-                return;
-            }
-
-            const selectedSet = savedSets[index];
-
-            // Load questions into current session
-            quickPollQuestions = [...selectedSet.questions];
-            renderQuestionsList();
-
-            showToast(`Loaded "${selectedSet.name}" with ${selectedSet.questionCount} questions`, 'success');
+            // Redirect to saved questions page which loads from cloud
+            window.location.href = '/saved-questions.html';
         }
 
         function insertBlank() {
@@ -916,47 +888,19 @@
         }
 
         async function autoSaveQuestions(sessionName, questions) {
-            if (!questions || questions.length === 0) return;
-
-            // Save to localStorage FIRST for immediate access
-            try {
-                const savedSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
-
-                // Check if this exact set already exists
-                const isDuplicate = savedSets.some(set =>
-                    set.name === sessionName &&
-                    JSON.stringify(set.questions) === JSON.stringify(questions)
-                );
-
-                if (!isDuplicate) {
-                    const newSet = {
-                        id: 'qset_' + Date.now(),
-                        name: sessionName,
-                        questions: questions,
-                        createdAt: new Date().toISOString(),
-                        questionCount: questions.length
-                    };
-
-                    savedSets.unshift(newSet);
-
-                    // Keep only last 20 question sets
-                    if (savedSets.length > 20) {
-                        savedSets.splice(20);
-                    }
-
-                    localStorage.setItem('savedQuestionSets', JSON.stringify(savedSets));
-                    console.log(`✅ Saved to localStorage: "${sessionName}" with ${questions.length} questions`);
-                }
-            } catch (e) {
-                console.error('localStorage save failed:', e);
-            }
-
-            // ALSO save to cloud API for cross-device access
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.warn('No authentication token, skipping cloud save');
+            if (!questions || questions.length === 0) {
+                console.log('No questions to save');
                 return;
             }
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error('❌ No authentication token found - cannot save question set');
+                alert('You must be logged in to save question sets.\n\nPlease log in and try again.');
+                return;
+            }
+
+            console.log(`Attempting to save "${sessionName}" with ${questions.length} questions to cloud...`);
 
             try {
                 const response = await fetch('https://api.intellaclick.com/api/question-sets', {
@@ -972,14 +916,18 @@
                     })
                 });
 
-                if (response.ok) {
-                    console.log('✅ Also saved to cloud API');
-                } else {
-                    console.warn('Cloud API save failed, but localStorage save succeeded');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Cloud API save failed:', errorData);
+                    throw new Error(errorData.error || 'Failed to save question set');
                 }
+
+                const data = await response.json();
+                console.log('✅ Question set saved to cloud successfully:', data);
+                showToast(`Question set "${sessionName}" saved successfully`, 'success');
             } catch (error) {
-                console.error('Cloud API error:', error);
-                // Don't show error - localStorage save already succeeded
+                console.error('❌ Error saving question set to cloud:', error);
+                alert(`Failed to save question set:\n${error.message}\n\nPlease check your internet connection and try again.`);
             }
         }
     </script>
