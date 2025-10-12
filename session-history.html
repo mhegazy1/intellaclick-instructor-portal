@@ -454,9 +454,23 @@
                             <tbody>
                                 ${questionResponses.map(r => {
                                     const participant = participants.find(p => p.participantId === r.participantId);
-                                    const earnedPoints = r.points ?? r.score ?? 0;
+
+                                    // Calculate points - check if answer matches correctAnswer
+                                    let earnedPoints = 0;
+                                    if (r.points !== undefined) {
+                                        earnedPoints = r.points;
+                                    } else if (r.score !== undefined) {
+                                        earnedPoints = r.score;
+                                    } else {
+                                        // Calculate based on correct answer match
+                                        const isCorrectAnswer = String(r.answer).toLowerCase().trim() === String(r.correctAnswer || question.correctAnswer).toLowerCase().trim();
+                                        earnedPoints = isCorrectAnswer ? (question.points || 10) : 0;
+                                    }
+
                                     const isCorrect = earnedPoints > 0;
-                                    const timestamp = r.timestamp || r.answeredAt || r.createdAt;
+
+                                    // Get timestamp - check multiple possible field names
+                                    const timestamp = r.submittedAt || r.timestamp || r.answeredAt || r.createdAt;
                                     const timeString = timestamp ? new Date(timestamp).toLocaleTimeString() : 'N/A';
 
                                     return `
