@@ -363,6 +363,7 @@
 
         async function viewSession(sessionId) {
             try {
+                console.log('Loading session:', sessionId);
                 const token = localStorage.getItem('token');
                 const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
                     headers: {
@@ -370,16 +371,23 @@
                     }
                 });
 
-                if (!response.ok) throw new Error('Failed to load session');
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Error response:', errorData);
+                    throw new Error(errorData.error || `Failed to load session (${response.status})`);
+                }
 
                 const data = await response.json();
+                console.log('Session data:', data);
                 currentSession = data.session;
 
                 displaySessionDetails(currentSession);
                 document.getElementById('sessionModal').classList.add('active');
             } catch (error) {
                 console.error('Error loading session:', error);
-                alert('Failed to load session details');
+                alert(`Failed to load session details: ${error.message}`);
             }
         }
 

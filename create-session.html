@@ -835,8 +835,10 @@
                 if (selectedType === 'quick' && sessionData.questions) {
                     sessionStorage.setItem('pendingQuestions', JSON.stringify(sessionData.questions));
                     sessionStorage.setItem('currentQuestionIndex', '0'); // Start with first question
+                }
 
-                    // AUTO-SAVE: Save questions for reuse
+                // AUTO-SAVE: Save questions for reuse (for ALL session types with questions)
+                if (sessionData.questions && sessionData.questions.length > 0) {
                     autoSaveQuestions(sessionData.title, sessionData.questions);
                 }
 
