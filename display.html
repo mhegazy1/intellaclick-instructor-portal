@@ -1025,8 +1025,11 @@
                             </div>`
                         ).join('');
 
+                    // Shuffle right items for display
+                    const shuffledRight = [...rightItems].sort(() => Math.random() - 0.5);
+
                     rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
-                        rightItems.map((item, i) =>
+                        shuffledRight.map((item, i) =>
                             `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
                                 ${i + 1}. ${item}
                             </div>`
@@ -1052,8 +1055,11 @@
                             </div>`
                         ).join('');
 
+                    // Shuffle right column for display
+                    const shuffledRightCol = [...question.rightColumn].sort(() => Math.random() - 0.5);
+
                     rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
-                        question.rightColumn.map((item, i) =>
+                        shuffledRightCol.map((item, i) =>
                             `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
                                 ${i + 1}. ${item}
                             </div>`
