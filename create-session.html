@@ -493,10 +493,16 @@
 
                 const data = await response.json();
                 classData = data.class || data;
-                
+
                 document.getElementById('classInfo').innerHTML = `
                     <strong>${classData.name}</strong> - ${classData.code} ${classData.section ? '(' + classData.section + ')' : ''}
                 `;
+
+                // Set default session name
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                document.getElementById('sessionName').value = `${classData.name} Session - ${dateStr} ${timeStr}`;
             } catch (error) {
                 console.error('Error loading class:', error);
                 showToast('Failed to load class information', 'error');
