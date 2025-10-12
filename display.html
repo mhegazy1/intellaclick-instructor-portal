@@ -959,6 +959,16 @@
             currentQuestion = question;
             questionEnded = false; // Reset the ended flag for new question
 
+            console.log('=== DISPLAYING QUESTION ===');
+            console.log('Full question object:', JSON.stringify(question, null, 2));
+            console.log('Question type:', question.type, question.questionType);
+            console.log('Has pairs?', !!question.pairs, question.pairs);
+            console.log('Has leftColumn?', !!question.leftColumn, question.leftColumn);
+            console.log('Has rightColumn?', !!question.rightColumn, question.rightColumn);
+            console.log('Has items?', !!question.items, question.items);
+            console.log('Has correctOrder?', !!question.correctOrder, question.correctOrder);
+            console.log('========================');
+
             // Hide waiting, show question
             document.getElementById('waitingMessage').style.display = 'none';
             document.getElementById('questionCard').style.display = 'block';
