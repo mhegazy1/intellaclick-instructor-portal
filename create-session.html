@@ -839,13 +839,16 @@
 
                 // AUTO-SAVE: Save questions for reuse (for ALL session types with questions)
                 if (sessionData.questions && sessionData.questions.length > 0) {
+                    // Don't wait for auto-save to complete - let it run in background
                     autoSaveQuestions(sessionData.title, sessionData.questions);
                 }
 
                 // Redirect to session management page with session info
+                // Increased delay to give more time to see console logs
                 setTimeout(() => {
+                    console.log('=== REDIRECTING NOW ===');
                     window.location.href = `/session.html?id=${session.id || session._id}&code=${session.sessionCode || sessionCode}&type=${selectedType}`;
-                }, 2000); // Give more time to see the code
+                }, 5000); // Give 5 seconds to see auto-save logs
                 
             } catch (error) {
                 console.error('Error creating session:', error);
