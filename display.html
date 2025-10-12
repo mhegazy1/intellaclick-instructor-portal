@@ -1298,7 +1298,6 @@
         }
 
         function renderMatchingResponses(responses, container) {
-            // Just show response count for matching questions
             const title = document.createElement('div');
             title.style.fontWeight = '600';
             title.style.marginBottom = '1rem';
@@ -1306,11 +1305,47 @@
             title.textContent = `${responses.length} student${responses.length === 1 ? '' : 's'} answered`;
             container.appendChild(title);
 
-            const note = document.createElement('div');
-            note.style.color = 'var(--text-secondary)';
-            note.style.fontStyle = 'italic';
-            note.textContent = 'Detailed matching results available after question ends';
-            container.appendChild(note);
+            // If question ended, show detailed results
+            if (questionEnded && responses.length > 0) {
+                responses.forEach((response, idx) => {
+                    const responseDiv = document.createElement('div');
+                    responseDiv.style.padding = '0.75rem';
+                    responseDiv.style.marginBottom = '0.5rem';
+                    responseDiv.style.background = 'rgba(248, 249, 250, 0.6)';
+                    responseDiv.style.borderRadius = '8px';
+                    responseDiv.style.fontSize = '0.9rem';
+
+                    // Try to parse and display matching pairs
+                    let displayText = 'Invalid format';
+                    try {
+                        const matches = typeof response.answer === 'string' ? JSON.parse(response.answer) : response.answer;
+                        if (typeof matches === 'object' && matches !== null) {
+                            // Handle object format: { "0": "rightText", "1": "rightText2" }
+                            const pairs = currentQuestion.pairs || [];
+                            const matchList = Object.entries(matches).map(([leftIdx, rightText]) => {
+                                const leftText = pairs[parseInt(leftIdx)]?.left || `Item ${String.fromCharCode(65 + parseInt(leftIdx))}`;
+                                return `${leftText} → ${rightText}`;
+                            });
+                            displayText = matchList.join(', ');
+                        } else if (Array.isArray(matches)) {
+                            // Handle array format: [{ left: "A", right: "1" }]
+                            displayText = matches.map(m => `${m.left} → ${m.right}`).join(', ');
+                        }
+                    } catch (e) {
+                        console.error('Error parsing matching answer:', e, response.answer);
+                    }
+
+                    responseDiv.innerHTML = `<strong>Student ${idx + 1}:</strong> ${displayText}`;
+                    container.appendChild(responseDiv);
+                });
+            } else if (!questionEnded) {
+                // Show note while question is active
+                const note = document.createElement('div');
+                note.style.color = 'var(--text-secondary)';
+                note.style.fontStyle = 'italic';
+                note.textContent = 'Detailed matching results will appear after question ends';
+                container.appendChild(note);
+            }
         }
 
         function renderOrderingResponses(responses, container) {
@@ -1431,8 +1466,14 @@
                 return;
             }
 
-            // Skip for fill_blank and ordering (for now)
-            if (questionType === 'fill_blank' || questionType === 'fillblank' || questionType === 'ordering') {
+            // Handle ordering questions with numbered correct order
+            if (questionType === 'ordering') {
+                highlightOrderingCorrectAnswer();
+                return;
+            }
+
+            // Skip for fill_blank
+            if (questionType === 'fill_blank' || questionType === 'fillblank') {
                 console.log('Skipping highlight for question type:', questionType);
                 return;
             }
@@ -1506,6 +1547,49 @@
                         rightItem.style.fontWeight = '600';
                     }
                 });
+            });
+        }
+
+        function highlightOrderingCorrectAnswer() {
+            const correctOrder = currentQuestion.correctOrder || currentQuestion.items || [];
+            if (correctOrder.length === 0) return;
+
+            const optionsGrid = document.getElementById('optionsGrid');
+            const options = optionsGrid.querySelectorAll('.option');
+
+            // Add numbered badges to show correct order
+            options.forEach((optionEl) => {
+                const optionText = optionEl.querySelector('.option-text')?.textContent?.trim();
+                if (!optionText) return;
+
+                // Find this item's position in correct order
+                const correctPosition = correctOrder.findIndex(item => item === optionText);
+                if (correctPosition >= 0) {
+                    // Add a numbered badge
+                    const badge = document.createElement('div');
+                    badge.style.cssText = `
+                        position: absolute;
+                        top: 8px;
+                        right: 8px;
+                        background: #4caf50;
+                        color: white;
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: 600;
+                        font-size: 16px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    `;
+                    badge.textContent = (correctPosition + 1).toString();
+
+                    optionEl.style.position = 'relative';
+                    optionEl.style.background = 'rgba(76, 175, 80, 0.1)';
+                    optionEl.style.border = '2px solid #4caf50';
+                    optionEl.appendChild(badge);
+                }
             });
         }
 
