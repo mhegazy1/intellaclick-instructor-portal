@@ -955,6 +955,16 @@
             }
         }
 
+        // Fisher-Yates shuffle algorithm for proper randomization
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
         function displayQuestion(question) {
             currentQuestion = question;
             questionEnded = false; // Reset the ended flag for new question
@@ -1025,8 +1035,8 @@
                             </div>`
                         ).join('');
 
-                    // Shuffle right items for display
-                    const shuffledRight = [...rightItems].sort(() => Math.random() - 0.5);
+                    // Shuffle right items for display using Fisher-Yates
+                    const shuffledRight = shuffleArray(rightItems);
 
                     rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
                         shuffledRight.map((item, i) =>
@@ -1055,8 +1065,8 @@
                             </div>`
                         ).join('');
 
-                    // Shuffle right column for display
-                    const shuffledRightCol = [...question.rightColumn].sort(() => Math.random() - 0.5);
+                    // Shuffle right column for display using Fisher-Yates
+                    const shuffledRightCol = shuffleArray(question.rightColumn);
 
                     rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
                         shuffledRightCol.map((item, i) =>
