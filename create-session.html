@@ -889,18 +889,18 @@
 
         async function autoSaveQuestions(sessionName, questions) {
             if (!questions || questions.length === 0) {
-                console.log('No questions to save');
+                console.log('No questions to save - skipping auto-save');
                 return;
             }
 
             const token = localStorage.getItem('token');
             if (!token) {
-                console.error('❌ No authentication token found - cannot save question set');
-                alert('You must be logged in to save question sets.\n\nPlease log in and try again.');
+                console.warn('⚠️ No authentication token - skipping auto-save (silent)');
+                // Don't alert - this is auto-save, not user-initiated
                 return;
             }
 
-            console.log(`Attempting to save "${sessionName}" with ${questions.length} questions to cloud...`);
+            console.log(`🔄 Auto-saving "${sessionName}" with ${questions.length} questions to cloud...`);
 
             try {
                 const response = await fetch('https://api.intellaclick.com/api/question-sets', {
@@ -918,16 +918,19 @@
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    console.error('Cloud API save failed:', errorData);
-                    throw new Error(errorData.error || 'Failed to save question set');
+                    console.error('❌ Cloud API save failed:', errorData);
+                    // Silent failure for auto-save - don't block session creation
+                    console.warn('⚠️ Question set auto-save failed, but session will continue');
+                    return;
                 }
 
                 const data = await response.json();
-                console.log('✅ Question set saved to cloud successfully:', data);
-                showToast(`Question set "${sessionName}" saved successfully`, 'success');
+                console.log('✅ Question set auto-saved to cloud successfully:', data);
+                // Silent success - no toast needed for auto-save
             } catch (error) {
-                console.error('❌ Error saving question set to cloud:', error);
-                alert(`Failed to save question set:\n${error.message}\n\nPlease check your internet connection and try again.`);
+                console.error('❌ Error auto-saving question set:', error);
+                // Silent failure for auto-save - don't block session creation
+                console.warn('⚠️ Question set auto-save failed, but session will continue');
             }
         }
     </script>

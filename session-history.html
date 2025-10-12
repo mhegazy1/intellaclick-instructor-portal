@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session History - IntellaClick</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .session-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .session-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .session-card.ended {
+            border-left: 4px solid #10B981;
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .session-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .session-code {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+
+        .session-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .session-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .session-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn-view {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-export {
+            background: #10B981;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #EF4444;
+            color: white;
+            margin-left: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .responses-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .responses-table th,
+        .responses-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .responses-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .correct {
+            color: #10B981;
+            font-weight: 600;
+        }
+
+        .incorrect {
+            color: #EF4444;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-section select,
+        .filter-section input {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Session History</h1>
+            <button class="btn btn-secondary" onclick="window.location.href='/classes.html'">
+                ← Back to Classes
+            </button>
+        </div>
+
+        <div class="filter-section">
+            <input type="text" id="searchInput" placeholder="Search by title or code..."
+                   oninput="filterSessions()">
+            <select id="statusFilter" onchange="filterSessions()">
+                <option value="all">All Sessions</option>
+                <option value="ended">Ended</option>
+                <option value="active">Active</option>
+            </select>
+        </div>
+
+        <div id="historyContainer" class="history-grid">
+            <!-- Sessions will be loaded here -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <h3>No Sessions Found</h3>
+            <p>You haven't created any sessions yet.</p>
+        </div>
+    </div>
+
+    <!-- View Session Modal -->
+    <div id="sessionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Session Details</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody">
+                <!-- Session details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allSessions = [];
+        let currentSession = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSessions();
+        });
+
+        async function loadSessions() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const response = await fetch('https://api.intellaclick.com/api/sessions', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load sessions');
+                }
+
+                const data = await response.json();
+                allSessions = data.sessions || [];
+
+                console.log(`Loaded ${allSessions.length} sessions`);
+                renderSessions(allSessions);
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                alert('Failed to load session history');
+            }
+        }
+
+        function renderSessions(sessions) {
+            const container = document.getElementById('historyContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            if (sessions.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = sessions.map(session => {
+                const date = new Date(session.createdAt).toLocaleDateString();
+                const time = new Date(session.createdAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                const participantCount = session.participants?.length || 0;
+                const questionCount = session.questions?.length || 0;
+                const responseCount = session.responses?.length || 0;
+
+                return `
+                    <div class="session-card ${session.status}" onclick="viewSession('${session._id}')">
+                        <div class="session-header">
+                            <div>
+                                <div class="session-title">${session.title || 'Untitled Session'}</div>
+                                <div class="session-code">Code: ${session.sessionCode}</div>
+                            </div>
+                            <span class="status-badge status-${session.status}">${session.status}</span>
+                        </div>
+
+                        <div class="session-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">${participantCount}</div>
+                                <div class="stat-label">Students</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${questionCount}</div>
+                                <div class="stat-label">Questions</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${responseCount}</div>
+                                <div class="stat-label">Responses</div>
+                            </div>
+                        </div>
+
+                        <div class="session-date">📅 ${date} at ${time}</div>
+
+                        <div class="session-actions" onclick="event.stopPropagation()">
+                            <button class="btn btn-view" onclick="viewSession('${session._id}')">
+                                View Details
+                            </button>
+                            <button class="btn btn-export" onclick="exportSession('${session._id}')">
+                                Export CSV
+                            </button>
+                            <button class="btn btn-delete" onclick="deleteSession('${session._id}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterSessions() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+
+            const filtered = allSessions.filter(session => {
+                const matchesSearch = session.title.toLowerCase().includes(searchTerm) ||
+                                    session.sessionCode.toLowerCase().includes(searchTerm);
+                const matchesStatus = status === 'all' || session.status === status;
+                return matchesSearch && matchesStatus;
+            });
+
+            renderSessions(filtered);
+        }
+
+        async function viewSession(sessionId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load session');
+
+                const data = await response.json();
+                currentSession = data.session;
+
+                displaySessionDetails(currentSession);
+                document.getElementById('sessionModal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading session:', error);
+                alert('Failed to load session details');
+            }
+        }
+
+        function displaySessionDetails(session) {
+            document.getElementById('modalTitle').textContent = session.title;
+
+            const questions = session.questions || [];
+            const responses = session.responses || [];
+            const participants = session.participants || [];
+
+            let html = `
+                <div style="margin-bottom: 2rem;">
+                    <h3>Session Information</h3>
+                    <p><strong>Code:</strong> ${session.sessionCode}</p>
+                    <p><strong>Status:</strong> ${session.status}</p>
+                    <p><strong>Participants:</strong> ${participants.length}</p>
+                    <p><strong>Questions Asked:</strong> ${questions.length}</p>
+                    <p><strong>Total Responses:</strong> ${responses.length}</p>
+                </div>
+
+                <h3>Questions & Responses</h3>
+            `;
+
+            questions.forEach((question, index) => {
+                const questionResponses = responses.filter(r => r.questionId === question.questionId);
+
+                html += `
+                    <div style="margin: 1.5rem 0; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                        <h4>Question ${index + 1}: ${question.questionText}</h4>
+                        <p><strong>Type:</strong> ${question.questionType} | <strong>Points:</strong> ${question.points}</p>
+
+                        <table class="responses-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Answer</th>
+                                    <th>Points</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${questionResponses.map(r => {
+                                    const participant = participants.find(p => p.participantId === r.participantId);
+                                    const isCorrect = r.points > 0;
+                                    return `
+                                        <tr>
+                                            <td>${participant?.name || r.participantId}</td>
+                                            <td>${r.answer}</td>
+                                            <td class="${isCorrect ? 'correct' : 'incorrect'}">
+                                                ${r.points} / ${question.points}
+                                            </td>
+                                            <td>${new Date(r.timestamp).toLocaleTimeString()}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                ${questionResponses.length === 0 ? '<tr><td colspan="4">No responses</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modalBody').innerHTML = html;
+        }
+
+        function closeModal() {
+            document.getElementById('sessionModal').classList.remove('active');
+        }
+
+        async function exportSession(sessionId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load session');
+
+                const data = await response.json();
+                const session = data.session;
+
+                // Create CSV content
+                let csv = 'Student,Question,Answer,Points,Correct Answer,Timestamp\n';
+
+                (session.responses || []).forEach(r => {
+                    const question = (session.questions || []).find(q => q.questionId === r.questionId);
+                    const participant = (session.participants || []).find(p => p.participantId === r.participantId);
+
+                    csv += `"${participant?.name || r.participantId}",`;
+                    csv += `"${question?.questionText || 'Unknown'}",`;
+                    csv += `"${r.answer}",`;
+                    csv += `${r.points},`;
+                    csv += `"${question?.correctAnswer || 'N/A'}",`;
+                    csv += `"${new Date(r.timestamp).toLocaleString()}"\n`;
+                });
+
+                // Download CSV
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${session.sessionCode}_${session.title}_responses.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                alert('Session exported successfully!');
+            } catch (error) {
+                console.error('Error exporting session:', error);
+                alert('Failed to export session');
+            }
+        }
+
+        async function deleteSession(sessionId) {
+            if (!confirm('Are you sure you want to delete this session? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to delete session');
+
+                alert('Session deleted successfully');
+                loadSessions(); // Reload the list
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                alert('Failed to delete session');
+            }
+        }
+    </script>
+</body>
+</html>
