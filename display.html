@@ -1552,18 +1552,32 @@
 
         function highlightOrderingCorrectAnswer() {
             const correctOrder = currentQuestion.correctOrder || currentQuestion.items || [];
-            if (correctOrder.length === 0) return;
+            console.log('Ordering correct answer data:', {
+                correctOrder,
+                items: currentQuestion.items,
+                fullQuestion: currentQuestion
+            });
+
+            if (correctOrder.length === 0) {
+                console.warn('No correct order found for ordering question');
+                return;
+            }
 
             const optionsGrid = document.getElementById('optionsGrid');
             const options = optionsGrid.querySelectorAll('.option');
 
+            console.log(`Found ${options.length} option elements to highlight`);
+
             // Add numbered badges to show correct order
-            options.forEach((optionEl) => {
+            options.forEach((optionEl, index) => {
                 const optionText = optionEl.querySelector('.option-text')?.textContent?.trim();
+                console.log(`Option ${index}: "${optionText}"`);
                 if (!optionText) return;
 
                 // Find this item's position in correct order
                 const correctPosition = correctOrder.findIndex(item => item === optionText);
+                console.log(`  Correct position: ${correctPosition}`);
+
                 if (correctPosition >= 0) {
                     // Add a numbered badge
                     const badge = document.createElement('div');
@@ -1589,6 +1603,7 @@
                     optionEl.style.background = 'rgba(76, 175, 80, 0.1)';
                     optionEl.style.border = '2px solid #4caf50';
                     optionEl.appendChild(badge);
+                    console.log(`  Added badge: ${correctPosition + 1}`);
                 }
             });
         }
