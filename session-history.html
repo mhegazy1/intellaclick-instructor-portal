@@ -398,6 +398,22 @@
             const responses = session.responses || [];
             const participants = session.participants || [];
 
+            // Helper function to format question type
+            function formatQuestionType(type) {
+                const typeMap = {
+                    'multiple_choice': 'Multiple Choice',
+                    'mcq': 'Multiple Choice',
+                    'true_false': 'True/False',
+                    'boolean': 'True/False',
+                    'tf': 'True/False',
+                    'short_answer': 'Short Answer',
+                    'matching': 'Matching',
+                    'ordering': 'Put in Order',
+                    'fill_blank': 'Fill in the Blank'
+                };
+                return typeMap[type] || type;
+            }
+
             let html = `
                 <div style="margin-bottom: 2rem;">
                     <h3>Session Information</h3>
@@ -417,7 +433,7 @@
                 html += `
                     <div style="margin: 1.5rem 0; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px;">
                         <h4>Question ${index + 1}: ${question.questionText}</h4>
-                        <p><strong>Type:</strong> ${question.questionType} | <strong>Points:</strong> ${question.points}</p>
+                        <p><strong>Type:</strong> ${formatQuestionType(question.questionType)} | <strong>Points:</strong> ${question.points}</p>
 
                         <table class="responses-table">
                             <thead>
@@ -431,15 +447,19 @@
                             <tbody>
                                 ${questionResponses.map(r => {
                                     const participant = participants.find(p => p.participantId === r.participantId);
-                                    const isCorrect = r.points > 0;
+                                    const earnedPoints = r.points ?? r.score ?? 0;
+                                    const isCorrect = earnedPoints > 0;
+                                    const timestamp = r.timestamp || r.answeredAt || r.createdAt;
+                                    const timeString = timestamp ? new Date(timestamp).toLocaleTimeString() : 'N/A';
+
                                     return `
                                         <tr>
                                             <td>${participant?.name || r.participantId}</td>
                                             <td>${r.answer}</td>
                                             <td class="${isCorrect ? 'correct' : 'incorrect'}">
-                                                ${r.points} / ${question.points}
+                                                ${earnedPoints} / ${question.points}
                                             </td>
-                                            <td>${new Date(r.timestamp).toLocaleTimeString()}</td>
+                                            <td>${timeString}</td>
                                         </tr>
                                     `;
                                 }).join('')}
