@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.0.2-button-fix">
+    <meta name="version" content="1.0.3-selector-edit">
     <title>Saved Question Sets - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -212,7 +212,9 @@
             <!-- Action Buttons -->
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveNewQuestionSet()">Save Question Set</button>
+                <button class="btn btn-primary" onclick="editingSetId ? updateQuestionSet() : saveNewQuestionSet()">
+                    <span id="saveButtonText">Save Question Set</span>
+                </button>
             </div>
         </div>
     </div>
@@ -263,6 +265,30 @@
                     <button type="submit" class="btn btn-primary">Add Question</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Question Selector Modal -->
+    <div id="questionSelectorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; padding: 2rem; overflow-y: auto;">
+        <div style="background: white; max-width: 800px; margin: 0 auto; border-radius: 12px; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 700;">Select Questions to Use</h2>
+                <button onclick="closeSelectorModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">&times;</button>
+            </div>
+
+            <div style="margin-bottom: 1rem; display: flex; gap: 12px;">
+                <button class="btn btn-secondary" onclick="selectAllQuestions()">Select All</button>
+                <button class="btn btn-secondary" onclick="deselectAllQuestions()">Deselect All</button>
+            </div>
+
+            <div id="questionCheckboxList" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+                <!-- Checkboxes will be populated here -->
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeSelectorModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="loadSelectedQuestions()">Use Selected Questions</button>
+            </div>
         </div>
     </div>
 
@@ -374,8 +400,11 @@
                         </div>
 
                         <div class="question-set-actions">
-                            <button class="btn btn-primary" onclick="event.stopPropagation(); loadQuestionSet('${setId}')">
-                                Use These Questions
+                            <button class="btn btn-primary" onclick="event.stopPropagation(); showQuestionSelector('${setId}')">
+                                Use Questions
+                            </button>
+                            <button class="btn btn-secondary" onclick="event.stopPropagation(); editQuestionSet('${setId}')">
+                                Edit
                             </button>
                             <button class="btn btn-secondary" onclick="event.stopPropagation(); viewQuestionSet('${setId}')">
                                 View All
@@ -542,14 +571,17 @@
         function showCreateQuestionSetModal() {
             newSetQuestions = [];
             currentEditingIndex = null;
+            editingSetId = null;
             document.getElementById('newSetName').value = '';
             document.getElementById('newQuestionsList').innerHTML = '';
             document.getElementById('emptyQuestions').style.display = 'block';
+            document.getElementById('saveButtonText').textContent = 'Save Question Set';
             document.getElementById('createModal').style.display = 'flex';
         }
 
         function closeCreateModal() {
             document.getElementById('createModal').style.display = 'none';
+            editingSetId = null;
         }
 
         function addNewQuestion() {
@@ -557,6 +589,8 @@
             currentEditingIndex = null;
             document.getElementById('builderQuestionText').value = '';
             document.getElementById('builderQuestionType').value = 'mcq';
+            document.getElementById('optionsList').innerHTML = '';
+            optionCount = 0; // Reset option count
             updateQuestionBuilderUI();
             document.getElementById('questionBuilderModal').style.display = 'flex';
         }
@@ -612,42 +646,56 @@
 
         function saveQuestion(event) {
             event.preventDefault();
+            console.log('=== saveQuestion called ===');
 
-            const type = document.getElementById('builderQuestionType').value;
-            const text = document.getElementById('builderQuestionText').value.trim();
+            try {
+                const type = document.getElementById('builderQuestionType').value;
+                const text = document.getElementById('builderQuestionText').value.trim();
 
-            if (!text) {
-                alert('Please enter question text');
-                return;
-            }
+                console.log('Question type:', type);
+                console.log('Question text:', text);
 
-            const question = {
-                type: type,
-                text: text
-            };
-
-            if (type === 'mcq') {
-                const options = Array.from(document.querySelectorAll('.option-input')).map(input => input.value.trim());
-                const correctIndex = parseInt(document.querySelector('input[name="correctAnswer"]:checked').value);
-
-                if (options.some(opt => !opt)) {
-                    alert('Please fill in all options');
+                if (!text) {
+                    alert('Please enter question text');
                     return;
                 }
 
-                question.options = options;
-                question.correctAnswer = correctIndex;
-            } else {
-                question.correctAnswer = document.getElementById('builderTFAnswer').value;
+                const question = {
+                    type: type,
+                    text: text
+                };
+
+                if (type === 'mcq') {
+                    const options = Array.from(document.querySelectorAll('.option-input')).map(input => input.value.trim());
+                    const correctIndex = parseInt(document.querySelector('input[name="correctAnswer"]:checked').value);
+
+                    console.log('MCQ options:', options);
+                    console.log('Correct index:', correctIndex);
+
+                    if (options.some(opt => !opt)) {
+                        alert('Please fill in all options');
+                        return;
+                    }
+
+                    question.options = options;
+                    question.correctAnswer = correctIndex;
+                } else {
+                    question.correctAnswer = document.getElementById('builderTFAnswer').value;
+                    console.log('TF correct answer:', question.correctAnswer);
+                }
+
+                newSetQuestions.push(question);
+                console.log('✅ Question added. Total questions:', newSetQuestions.length);
+                renderNewQuestionsList();
+                closeQuestionBuilder();
+
+                // Reset for next question
+                optionCount = 0;
+                document.getElementById('optionsList').innerHTML = '';
+            } catch (error) {
+                console.error('❌ Error saving question:', error);
+                alert('Error saving question: ' + error.message);
             }
-
-            newSetQuestions.push(question);
-            renderNewQuestionsList();
-            closeQuestionBuilder();
-
-            // Reset for next question
-            optionCount = 0;
-            document.getElementById('optionsList').innerHTML = '';
         }
 
         function renderNewQuestionsList() {
@@ -717,6 +765,165 @@
             } catch (error) {
                 console.error('Error saving question set:', error);
                 alert(`Failed to save question set: ${error.message}`);
+            }
+        }
+
+        // ========== QUESTION SELECTOR FUNCTIONS ==========
+
+        let currentSelectedSetId = null;
+
+        function showQuestionSelector(setId) {
+            console.log('Opening question selector for set:', setId);
+            const set = allQuestionSets.find(s => (s._id || s.id) === setId);
+
+            if (!set) {
+                alert('Question set not found');
+                return;
+            }
+
+            currentSelectedSetId = setId;
+
+            // Populate checkbox list
+            const container = document.getElementById('questionCheckboxList');
+            container.innerHTML = set.questions.map((q, index) => {
+                const typeLabel = getTypeLabel(q.type);
+                const questionText = q.text || q.questionText || 'Question';
+                return `
+                    <div style="padding: 1rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.75rem;">
+                        <label style="display: flex; align-items: start; gap: 12px; cursor: pointer;">
+                            <input type="checkbox" class="question-checkbox" data-index="${index}" checked style="width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                    <span class="question-type-badge" style="margin-right: 8px;">${typeLabel}</span>
+                                    Q${index + 1}: ${questionText.substring(0, 80)}${questionText.length > 80 ? '...' : ''}
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('questionSelectorModal').style.display = 'flex';
+        }
+
+        function closeSelectorModal() {
+            document.getElementById('questionSelectorModal').style.display = 'none';
+            currentSelectedSetId = null;
+        }
+
+        function selectAllQuestions() {
+            document.querySelectorAll('.question-checkbox').forEach(cb => cb.checked = true);
+        }
+
+        function deselectAllQuestions() {
+            document.querySelectorAll('.question-checkbox').forEach(cb => cb.checked = false);
+        }
+
+        function loadSelectedQuestions() {
+            const set = allQuestionSets.find(s => (s._id || s.id) === currentSelectedSetId);
+            if (!set) {
+                alert('Question set not found');
+                return;
+            }
+
+            // Get selected question indices
+            const checkboxes = document.querySelectorAll('.question-checkbox');
+            const selectedIndices = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => parseInt(cb.dataset.index));
+
+            if (selectedIndices.length === 0) {
+                alert('Please select at least one question');
+                return;
+            }
+
+            // Get only selected questions
+            const selectedQuestions = selectedIndices.map(index => set.questions[index]);
+
+            // Store in sessionStorage
+            sessionStorage.setItem('pendingQuestions', JSON.stringify(selectedQuestions));
+            sessionStorage.setItem('fromSavedSet', 'true');
+
+            console.log(`✅ Loaded ${selectedQuestions.length} questions from "${set.name}"`);
+
+            // Auto-navigate back
+            const urlParams = new URLSearchParams(window.location.search);
+            const returnUrl = urlParams.get('returnUrl') || sessionStorage.getItem('createSessionUrl');
+
+            closeSelectorModal();
+
+            if (returnUrl) {
+                window.location.href = returnUrl;
+            } else {
+                alert(`✅ Loaded ${selectedQuestions.length} questions from "${set.name}"!\n\nGo back to the session page to use them.`);
+            }
+        }
+
+        // ========== EDIT QUESTION SET FUNCTIONS ==========
+
+        let editingSetId = null;
+
+        function editQuestionSet(setId) {
+            console.log('Opening editor for set:', setId);
+            const set = allQuestionSets.find(s => (s._id || s.id) === setId);
+
+            if (!set) {
+                alert('Question set not found');
+                return;
+            }
+
+            editingSetId = setId;
+            newSetQuestions = [...set.questions]; // Copy questions
+            currentEditingIndex = null;
+
+            // Populate the create modal with existing data
+            document.getElementById('newSetName').value = set.name;
+            document.getElementById('saveButtonText').textContent = 'Update Question Set';
+            renderNewQuestionsList();
+            document.getElementById('createModal').style.display = 'flex';
+        }
+
+        async function updateQuestionSet() {
+            const name = document.getElementById('newSetName').value.trim();
+
+            if (!name) {
+                alert('Please enter a question set name');
+                return;
+            }
+
+            if (newSetQuestions.length === 0) {
+                alert('Please add at least one question');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`https://api.intellaclick.com/api/question-sets/${editingSetId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        questions: newSetQuestions
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to update question set');
+                }
+
+                console.log('✅ Question set updated successfully');
+                alert(`✅ Question set "${name}" updated successfully with ${newSetQuestions.length} questions!`);
+
+                editingSetId = null;
+                closeCreateModal();
+                loadQuestionSets(); // Reload the list
+            } catch (error) {
+                console.error('Error updating question set:', error);
+                alert(`Failed to update question set: ${error.message}`);
             }
         }
 

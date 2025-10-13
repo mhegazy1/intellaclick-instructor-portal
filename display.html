@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.0.1-timer-fix">
     <title>Session Display - IntellaClick</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -806,6 +807,7 @@
         let currentQuestion = null;
         let timerInterval = null;
         let timeRemaining = 0;
+        let timerEndTime = null; // End time for the timer
         let questionEnded = false; // Track if we manually ended the question
 
         // Initialize
@@ -1150,11 +1152,11 @@
             }
 
             const start = new Date(startedAt);
-            const end = new Date(start.getTime() + duration * 1000);
+            timerEndTime = new Date(start.getTime() + duration * 1000);
 
             timerInterval = setInterval(() => {
                 const now = new Date();
-                timeRemaining = Math.max(0, Math.floor((end - now) / 1000));
+                timeRemaining = Math.max(0, Math.floor((timerEndTime - now) / 1000));
 
                 document.getElementById('timeLeft').textContent = timeRemaining;
 
@@ -1393,7 +1395,7 @@
         }
 
         async function addTime(seconds) {
-            if (!currentQuestion) return;
+            if (!currentQuestion || !timerEndTime) return;
 
             try {
                 const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions/${currentQuestion.id}/timer`, {
@@ -1406,7 +1408,9 @@
                 });
 
                 if (response.ok) {
-                    timeRemaining += seconds;
+                    // Update the timer end time by adding the seconds
+                    timerEndTime = new Date(timerEndTime.getTime() + seconds * 1000);
+                    console.log(`✅ Added ${seconds} seconds to timer. New end time:`, timerEndTime);
                 }
             } catch (error) {
                 console.error('Error adding time:', error);
