@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.0.2-button-fix">
     <title>Saved Question Sets - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -178,7 +179,10 @@
     <script>
         let allQuestionSets = [];
 
+        console.log('🔵 Saved Questions Page Loaded - Version 1.0.2-button-fix');
+
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔵 DOMContentLoaded - initializing page');
             loadQuestionSets();
         });
 
@@ -280,13 +284,13 @@
                         </div>
 
                         <div class="question-set-actions">
-                            <button class="btn btn-primary" onclick="loadQuestionSet('${setId}')">
+                            <button class="btn btn-primary" onclick="event.stopPropagation(); loadQuestionSet('${setId}')">
                                 Use These Questions
                             </button>
-                            <button class="btn btn-secondary" onclick="viewQuestionSet('${setId}')">
+                            <button class="btn btn-secondary" onclick="event.stopPropagation(); viewQuestionSet('${setId}')">
                                 View All
                             </button>
-                            <button class="btn btn-danger" onclick="deleteQuestionSet('${setId}')">
+                            <button class="btn btn-danger" onclick="event.stopPropagation(); deleteQuestionSet('${setId}')">
                                 Delete
                             </button>
                         </div>
@@ -325,11 +329,20 @@
         }
 
         function loadQuestionSet(setId) {
-            console.log('Loading question set:', setId);
-            const set = allQuestionSets.find(s => (s._id || s.id) === setId);
+            console.log('=== loadQuestionSet CALLED ===');
+            console.log('setId:', setId);
+            console.log('allQuestionSets:', allQuestionSets);
+
+            const set = allQuestionSets.find(s => {
+                const id = s._id || s.id;
+                console.log('Comparing:', id, '===', setId, '?', id === setId);
+                return id === setId;
+            });
+
+            console.log('Found set:', set);
 
             if (!set) {
-                alert('Question set not found');
+                alert('Question set not found. Check console for details.');
                 return;
             }
 
@@ -337,6 +350,7 @@
             sessionStorage.setItem('pendingQuestions', JSON.stringify(set.questions));
             sessionStorage.setItem('fromSavedSet', 'true');
 
+            console.log('✅ Questions saved to sessionStorage');
             alert(`Loaded "${set.name}" with ${set.questionCount} questions!\n\nGo to Classes → Create Session → Quick Poll to use them.`);
         }
 
