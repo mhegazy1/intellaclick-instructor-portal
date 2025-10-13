@@ -298,6 +298,18 @@
                     <input type="text" id="sessionName" placeholder="e.g., Week 3 Review" required>
                 </div>
 
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="enableGamification" checked style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-weight: 600; font-size: 14px;">🏆 Enable Gamification</span>
+                            <span style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">
+                                Students will earn points, achievements, and level up during this session
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
                 <div class="form-group" id="quickPollConfig" style="display: none;">
                     <!-- Load Saved Questions Button -->
                     <div style="margin-bottom: 16px;">
@@ -796,7 +808,8 @@
                 description: `${selectedType === 'quick' ? 'Quick Poll' : 'Quiz Session'} for ${classData.name}`,
                 requireLogin: !document.getElementById('allowAnonymous').checked, // Invert anonymous flag
                 classId: classId, // Add class ID for enrollment checking
-                restrictToEnrolled: !document.getElementById('openToAll').checked // Restrict by default
+                restrictToEnrolled: !document.getElementById('openToAll').checked, // Restrict by default
+                gamificationEnabled: document.getElementById('enableGamification').checked // Enable/disable gamification
             };
             
             if (selectedType === 'quick') {
