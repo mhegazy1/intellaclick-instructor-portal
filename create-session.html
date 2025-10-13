@@ -313,7 +313,7 @@
                 <div class="form-group" id="quickPollConfig" style="display: none;">
                     <!-- Load Saved Questions Button -->
                     <div style="margin-bottom: 16px;">
-                        <button type="button" class="btn btn-secondary" onclick="window.location.href='/saved-questions.html'" style="width: 100%;">
+                        <button type="button" class="btn btn-secondary" onclick="goToSavedQuestions()" style="width: 100%;">
                             📂 Manage Saved Question Sets
                         </button>
                     </div>
@@ -909,9 +909,20 @@
             }, 3000);
         }
 
+        function goToSavedQuestions() {
+            // Save current URL so we can return here
+            const returnUrl = window.location.href;
+            sessionStorage.setItem('createSessionUrl', returnUrl);
+
+            console.log('Navigating to saved questions, returnUrl:', returnUrl);
+
+            // Navigate with returnUrl parameter
+            window.location.href = `/saved-questions.html?returnUrl=${encodeURIComponent(returnUrl)}`;
+        }
+
+        // Legacy function name for compatibility
         function loadSavedQuestions() {
-            // Redirect to saved questions page which loads from cloud
-            window.location.href = '/saved-questions.html';
+            goToSavedQuestions();
         }
 
         function insertBlank() {

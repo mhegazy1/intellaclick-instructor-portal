@@ -351,7 +351,19 @@
             sessionStorage.setItem('fromSavedSet', 'true');
 
             console.log('✅ Questions saved to sessionStorage');
-            alert(`✅ Loaded "${set.name}" with ${set.questionCount} questions!\n\nGo to Classes → Start Session to use them.\n\n(Quick Poll mode will be automatically selected)`);
+
+            // Get the classId from URL or sessionStorage to navigate back
+            const urlParams = new URLSearchParams(window.location.search);
+            const returnUrl = urlParams.get('returnUrl') || sessionStorage.getItem('createSessionUrl');
+
+            if (returnUrl) {
+                // Automatically navigate back to create-session page
+                console.log('Navigating back to:', returnUrl);
+                window.location.href = returnUrl;
+            } else {
+                // Fallback: show alert if we don't know where to return
+                alert(`✅ Loaded "${set.name}" with ${set.questionCount} questions!\n\nGo back to the session page to use them.`);
+            }
         }
 
         function viewQuestionSet(setId) {
