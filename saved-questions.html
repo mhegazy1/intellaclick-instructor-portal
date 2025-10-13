@@ -324,8 +324,14 @@
             renderQuestionSets(filtered);
         }
 
-        function loadQuestionSet(index) {
-            const set = allQuestionSets[index];
+        function loadQuestionSet(setId) {
+            console.log('Loading question set:', setId);
+            const set = allQuestionSets.find(s => (s._id || s.id) === setId);
+
+            if (!set) {
+                alert('Question set not found');
+                return;
+            }
 
             // Store in sessionStorage
             sessionStorage.setItem('pendingQuestions', JSON.stringify(set.questions));
@@ -334,8 +340,14 @@
             alert(`Loaded "${set.name}" with ${set.questionCount} questions!\n\nGo to Classes → Create Session → Quick Poll to use them.`);
         }
 
-        function viewQuestionSet(index) {
-            const set = allQuestionSets[index];
+        function viewQuestionSet(setId) {
+            console.log('Viewing question set:', setId);
+            const set = allQuestionSets.find(s => (s._id || s.id) === setId);
+
+            if (!set) {
+                alert('Question set not found');
+                return;
+            }
 
             let details = `<div style="max-width: 600px; text-align: left;">
                 <h3>${set.name}</h3>
@@ -363,15 +375,40 @@
             });
         }
 
-        function deleteQuestionSet(index) {
-            const set = allQuestionSets[index];
+        async function deleteQuestionSet(setId) {
+            console.log('Deleting question set:', setId);
+            const set = allQuestionSets.find(s => (s._id || s.id) === setId);
+
+            if (!set) {
+                alert('Question set not found');
+                return;
+            }
 
             if (!confirm(`Delete "${set.name}"?\n\nThis cannot be undone.`)) return;
 
-            allQuestionSets.splice(index, 1);
-            localStorage.setItem('savedQuestionSets', JSON.stringify(allQuestionSets));
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`https://api.intellaclick.com/api/question-sets/${setId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-            loadQuestionSets();
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to delete question set');
+                }
+
+                console.log('✅ Question set deleted successfully');
+                alert('Question set deleted successfully');
+
+                // Reload the list
+                loadQuestionSets();
+            } catch (error) {
+                console.error('Error deleting question set:', error);
+                alert(`Failed to delete question set: ${error.message}`);
+            }
         }
 
         function checkAuth() {
