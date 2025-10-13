@@ -474,7 +474,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             classId = urlParams.get('classId');
-            
+
             if (!classId) {
                 window.location.href = '/classes.html';
                 return;
@@ -482,8 +482,23 @@
 
             checkAuth();
             loadClassInfo();
-            
+
             document.getElementById('sessionForm').addEventListener('submit', handleStartSession);
+
+            // Auto-select Quick Poll if there are saved questions waiting
+            const fromSavedSet = sessionStorage.getItem('fromSavedSet');
+            const pendingQuestions = sessionStorage.getItem('pendingQuestions');
+
+            console.log('🔵 Page loaded - checking for pending questions');
+            console.log('fromSavedSet:', fromSavedSet);
+            console.log('pendingQuestions:', pendingQuestions ? 'exists' : 'none');
+
+            if (fromSavedSet === 'true' && pendingQuestions) {
+                console.log('✅ Auto-selecting Quick Poll mode');
+                setTimeout(() => {
+                    selectSessionType('quick');
+                }, 500); // Small delay to ensure UI is ready
+            }
         });
 
         function checkAuth() {
@@ -522,6 +537,8 @@
         }
 
         function selectSessionType(type) {
+            console.log('=== selectSessionType called ===');
+            console.log('type:', type);
             selectedType = type;
 
             // Clear quick poll questions when switching session type
@@ -532,14 +549,21 @@
                 const fromSavedSet = sessionStorage.getItem('fromSavedSet');
                 const pendingQuestions = sessionStorage.getItem('pendingQuestions');
 
+                console.log('fromSavedSet:', fromSavedSet);
+                console.log('pendingQuestions:', pendingQuestions ? `${pendingQuestions.length} chars` : 'null');
+
                 if (fromSavedSet === 'true' && pendingQuestions) {
                     try {
                         quickPollQuestions = JSON.parse(pendingQuestions);
+                        console.log('✅ Loaded questions:', quickPollQuestions.length);
                         sessionStorage.removeItem('fromSavedSet'); // Clear flag
+                        sessionStorage.removeItem('pendingQuestions'); // Also clear questions
                         showToast(`Loaded ${quickPollQuestions.length} questions from saved set`, 'success');
                     } catch (e) {
-                        console.error('Error loading saved questions:', e);
+                        console.error('❌ Error loading saved questions:', e);
                     }
+                } else {
+                    console.log('No pending questions found');
                 }
 
                 renderQuestionsList(); // Show existing questions if any
