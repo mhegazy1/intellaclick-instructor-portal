@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.0.3-debug-logging">
+    <meta name="version" content="1.0.4-nested-error-fix">
     <title>Session History - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -794,7 +794,21 @@
                         try {
                             const errorData = JSON.parse(responseText);
                             console.log('Parsed error data:', errorData);
-                            errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+
+                            // Extract error message from various possible structures
+                            if (errorData.error && typeof errorData.error === 'object' && errorData.error.message) {
+                                // Nested error object: {error: {message: "...", status: 404}}
+                                errorMessage = errorData.error.message;
+                            } else if (errorData.error && typeof errorData.error === 'string') {
+                                // Error as string: {error: "..."}
+                                errorMessage = errorData.error;
+                            } else if (errorData.message) {
+                                // Direct message: {message: "..."}
+                                errorMessage = errorData.message;
+                            } else {
+                                // Fallback to stringified JSON
+                                errorMessage = JSON.stringify(errorData);
+                            }
                         } catch (parseError) {
                             console.log('Could not parse as JSON, using text:', responseText);
                             errorMessage = responseText;
@@ -920,7 +934,17 @@
                         if (responseText) {
                             try {
                                 const errorData = JSON.parse(responseText);
-                                errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+
+                                // Extract error message from various possible structures
+                                if (errorData.error && typeof errorData.error === 'object' && errorData.error.message) {
+                                    errorMessage = errorData.error.message;
+                                } else if (errorData.error && typeof errorData.error === 'string') {
+                                    errorMessage = errorData.error;
+                                } else if (errorData.message) {
+                                    errorMessage = errorData.message;
+                                } else {
+                                    errorMessage = JSON.stringify(errorData);
+                                }
                             } catch (e) {
                                 errorMessage = responseText;
                             }
