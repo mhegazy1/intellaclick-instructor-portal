@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.0.1-delete-fix-summary">
+    <meta name="version" content="1.0.2-bulk-delete">
     <title>Session History - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -190,6 +190,7 @@
             gap: 1rem;
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .filter-section select,
@@ -197,6 +198,28 @@
             padding: 0.5rem;
             border: 1px solid var(--border);
             border-radius: 6px;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+
+        .session-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .session-card-header {
+            display: flex;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .session-card-content {
+            flex: 1;
         }
 
         .summary-section {
@@ -259,6 +282,14 @@
                 <option value="ended">Ended</option>
                 <option value="active">Active</option>
             </select>
+            <div class="bulk-actions">
+                <button class="btn btn-secondary" onclick="toggleSelectAll()">
+                    <span id="selectAllText">Select All</span>
+                </button>
+                <button class="btn btn-danger" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                    Delete Selected (<span id="selectedCount">0</span>)
+                </button>
+            </div>
         </div>
 
         <div id="historyContainer" class="history-grid">
@@ -290,6 +321,7 @@
     <script>
         let allSessions = [];
         let currentSession = null;
+        let selectedSessions = new Set();
 
         document.addEventListener('DOMContentLoaded', () => {
             loadSessions();
@@ -346,44 +378,54 @@
                 const participantCount = session.participantCount || 0;
                 const questionCount = session.totalQuestions || 0;
                 const responseCount = session.responseCount || 0;
+                const isSelected = selectedSessions.has(session.id);
 
                 return `
-                    <div class="session-card ${session.status}" onclick="viewSession('${session.id}')">
-                        <div class="session-header">
-                            <div>
-                                <div class="session-title">${session.title || 'Untitled Session'}</div>
-                                <div class="session-code">Code: ${session.sessionCode}</div>
-                            </div>
-                            <span class="status-badge status-${session.status}">${session.status}</span>
-                        </div>
+                    <div class="session-card ${session.status}">
+                        <div class="session-card-header">
+                            <input type="checkbox" class="session-checkbox"
+                                   data-session-id="${session.id}"
+                                   ${isSelected ? 'checked' : ''}
+                                   onclick="event.stopPropagation(); toggleSessionSelection('${session.id}')"
+                                   style="margin-top: 4px;">
+                            <div class="session-card-content" onclick="viewSession('${session.id}')">
+                                <div class="session-header">
+                                    <div>
+                                        <div class="session-title">${session.title || 'Untitled Session'}</div>
+                                        <div class="session-code">Code: ${session.sessionCode}</div>
+                                    </div>
+                                    <span class="status-badge status-${session.status}">${session.status}</span>
+                                </div>
 
-                        <div class="session-stats">
-                            <div class="stat-item">
-                                <div class="stat-value">${participantCount}</div>
-                                <div class="stat-label">Students</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">${questionCount}</div>
-                                <div class="stat-label">Questions</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">${responseCount}</div>
-                                <div class="stat-label">Responses</div>
-                            </div>
-                        </div>
+                                <div class="session-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-value">${participantCount}</div>
+                                        <div class="stat-label">Students</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${questionCount}</div>
+                                        <div class="stat-label">Questions</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${responseCount}</div>
+                                        <div class="stat-label">Responses</div>
+                                    </div>
+                                </div>
 
-                        <div class="session-date">📅 ${date} at ${time}</div>
+                                <div class="session-date">📅 ${date} at ${time}</div>
 
-                        <div class="session-actions" onclick="event.stopPropagation()">
-                            <button class="btn btn-view" onclick="viewSession('${session.id}')">
-                                View Details
-                            </button>
-                            <button class="btn btn-export" onclick="exportSession('${session.id}')">
-                                Export CSV
-                            </button>
-                            <button class="btn btn-delete" onclick="deleteSession('${session.id}')">
-                                Delete
-                            </button>
+                                <div class="session-actions" onclick="event.stopPropagation()">
+                                    <button class="btn btn-view" onclick="viewSession('${session.id}')">
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-export" onclick="exportSession('${session.id}')">
+                                        Export CSV
+                                    </button>
+                                    <button class="btn btn-delete" onclick="deleteSession('${session.id}')">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -735,20 +777,142 @@
                 console.log('Delete response status:', response.status);
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.error('Delete error:', errorData);
-                    throw new Error(errorData.error || errorData.message || `Failed to delete session (${response.status})`);
+                    let errorMessage = `HTTP ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        console.error('Delete error data:', errorData);
+                        errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+                    } catch (parseError) {
+                        const errorText = await response.text();
+                        console.error('Delete error text:', errorText);
+                        errorMessage = errorText || errorMessage;
+                    }
+                    throw new Error(errorMessage);
                 }
 
-                const result = await response.json();
+                const result = await response.json().catch(() => ({ success: true }));
                 console.log('Delete result:', result);
 
                 alert('Session deleted successfully');
                 loadSessions(); // Reload the list
             } catch (error) {
                 console.error('Error deleting session:', error);
-                alert(`Failed to delete session: ${error.message}`);
+                const errorMsg = error.message || String(error);
+                alert(`Failed to delete session: ${errorMsg}`);
             }
+        }
+
+        // ========== BULK DELETE FUNCTIONS ==========
+
+        function toggleSessionSelection(sessionId) {
+            if (selectedSessions.has(sessionId)) {
+                selectedSessions.delete(sessionId);
+            } else {
+                selectedSessions.add(sessionId);
+            }
+            updateSelectionUI();
+        }
+
+        function toggleSelectAll() {
+            const visibleSessions = Array.from(document.querySelectorAll('.session-checkbox'));
+
+            if (selectedSessions.size === visibleSessions.length && visibleSessions.length > 0) {
+                // All are selected, deselect all
+                selectedSessions.clear();
+            } else {
+                // Select all visible
+                visibleSessions.forEach(checkbox => {
+                    selectedSessions.add(checkbox.dataset.sessionId);
+                });
+            }
+
+            // Re-render to update checkboxes
+            renderSessions(allSessions.filter(session => {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const status = document.getElementById('statusFilter').value;
+                const matchesSearch = session.title.toLowerCase().includes(searchTerm) ||
+                                    session.sessionCode.toLowerCase().includes(searchTerm);
+                const matchesStatus = status === 'all' || session.status === status;
+                return matchesSearch && matchesStatus;
+            }));
+            updateSelectionUI();
+        }
+
+        function updateSelectionUI() {
+            const count = selectedSessions.size;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('deleteSelectedBtn').disabled = count === 0;
+
+            const visibleCheckboxes = document.querySelectorAll('.session-checkbox');
+            const allSelected = count > 0 && count === visibleCheckboxes.length;
+            document.getElementById('selectAllText').textContent = allSelected ? 'Deselect All' : 'Select All';
+        }
+
+        async function deleteSelected() {
+            const count = selectedSessions.size;
+            if (count === 0) return;
+
+            if (!confirm(`Are you sure you want to delete ${count} session(s)? This cannot be undone.`)) {
+                return;
+            }
+
+            const sessionIds = Array.from(selectedSessions);
+            const token = localStorage.getItem('token');
+
+            let successCount = 0;
+            let failCount = 0;
+            const errors = [];
+
+            // Show progress
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const originalText = deleteBtn.innerHTML;
+            deleteBtn.disabled = true;
+
+            for (let i = 0; i < sessionIds.length; i++) {
+                const sessionId = sessionIds[i];
+                deleteBtn.innerHTML = `Deleting ${i + 1}/${sessionIds.length}...`;
+
+                try {
+                    const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        successCount++;
+                        selectedSessions.delete(sessionId);
+                    } else {
+                        let errorMessage = `HTTP ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+                        } catch (e) {
+                            const errorText = await response.text();
+                            errorMessage = errorText || errorMessage;
+                        }
+                        failCount++;
+                        errors.push(`Session ${sessionId}: ${errorMessage}`);
+                    }
+                } catch (error) {
+                    failCount++;
+                    errors.push(`Session ${sessionId}: ${error.message}`);
+                }
+            }
+
+            deleteBtn.innerHTML = originalText;
+
+            // Show results
+            let message = `Successfully deleted ${successCount} session(s).`;
+            if (failCount > 0) {
+                message += `\n\nFailed to delete ${failCount} session(s):\n${errors.join('\n')}`;
+            }
+            alert(message);
+
+            // Reload the list
+            await loadSessions();
+            updateSelectionUI();
         }
     </script>
 </body>
