@@ -1337,7 +1337,7 @@
             document.getElementById('editClassId').value = classId;
 
             // Show modal
-            document.getElementById('editClassModal').style.display = 'flex';
+            document.getElementById('editClassModal').classList.add('show');
         }
 
         async function saveClassEdits() {
@@ -1375,7 +1375,7 @@
         }
 
         function closeEditClassModal() {
-            document.getElementById('editClassModal').style.display = 'none';
+            document.getElementById('editClassModal').classList.remove('show');
         }
 
         async function deleteClass(event, classId, className) {
@@ -1574,28 +1574,27 @@
     </div>
 
     <!-- Edit Class Modal -->
-    <div id="editClassModal" class="modal-overlay" style="display: none;">
+    <div id="editClassModal" class="modal" onclick="if(event.target === this) closeEditClassModal()">
         <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="font-size: 24px; font-weight: 700;">Edit Class Settings</h2>
-                <button onclick="closeEditClassModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+            <div class="modal-header">
+                <h2>Edit Class Settings</h2>
+                <p style="color: var(--text-secondary); font-size: 14px;">Update class name and description</p>
             </div>
 
-            <div style="margin-bottom: 16px;">
-                <label for="editClassName" style="display: block; margin-bottom: 8px; font-weight: 600;">Class Name *</label>
-                <input type="text" id="editClassName" placeholder="e.g., Introduction to Psychology"
-                       style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 16px;">
+            <div class="form-group">
+                <label for="editClassName">Class Name *</label>
+                <input type="text" id="editClassName" placeholder="e.g., Introduction to Psychology" required>
             </div>
 
-            <div style="margin-bottom: 24px;">
-                <label for="editClassDescription" style="display: block; margin-bottom: 8px; font-weight: 600;">Description (optional)</label>
+            <div class="form-group">
+                <label for="editClassDescription">Description (optional)</label>
                 <textarea id="editClassDescription" placeholder="Brief description of the class..." rows="3"
-                          style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 16px; resize: vertical;"></textarea>
+                          style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; resize: vertical;"></textarea>
             </div>
 
             <input type="hidden" id="editClassId">
 
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeEditClassModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="saveClassEdits()">Save Changes</button>
             </div>
