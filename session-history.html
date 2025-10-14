@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.0.2-bulk-delete">
+    <meta name="version" content="1.0.3-debug-logging">
     <title>Session History - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -765,40 +765,62 @@
 
             try {
                 const token = localStorage.getItem('token');
-                console.log('Attempting to delete session:', sessionId);
+                console.log('=== DELETE SESSION DEBUG ===');
+                console.log('Session ID:', sessionId);
+                console.log('Token present:', !!token);
+                console.log('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'N/A');
+                console.log('Request URL:', `https://api.intellaclick.com/api/sessions/${sessionId}`);
 
                 const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
                     method: 'DELETE',
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
 
-                console.log('Delete response status:', response.status);
+                console.log('Response status:', response.status);
+                console.log('Response statusText:', response.statusText);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+                // Try to get response body
+                const responseText = await response.text();
+                console.log('Response body (raw text):', responseText);
 
                 if (!response.ok) {
-                    let errorMessage = `HTTP ${response.status}`;
-                    try {
-                        const errorData = await response.json();
-                        console.error('Delete error data:', errorData);
-                        errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
-                    } catch (parseError) {
-                        const errorText = await response.text();
-                        console.error('Delete error text:', errorText);
-                        errorMessage = errorText || errorMessage;
+                    let errorMessage = `HTTP ${response.status} ${response.statusText}`;
+
+                    if (responseText) {
+                        try {
+                            const errorData = JSON.parse(responseText);
+                            console.log('Parsed error data:', errorData);
+                            errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+                        } catch (parseError) {
+                            console.log('Could not parse as JSON, using text:', responseText);
+                            errorMessage = responseText;
+                        }
                     }
+
+                    console.error('DELETE FAILED:', errorMessage);
+                    console.log('=== END DEBUG ===');
+
                     throw new Error(errorMessage);
                 }
 
-                const result = await response.json().catch(() => ({ success: true }));
-                console.log('Delete result:', result);
+                console.log('DELETE SUCCESS');
+                console.log('=== END DEBUG ===');
 
                 alert('Session deleted successfully');
                 loadSessions(); // Reload the list
             } catch (error) {
                 console.error('Error deleting session:', error);
+                console.error('Error type:', error.constructor.name);
+                console.error('Error stack:', error.stack);
+
                 const errorMsg = error.message || String(error);
-                alert(`Failed to delete session: ${errorMsg}`);
+
+                // Show detailed error in alert
+                alert(`Failed to delete session\n\nError: ${errorMsg}\n\nCheck browser console (F12) for full details.`);
             }
         }
 
@@ -872,32 +894,45 @@
                 const sessionId = sessionIds[i];
                 deleteBtn.innerHTML = `Deleting ${i + 1}/${sessionIds.length}...`;
 
+                console.log(`\n=== BULK DELETE ${i + 1}/${sessionIds.length} ===`);
+                console.log('Session ID:', sessionId);
+
                 try {
                     const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}`, {
                         method: 'DELETE',
                         headers: {
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
                         }
                     });
 
+                    console.log('Response status:', response.status);
+
+                    const responseText = await response.text();
+                    console.log('Response body:', responseText);
+
                     if (response.ok) {
+                        console.log('✅ Delete successful');
                         successCount++;
                         selectedSessions.delete(sessionId);
                     } else {
                         let errorMessage = `HTTP ${response.status}`;
-                        try {
-                            const errorData = await response.json();
-                            errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
-                        } catch (e) {
-                            const errorText = await response.text();
-                            errorMessage = errorText || errorMessage;
+                        if (responseText) {
+                            try {
+                                const errorData = JSON.parse(responseText);
+                                errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+                            } catch (e) {
+                                errorMessage = responseText;
+                            }
                         }
+                        console.error('❌ Delete failed:', errorMessage);
                         failCount++;
-                        errors.push(`Session ${sessionId}: ${errorMessage}`);
+                        errors.push(`${sessionId.substring(0, 8)}: ${errorMessage}`);
                     }
                 } catch (error) {
+                    console.error('❌ Exception:', error.message);
                     failCount++;
-                    errors.push(`Session ${sessionId}: ${error.message}`);
+                    errors.push(`${sessionId.substring(0, 8)}: ${error.message}`);
                 }
             }
 
