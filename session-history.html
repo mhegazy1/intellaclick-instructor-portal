@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.0.5-refresh-fix">
+    <meta name="version" content="1.0.6-pagination">
     <title>Session History - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -200,6 +200,40 @@
             border-radius: 6px;
         }
 
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .page-size-selector label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
         .bulk-actions {
             display: flex;
             gap: 0.5rem;
@@ -303,6 +337,43 @@
             <h3>No Sessions Found</h3>
             <p>You haven't created any sessions yet.</p>
         </div>
+
+        <!-- Pagination Controls -->
+        <div id="paginationControls" class="pagination-controls" style="display: none;">
+            <div class="page-size-selector">
+                <label>Show:</label>
+                <select id="pageSizeSelect" onchange="changePageSize()">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="all">All</option>
+                </select>
+                <span style="font-size: 0.9rem; color: var(--text-secondary);">per page</span>
+            </div>
+
+            <div class="pagination-info">
+                Showing <strong id="showingStart">1</strong> to <strong id="showingEnd">20</strong> of <strong id="totalSessions">0</strong> sessions
+            </div>
+
+            <div class="pagination-buttons">
+                <button class="btn btn-secondary" onclick="goToFirstPage()" id="firstPageBtn" disabled>
+                    ⏮ First
+                </button>
+                <button class="btn btn-secondary" onclick="previousPage()" id="prevPageBtn" disabled>
+                    ← Previous
+                </button>
+                <span style="padding: 0 1rem; font-weight: 600;">
+                    Page <span id="currentPageNum">1</span> of <span id="totalPagesNum">1</span>
+                </span>
+                <button class="btn btn-secondary" onclick="nextPage()" id="nextPageBtn" disabled>
+                    Next →
+                </button>
+                <button class="btn btn-secondary" onclick="goToLastPage()" id="lastPageBtn" disabled>
+                    Last ⏭
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- View Session Modal -->
@@ -320,8 +391,11 @@
 
     <script>
         let allSessions = [];
+        let filteredSessions = [];
         let currentSession = null;
         let selectedSessions = new Set();
+        let currentPage = 1;
+        let pageSize = 20;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadSessions();
@@ -335,7 +409,8 @@
                     return;
                 }
 
-                const response = await fetch('https://api.intellaclick.com/api/sessions', {
+                // Fetch all sessions (no limit)
+                const response = await fetch('https://api.intellaclick.com/api/sessions?limit=1000', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -349,7 +424,9 @@
                 allSessions = data.sessions || [];
 
                 console.log(`Loaded ${allSessions.length} sessions`);
-                renderSessions(allSessions);
+
+                // Apply any active filters
+                filterSessions();
             } catch (error) {
                 console.error('Error loading sessions:', error);
                 alert('Failed to load session history');
@@ -359,17 +436,43 @@
         function renderSessions(sessions) {
             const container = document.getElementById('historyContainer');
             const emptyState = document.getElementById('emptyState');
+            const paginationControls = document.getElementById('paginationControls');
 
             if (sessions.length === 0) {
                 container.style.display = 'none';
                 emptyState.style.display = 'block';
+                paginationControls.style.display = 'none';
                 return;
+            }
+
+            // Calculate pagination
+            const totalSessions = sessions.length;
+            const totalPages = pageSize === 'all' ? 1 : Math.ceil(totalSessions / pageSize);
+
+            // Adjust current page if needed
+            if (currentPage > totalPages) {
+                currentPage = Math.max(1, totalPages);
+            }
+
+            // Get sessions for current page
+            let displaySessions;
+            let startIndex, endIndex;
+
+            if (pageSize === 'all') {
+                displaySessions = sessions;
+                startIndex = 1;
+                endIndex = totalSessions;
+            } else {
+                startIndex = (currentPage - 1) * pageSize + 1;
+                endIndex = Math.min(currentPage * pageSize, totalSessions);
+                displaySessions = sessions.slice(startIndex - 1, endIndex);
             }
 
             container.style.display = 'grid';
             emptyState.style.display = 'none';
+            paginationControls.style.display = totalSessions > 10 ? 'flex' : 'none';
 
-            container.innerHTML = sessions.map(session => {
+            container.innerHTML = displaySessions.map(session => {
                 const date = new Date(session.createdAt).toLocaleDateString();
                 const time = new Date(session.createdAt).toLocaleTimeString([], {
                     hour: '2-digit',
@@ -430,20 +533,78 @@
                     </div>
                 `;
             }).join('');
+
+            // Update pagination UI
+            document.getElementById('showingStart').textContent = startIndex;
+            document.getElementById('showingEnd').textContent = endIndex;
+            document.getElementById('totalSessions').textContent = totalSessions;
+            document.getElementById('currentPageNum').textContent = currentPage;
+            document.getElementById('totalPagesNum').textContent = totalPages;
+
+            // Enable/disable pagination buttons
+            document.getElementById('firstPageBtn').disabled = currentPage === 1;
+            document.getElementById('prevPageBtn').disabled = currentPage === 1;
+            document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
+            document.getElementById('lastPageBtn').disabled = currentPage === totalPages;
         }
 
         function filterSessions() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const status = document.getElementById('statusFilter').value;
 
-            const filtered = allSessions.filter(session => {
+            filteredSessions = allSessions.filter(session => {
                 const matchesSearch = session.title.toLowerCase().includes(searchTerm) ||
                                     session.sessionCode.toLowerCase().includes(searchTerm);
                 const matchesStatus = status === 'all' || session.status === status;
                 return matchesSearch && matchesStatus;
             });
 
-            renderSessions(filtered);
+            // Reset to first page when filtering
+            currentPage = 1;
+            renderSessions(filteredSessions);
+        }
+
+        // ========== PAGINATION FUNCTIONS ==========
+
+        function changePageSize() {
+            const select = document.getElementById('pageSizeSelect');
+            pageSize = select.value === 'all' ? 'all' : parseInt(select.value);
+            currentPage = 1; // Reset to first page
+            renderSessions(filteredSessions);
+        }
+
+        function nextPage() {
+            const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredSessions.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderSessions(filteredSessions);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderSessions(filteredSessions);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function goToFirstPage() {
+            if (currentPage !== 1) {
+                currentPage = 1;
+                renderSessions(filteredSessions);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function goToLastPage() {
+            const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredSessions.length / pageSize);
+            if (currentPage !== totalPages) {
+                currentPage = totalPages;
+                renderSessions(filteredSessions);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
         async function viewSession(sessionId) {
@@ -877,14 +1038,7 @@
             }
 
             // Re-render to update checkboxes
-            renderSessions(allSessions.filter(session => {
-                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-                const status = document.getElementById('statusFilter').value;
-                const matchesSearch = session.title.toLowerCase().includes(searchTerm) ||
-                                    session.sessionCode.toLowerCase().includes(searchTerm);
-                const matchesStatus = status === 'all' || session.status === status;
-                return matchesSearch && matchesStatus;
-            }));
+            renderSessions(filteredSessions);
             updateSelectionUI();
         }
 
