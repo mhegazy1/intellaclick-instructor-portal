@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.0.6-pagination">
+    <meta name="version" content="1.0.7-filters">
     <title>Session History - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -200,6 +200,17 @@
             border-radius: 6px;
         }
 
+        .class-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #E0E7FF;
+            color: #4338CA;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
         .pagination-controls {
             display: flex;
             align-items: center;
@@ -310,8 +321,12 @@
 
         <div class="filter-section">
             <input type="text" id="searchInput" placeholder="Search by title or code..."
-                   oninput="filterSessions()">
-            <select id="statusFilter" onchange="filterSessions()">
+                   oninput="filterSessions()" style="min-width: 200px;">
+            <select id="classFilter" onchange="filterSessions()" style="min-width: 150px;">
+                <option value="all">All Classes</option>
+                <!-- Classes will be loaded dynamically -->
+            </select>
+            <select id="statusFilter" onchange="filterSessions()" style="min-width: 120px;">
                 <option value="all">All Sessions</option>
                 <option value="ended">Ended</option>
                 <option value="active">Active</option>
@@ -396,10 +411,55 @@
         let selectedSessions = new Set();
         let currentPage = 1;
         let pageSize = 20;
+        let allClasses = [];
+        let classesMap = {}; // Map of classId -> className
 
         document.addEventListener('DOMContentLoaded', () => {
+            loadClasses();
             loadSessions();
         });
+
+        async function loadClasses() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    return;
+                }
+
+                const response = await fetch('https://api.intellaclick.com/api/classes', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to load classes');
+                    return;
+                }
+
+                const data = await response.json();
+                allClasses = data.classes || [];
+
+                // Create a map for quick lookup
+                classesMap = {};
+                allClasses.forEach(cls => {
+                    classesMap[cls._id] = cls.name;
+                });
+
+                // Populate class filter dropdown
+                const classFilter = document.getElementById('classFilter');
+                allClasses.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls._id;
+                    option.textContent = cls.name;
+                    classFilter.appendChild(option);
+                });
+
+                console.log(`Loaded ${allClasses.length} classes`);
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
 
         async function loadSessions() {
             try {
@@ -482,6 +542,7 @@
                 const questionCount = session.totalQuestions || 0;
                 const responseCount = session.responseCount || 0;
                 const isSelected = selectedSessions.has(session.id);
+                const className = classesMap[session.classId] || 'No Class';
 
                 return `
                     <div class="session-card ${session.status}">
@@ -496,6 +557,7 @@
                                     <div>
                                         <div class="session-title">${session.title || 'Untitled Session'}</div>
                                         <div class="session-code">Code: ${session.sessionCode}</div>
+                                        ${session.classId ? `<div class="class-badge">📚 ${className}</div>` : ''}
                                     </div>
                                     <span class="status-badge status-${session.status}">${session.status}</span>
                                 </div>
@@ -551,12 +613,14 @@
         function filterSessions() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const status = document.getElementById('statusFilter').value;
+            const classId = document.getElementById('classFilter').value;
 
             filteredSessions = allSessions.filter(session => {
                 const matchesSearch = session.title.toLowerCase().includes(searchTerm) ||
                                     session.sessionCode.toLowerCase().includes(searchTerm);
                 const matchesStatus = status === 'all' || session.status === status;
-                return matchesSearch && matchesStatus;
+                const matchesClass = classId === 'all' || session.classId === classId;
+                return matchesSearch && matchesStatus && matchesClass;
             });
 
             // Reset to first page when filtering
