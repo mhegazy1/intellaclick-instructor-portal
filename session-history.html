@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.0.4-nested-error-fix">
+    <meta name="version" content="1.0.5-refresh-fix">
     <title>Session History - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -763,6 +763,13 @@
                 return;
             }
 
+            // Find the session card and add a deleting indicator
+            const sessionCard = document.querySelector(`[data-session-id="${sessionId}"]`)?.closest('.session-card');
+            if (sessionCard) {
+                sessionCard.style.opacity = '0.5';
+                sessionCard.style.pointerEvents = 'none';
+            }
+
             try {
                 const token = localStorage.getItem('token');
                 console.log('=== DELETE SESSION DEBUG ===');
@@ -824,12 +831,19 @@
                 console.log('DELETE SUCCESS');
                 console.log('=== END DEBUG ===');
 
+                // Reload the list first, then show alert
+                await loadSessions();
                 alert('Session deleted successfully');
-                loadSessions(); // Reload the list
             } catch (error) {
                 console.error('Error deleting session:', error);
                 console.error('Error type:', error.constructor.name);
                 console.error('Error stack:', error.stack);
+
+                // Restore card if delete failed
+                if (sessionCard) {
+                    sessionCard.style.opacity = '1';
+                    sessionCard.style.pointerEvents = 'auto';
+                }
 
                 const errorMsg = error.message || String(error);
 
@@ -967,11 +981,16 @@
             if (failCount > 0) {
                 message += `\n\nFailed to delete ${failCount} session(s):\n${errors.join('\n')}`;
             }
-            alert(message);
 
-            // Reload the list
+            // Reload the list first
             await loadSessions();
+
+            // Clear selection state for successfully deleted sessions
+            selectedSessions.clear();
             updateSelectionUI();
+
+            // Then show the alert
+            alert(message);
         }
     </script>
 </body>
