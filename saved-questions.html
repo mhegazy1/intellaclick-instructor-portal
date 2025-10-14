@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.0.3-selector-edit">
+    <meta name="version" content="1.0.4-full-edit">
     <title>Saved Question Sets - IntellaClick</title>
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -597,6 +597,12 @@
 
         function closeQuestionBuilder() {
             document.getElementById('questionBuilderModal').style.display = 'none';
+
+            // If we were editing from selector and cancelled, re-show selector
+            if (editingSelectorQuestionIndex !== null) {
+                editingSelectorQuestionIndex = null;
+                document.getElementById('questionSelectorModal').style.display = 'flex';
+            }
         }
 
         function updateQuestionBuilderUI() {
@@ -644,9 +650,11 @@
             }
         }
 
-        function saveQuestion(event) {
+        async function saveQuestion(event) {
             event.preventDefault();
             console.log('=== saveQuestion called ===');
+            console.log('currentEditingIndex:', currentEditingIndex);
+            console.log('editingSelectorQuestionIndex:', editingSelectorQuestionIndex);
 
             try {
                 const type = document.getElementById('builderQuestionType').value;
@@ -684,12 +692,29 @@
                     console.log('TF correct answer:', question.correctAnswer);
                 }
 
-                newSetQuestions.push(question);
-                console.log('✅ Question added. Total questions:', newSetQuestions.length);
+                // Check if we're editing from the selector modal
+                if (editingSelectorQuestionIndex !== null) {
+                    closeQuestionBuilder();
+                    await saveSelectorQuestionEdit(question);
+                    return;
+                }
+
+                // Otherwise, handle normal create/edit flow
+                if (currentEditingIndex !== null) {
+                    // Update existing question in newSetQuestions
+                    newSetQuestions[currentEditingIndex] = question;
+                    console.log('✅ Question updated at index:', currentEditingIndex);
+                } else {
+                    // Add new question
+                    newSetQuestions.push(question);
+                    console.log('✅ Question added. Total questions:', newSetQuestions.length);
+                }
+
                 renderNewQuestionsList();
                 closeQuestionBuilder();
 
                 // Reset for next question
+                currentEditingIndex = null;
                 optionCount = 0;
                 document.getElementById('optionsList').innerHTML = '';
             } catch (error) {
@@ -715,9 +740,46 @@
                         <div style="font-weight: 600; margin-bottom: 0.25rem;">Q${index + 1}: ${q.text}</div>
                         <div style="font-size: 0.875rem; color: #6b7280;">Type: ${q.type === 'mcq' ? 'Multiple Choice' : 'True/False'}</div>
                     </div>
-                    <button class="btn btn-danger" onclick="removeNewQuestion(${index})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Remove</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="editNewQuestion(${index})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Edit</button>
+                        <button class="btn btn-danger" onclick="removeNewQuestion(${index})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Remove</button>
+                    </div>
                 </div>
             `).join('');
+        }
+
+        function editNewQuestion(index) {
+            const question = newSetQuestions[index];
+            currentEditingIndex = index;
+
+            // Populate the question builder with existing data
+            document.getElementById('builderQuestionType').value = question.type;
+            document.getElementById('builderQuestionText').value = question.text;
+
+            if (question.type === 'mcq') {
+                // Clear existing options
+                document.getElementById('optionsList').innerHTML = '';
+                optionCount = 0;
+
+                // Add options from the question
+                question.options.forEach((optionText, idx) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+                    optionDiv.innerHTML = `
+                        <input type="radio" name="correctAnswer" value="${idx}" ${idx === question.correctAnswer ? 'checked' : ''} style="width: 20px; height: 20px;">
+                        <input type="text" class="option-input" value="${optionText}" placeholder="Option ${String.fromCharCode(65 + idx)}" required style="flex: 1; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 6px;">
+                        <button type="button" onclick="removeOption(this)" style="padding: 0.5rem; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">✕</button>
+                    `;
+                    document.getElementById('optionsList').appendChild(optionDiv);
+                    optionCount++;
+                });
+            } else {
+                // True/False
+                document.getElementById('builderTFAnswer').value = question.correctAnswer;
+            }
+
+            updateQuestionBuilderUI();
+            document.getElementById('questionBuilderModal').style.display = 'flex';
         }
 
         function removeNewQuestion(index) {
@@ -771,6 +833,7 @@
         // ========== QUESTION SELECTOR FUNCTIONS ==========
 
         let currentSelectedSetId = null;
+        let editingSelectorQuestionIndex = null;
 
         function showQuestionSelector(setId) {
             console.log('Opening question selector for set:', setId);
@@ -790,7 +853,7 @@
                 const questionText = q.text || q.questionText || 'Question';
                 return `
                     <div style="padding: 1rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.75rem;">
-                        <label style="display: flex; align-items: start; gap: 12px; cursor: pointer;">
+                        <div style="display: flex; align-items: start; gap: 12px;">
                             <input type="checkbox" class="question-checkbox" data-index="${index}" checked style="width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; margin-bottom: 0.25rem;">
@@ -798,7 +861,8 @@
                                     Q${index + 1}: ${questionText.substring(0, 80)}${questionText.length > 80 ? '...' : ''}
                                 </div>
                             </div>
-                        </label>
+                            <button class="btn btn-secondary" onclick="editSelectorQuestion(${index}); event.stopPropagation();" style="padding: 0.5rem 1rem; font-size: 0.875rem; flex-shrink: 0;">Edit</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -809,6 +873,95 @@
         function closeSelectorModal() {
             document.getElementById('questionSelectorModal').style.display = 'none';
             currentSelectedSetId = null;
+            editingSelectorQuestionIndex = null;
+        }
+
+        async function editSelectorQuestion(index) {
+            const set = allQuestionSets.find(s => (s._id || s.id) === currentSelectedSetId);
+            if (!set) {
+                alert('Question set not found');
+                return;
+            }
+
+            const question = set.questions[index];
+            editingSelectorQuestionIndex = index;
+
+            // Hide selector modal temporarily
+            document.getElementById('questionSelectorModal').style.display = 'none';
+
+            // Populate the question builder with existing data
+            document.getElementById('builderQuestionType').value = question.type;
+            document.getElementById('builderQuestionText').value = question.text || question.questionText;
+
+            if (question.type === 'mcq') {
+                // Clear existing options
+                document.getElementById('optionsList').innerHTML = '';
+                optionCount = 0;
+
+                // Add options from the question
+                question.options.forEach((optionText, idx) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+                    optionDiv.innerHTML = `
+                        <input type="radio" name="correctAnswer" value="${idx}" ${idx === question.correctAnswer ? 'checked' : ''} style="width: 20px; height: 20px;">
+                        <input type="text" class="option-input" value="${optionText}" placeholder="Option ${String.fromCharCode(65 + idx)}" required style="flex: 1; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 6px;">
+                        <button type="button" onclick="removeOption(this)" style="padding: 0.5rem; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">✕</button>
+                    `;
+                    document.getElementById('optionsList').appendChild(optionDiv);
+                    optionCount++;
+                });
+            } else {
+                // True/False
+                document.getElementById('builderTFAnswer').value = question.correctAnswer;
+            }
+
+            updateQuestionBuilderUI();
+            document.getElementById('questionBuilderModal').style.display = 'flex';
+        }
+
+        async function saveSelectorQuestionEdit(updatedQuestion) {
+            const set = allQuestionSets.find(s => (s._id || s.id) === currentSelectedSetId);
+            if (!set) {
+                alert('Question set not found');
+                return;
+            }
+
+            // Update the question in the set
+            set.questions[editingSelectorQuestionIndex] = updatedQuestion;
+
+            // Save to database
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`https://api.intellaclick.com/api/question-sets/${currentSelectedSetId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name: set.name,
+                        questions: set.questions
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to update question');
+                }
+
+                console.log('✅ Question updated in database');
+
+                // Refresh the selector modal
+                editingSelectorQuestionIndex = null;
+                showQuestionSelector(currentSelectedSetId);
+
+            } catch (error) {
+                console.error('Error updating question:', error);
+                alert(`Failed to update question: ${error.message}`);
+                // Re-show selector modal even on error
+                editingSelectorQuestionIndex = null;
+                document.getElementById('questionSelectorModal').style.display = 'flex';
+            }
         }
 
         function selectAllQuestions() {
