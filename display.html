@@ -945,13 +945,19 @@
                 if (sessionData.session) {
                     currentSession = sessionData.session; // Store session data globally
 
+                    console.log('=== SESSION DATA LOADED ===');
+                    console.log('Session showCorrectAnswer field:', sessionData.session.showCorrectAnswer);
+                    console.log('Session allowAnswerChange field:', sessionData.session.allowAnswerChange);
+
                     // Sync the showCorrectAnswer checkbox with session setting (only on first load)
                     const checkbox = document.getElementById('showCorrectAnswer');
                     if (checkbox && !checkbox.dataset.userModified) {
-                        // Default to true if not set (for sessions created before this feature)
+                        // Use session value, default to FALSE if not set
                         const shouldShow = sessionData.session.showCorrectAnswer !== undefined
                             ? sessionData.session.showCorrectAnswer
-                            : true;
+                            : false; // Changed from true to false
+
+                        console.log('Setting checkbox to:', shouldShow);
                         checkbox.checked = shouldShow;
                     }
 
