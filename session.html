@@ -1187,7 +1187,9 @@
             
             let question = {
                 text: questionText,
-                type: questionType
+                type: questionType,
+                timeLimit: 60,  // Default to 60 seconds
+                points: 10      // Default to 10 points
             };
             
             // Build question based on type
@@ -1361,7 +1363,9 @@
                             text: snapshot.questionText || q.text || '',
                             type: snapshot.type || 'mcq',
                             options: snapshot.options || [],
-                            correctAnswer: snapshot.correctAnswer || 0
+                            correctAnswer: snapshot.correctAnswer || 0,
+                            timeLimit: snapshot.timeLimit || q.timeLimit || 60,
+                            points: snapshot.points || q.points || 10
                         });
                     });
 

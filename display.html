@@ -1733,6 +1733,10 @@
                 // Ensure questionText is set
                 normalizedQuestion.questionText = question.text || question.questionText;
 
+                // Ensure timeLimit and points are set (default to 60s and 10 points if not present)
+                normalizedQuestion.timeLimit = question.timeLimit || 60;
+                normalizedQuestion.points = question.points || 10;
+
                 // For true/false, ensure options are properly formatted
                 if (question.type === 'tf') {
                     normalizedQuestion.options = ['True', 'False'];
@@ -1764,7 +1768,11 @@
                     }
                 }
 
-                console.log('Sending question to backend:', normalizedQuestion);
+                console.log('=== SENDING QUESTION DEBUG ===');
+                console.log('Original question from queue:', question);
+                console.log('Normalized question to send:', normalizedQuestion);
+                console.log('timeLimit field:', normalizedQuestion.timeLimit);
+                console.log('points field:', normalizedQuestion.points);
 
                 // Send the question
                 const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
