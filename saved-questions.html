@@ -465,8 +465,15 @@
                 return;
             }
 
+            // Ensure all questions have timeLimit and points (for backward compatibility)
+            const questionsWithDefaults = set.questions.map(q => ({
+                ...q,
+                timeLimit: q.timeLimit || 60,
+                points: q.points || 10
+            }));
+
             // Store in sessionStorage
-            sessionStorage.setItem('pendingQuestions', JSON.stringify(set.questions));
+            sessionStorage.setItem('pendingQuestions', JSON.stringify(questionsWithDefaults));
             sessionStorage.setItem('fromSavedSet', 'true');
 
             console.log('✅ Questions saved to sessionStorage');
@@ -990,8 +997,12 @@
                 return;
             }
 
-            // Get only selected questions
-            const selectedQuestions = selectedIndices.map(index => set.questions[index]);
+            // Get only selected questions and ensure they have timeLimit and points
+            const selectedQuestions = selectedIndices.map(index => ({
+                ...set.questions[index],
+                timeLimit: set.questions[index].timeLimit || 60,
+                points: set.questions[index].points || 10
+            }));
 
             // Store in sessionStorage
             sessionStorage.setItem('pendingQuestions', JSON.stringify(selectedQuestions));
