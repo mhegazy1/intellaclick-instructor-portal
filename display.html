@@ -805,6 +805,7 @@
         let sessionCode;
         let socket;
         let currentQuestion = null;
+        let currentSession = null; // Store session data including settings
         let timerInterval = null;
         let timeRemaining = 0;
         let timerEndTime = null; // End time for the timer
@@ -838,6 +839,14 @@
             // Poll for updates - every 1 second for real-time feel
             setInterval(pollSession, 1000);
             pollSession();
+
+            // Track when instructor manually changes the showCorrectAnswer checkbox
+            const showCorrectAnswerCheckbox = document.getElementById('showCorrectAnswer');
+            if (showCorrectAnswerCheckbox) {
+                showCorrectAnswerCheckbox.addEventListener('change', () => {
+                    showCorrectAnswerCheckbox.dataset.userModified = 'true';
+                });
+            }
         });
 
         function connectSocket() {
@@ -934,6 +943,14 @@
 
                 const sessionData = await sessionResponse.json();
                 if (sessionData.session) {
+                    currentSession = sessionData.session; // Store session data globally
+
+                    // Sync the showCorrectAnswer checkbox with session setting (only on first load)
+                    const checkbox = document.getElementById('showCorrectAnswer');
+                    if (checkbox && sessionData.session.showCorrectAnswer !== undefined && !checkbox.dataset.userModified) {
+                        checkbox.checked = sessionData.session.showCorrectAnswer;
+                    }
+
                     document.getElementById('participantCount').textContent = sessionData.session.participantCount || 0;
 
                     // Update response count and chart if there's a current question
@@ -1169,8 +1186,24 @@
 
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
+                    handleTimerExpiration(); // Handle timer expiration
                 }
             }, 100);
+        }
+
+        function handleTimerExpiration() {
+            // When timer expires, check if we should show correct answers
+            const keepResults = document.getElementById('keepResults').checked;
+            const showCorrect = document.getElementById('showCorrectAnswer').checked;
+
+            if (keepResults && showCorrect && currentQuestion && currentQuestion.correctAnswer) {
+                // Show correct answer when timer expires
+                highlightCorrectAnswer();
+                // Disable timer controls
+                document.getElementById('addTimeBtn').disabled = true;
+                document.getElementById('addTime30Btn').disabled = true;
+                document.getElementById('endBtn').disabled = true;
+            }
         }
 
         function updateAnalytics(data) {
