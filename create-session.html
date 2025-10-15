@@ -493,6 +493,9 @@
 
             document.getElementById('sessionForm').addEventListener('submit', handleStartSession);
 
+            // Load saved session settings from previous session
+            loadSavedSettings();
+
             // Auto-select Quick Poll if there are saved questions waiting
             const fromSavedSet = sessionStorage.getItem('fromSavedSet');
             const pendingQuestions = sessionStorage.getItem('pendingQuestions');
@@ -513,6 +516,37 @@
             const token = localStorage.getItem('token');
             if (!token) {
                 window.location.href = '/login.html';
+            }
+        }
+
+        function loadSavedSettings() {
+            try {
+                const savedSettings = localStorage.getItem('sessionSettings');
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+
+                    // Apply saved settings to checkboxes
+                    if (settings.allowAnonymous !== undefined) {
+                        document.getElementById('allowAnonymous').checked = settings.allowAnonymous;
+                    }
+                    if (settings.openToAll !== undefined) {
+                        document.getElementById('openToAll').checked = settings.openToAll;
+                    }
+                    if (settings.allowAnswerChange !== undefined) {
+                        document.getElementById('allowAnswerChange').checked = settings.allowAnswerChange;
+                    }
+                    if (settings.showCorrectAnswer !== undefined) {
+                        document.getElementById('showCorrectAnswer').checked = settings.showCorrectAnswer;
+                    }
+                    if (settings.enableGamification !== undefined) {
+                        document.getElementById('enableGamification').checked = settings.enableGamification;
+                    }
+
+                    console.log('✅ Loaded saved session settings:', settings);
+                }
+            } catch (error) {
+                console.error('Error loading saved settings:', error);
+                // Don't show error to user - just use defaults if loading fails
             }
         }
 
@@ -874,6 +908,16 @@
 
                 const result = await response.json();
                 const session = result.session || result;
+
+                // Save session settings to localStorage for next time
+                const sessionSettings = {
+                    allowAnonymous: document.getElementById('allowAnonymous').checked,
+                    openToAll: document.getElementById('openToAll').checked,
+                    allowAnswerChange: document.getElementById('allowAnswerChange').checked,
+                    showCorrectAnswer: document.getElementById('showCorrectAnswer').checked,
+                    enableGamification: document.getElementById('enableGamification').checked
+                };
+                localStorage.setItem('sessionSettings', JSON.stringify(sessionSettings));
 
                 // Show session code in toast for instructor to share
                 showToast(`Session created! Code: ${session.sessionCode || sessionCode}`, 'success');

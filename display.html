@@ -773,7 +773,7 @@
                 <div class="setting-item">
                     <span class="setting-label">Show Correct Answer</span>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="showCorrectAnswer" checked>
+                        <input type="checkbox" id="showCorrectAnswer">
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
@@ -947,8 +947,12 @@
 
                     // Sync the showCorrectAnswer checkbox with session setting (only on first load)
                     const checkbox = document.getElementById('showCorrectAnswer');
-                    if (checkbox && sessionData.session.showCorrectAnswer !== undefined && !checkbox.dataset.userModified) {
-                        checkbox.checked = sessionData.session.showCorrectAnswer;
+                    if (checkbox && !checkbox.dataset.userModified) {
+                        // Default to true if not set (for sessions created before this feature)
+                        const shouldShow = sessionData.session.showCorrectAnswer !== undefined
+                            ? sessionData.session.showCorrectAnswer
+                            : true;
+                        checkbox.checked = shouldShow;
                     }
 
                     document.getElementById('participantCount').textContent = sessionData.session.participantCount || 0;
