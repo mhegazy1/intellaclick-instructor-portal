@@ -888,6 +888,10 @@
                 allowAnswerChange: document.getElementById('allowAnswerChange').checked, // Allow students to change answer
                 showCorrectAnswer: document.getElementById('showCorrectAnswer').checked // Show correct answer when question ends
             };
+
+            console.log('=== CREATING SESSION WITH SETTINGS ===');
+            console.log('showCorrectAnswer checkbox value:', document.getElementById('showCorrectAnswer').checked);
+            console.log('Session data being sent:', sessionData);
             
             if (selectedType === 'quick') {
                 // Check if there are questions added
