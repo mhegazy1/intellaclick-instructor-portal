@@ -705,9 +705,14 @@
                 return;
             }
 
+            // Read timeLimit from the duration input
+            const timeLimit = parseInt(document.getElementById('duration').value) || 60;
+
             let question = {
                 text: questionText,
-                type: questionType
+                type: questionType,
+                timeLimit: timeLimit,
+                points: 10  // Default points
             };
 
             // Validate and add question-specific data

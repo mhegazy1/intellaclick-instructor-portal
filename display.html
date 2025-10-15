@@ -1203,18 +1203,16 @@
 
         function handleTimerExpiration() {
             // When timer expires, check if we should show correct answers
-            const keepResults = document.getElementById('keepResults').checked;
             const showCorrect = document.getElementById('showCorrectAnswer').checked;
 
             console.log('=== TIMER EXPIRED - ANSWER DISPLAY CHECK ===');
-            console.log('keepResults checked?', keepResults);
             console.log('showCorrectAnswer checked?', showCorrect);
             console.log('currentQuestion exists?', !!currentQuestion);
             console.log('currentQuestion has correctAnswer?', currentQuestion ? !!currentQuestion.correctAnswer : false);
-            console.log('Will highlight answer?', keepResults && showCorrect && currentQuestion && currentQuestion.correctAnswer);
+            console.log('Will highlight answer?', showCorrect && currentQuestion && currentQuestion.correctAnswer);
 
-            if (keepResults && showCorrect && currentQuestion && currentQuestion.correctAnswer) {
-                // Show correct answer when timer expires
+            // Show correct answer if setting is enabled (independent of keepResults)
+            if (showCorrect && currentQuestion && currentQuestion.correctAnswer) {
                 console.log('CALLING highlightCorrectAnswer() from timer expiration');
                 highlightCorrectAnswer();
                 // Disable timer controls
@@ -1223,6 +1221,7 @@
                 document.getElementById('endBtn').disabled = true;
             } else {
                 console.log('NOT highlighting answer on timer expiration');
+                console.log('  Reason: showCorrect=', showCorrect, 'hasQuestion=', !!currentQuestion, 'hasAnswer=', currentQuestion ? !!currentQuestion.correctAnswer : false);
             }
         }
 
