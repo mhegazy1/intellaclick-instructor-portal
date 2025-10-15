@@ -519,11 +519,18 @@
             }
         }
 
-        function loadSavedSettings() {
+        async function loadSavedSettings() {
             try {
-                const savedSettings = localStorage.getItem('sessionSettings');
-                if (savedSettings) {
-                    const settings = JSON.parse(savedSettings);
+                // Load settings from backend API instead of localStorage
+                const response = await fetch('https://api.intellaclick.com/api/users/session-settings', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const settings = data.settings;
 
                     // Apply saved settings to checkboxes
                     if (settings.allowAnonymous !== undefined) {
@@ -542,7 +549,9 @@
                         document.getElementById('enableGamification').checked = settings.enableGamification;
                     }
 
-                    console.log('✅ Loaded saved session settings:', settings);
+                    console.log('✅ Loaded saved session settings from backend:', settings);
+                } else {
+                    console.log('No saved settings found, using defaults');
                 }
             } catch (error) {
                 console.error('Error loading saved settings:', error);
@@ -909,7 +918,7 @@
                 const result = await response.json();
                 const session = result.session || result;
 
-                // Save session settings to localStorage for next time
+                // Save session settings to backend for next time (don't wait for this)
                 const sessionSettings = {
                     allowAnonymous: document.getElementById('allowAnonymous').checked,
                     openToAll: document.getElementById('openToAll').checked,
@@ -917,7 +926,20 @@
                     showCorrectAnswer: document.getElementById('showCorrectAnswer').checked,
                     enableGamification: document.getElementById('enableGamification').checked
                 };
-                localStorage.setItem('sessionSettings', JSON.stringify(sessionSettings));
+
+                // Save to backend (async, don't wait)
+                fetch('https://api.intellaclick.com/api/users/session-settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(sessionSettings)
+                }).then(() => {
+                    console.log('✅ Saved session settings to backend for next time');
+                }).catch(err => {
+                    console.error('Failed to save settings (non-critical):', err);
+                });
 
                 // Show session code in toast for instructor to share
                 showToast(`Session created! Code: ${session.sessionCode || sessionCode}`, 'success');
