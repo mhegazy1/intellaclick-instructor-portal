@@ -299,6 +299,24 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="customSessionCode">
+                        Custom Session Code (Optional)
+                        <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                            Leave blank for random code, or enter your own (e.g., BIO3002025). Same code can be reused for multiple sessions.
+                        </small>
+                    </label>
+                    <input
+                        type="text"
+                        id="customSessionCode"
+                        placeholder="e.g., BIO3002025"
+                        maxlength="20"
+                        pattern="[A-Za-z0-9]{4,20}"
+                        title="4-20 characters, letters and numbers only"
+                        style="text-transform: uppercase;"
+                    >
+                </div>
+
+                <div class="form-group">
                     <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="enableGamification" checked style="width: 20px; height: 20px; cursor: pointer;">
                         <span style="display: flex; flex-direction: column; gap: 4px;">
@@ -879,9 +897,10 @@
                 return;
             }
             
-            // Generate a session code for students to join
-            const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-            
+            // Get custom session code or generate a random one
+            const customCode = document.getElementById('customSessionCode').value.trim();
+            const sessionCode = customCode || Math.random().toString(36).substring(2, 8).toUpperCase();
+
             const sessionData = {
                 sessionCode: sessionCode,
                 title: document.getElementById('sessionName').value,
