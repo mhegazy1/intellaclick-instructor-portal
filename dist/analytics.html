@@ -497,7 +497,8 @@
             </div>
         </div>
 
-        <div class="charts-section">
+        <!-- Charts section - hidden for now, will add charting library later -->
+        <div class="charts-section" style="display: none;">
             <div class="chart-container">
                 <h2>Attendance Trend</h2>
                 <div class="chart-placeholder">
@@ -870,18 +871,34 @@
 
                 if (enrollmentResponse.ok) {
                     const { students } = await enrollmentResponse.json();
-                    const student = students.find(s => s.studentId._id === studentId || s.studentId.email === studentId);
+                    // studentId is a string, not an object
+                    const student = students.find(s => s.studentId === studentId || s.email === studentId);
 
-                    if (student) {
+                    if (student && student.stats) {
+                        const stats = student.stats;
+
+                        // Calculate performance from correct answers
+                        const questionsAnswered = stats.questionsAnswered || 0;
+                        const correctAnswers = stats.correctAnswers || 0;
+                        const performance = questionsAnswered > 0
+                            ? Math.round((correctAnswers / questionsAnswered) * 100)
+                            : 0;
+
                         // Update overall stats
                         document.getElementById('detailAttendance').textContent =
-                            `${student.stats?.attendanceRate || 0}%`;
+                            `${stats.attendanceRate || 0}%`;
                         document.getElementById('detailPerformance').textContent =
-                            `${student.stats?.averageScore || 0}%`;
+                            `${performance}%`;
                         document.getElementById('detailSessionsAttended').textContent =
-                            student.stats?.sessionsAttended || 0;
+                            stats.sessionsAttended || 0;
                         document.getElementById('detailQuestionsAnswered').textContent =
-                            student.stats?.questionsAnswered || 0;
+                            questionsAnswered;
+                    } else {
+                        // No stats available
+                        document.getElementById('detailAttendance').textContent = '0%';
+                        document.getElementById('detailPerformance').textContent = '0%';
+                        document.getElementById('detailSessionsAttended').textContent = '0';
+                        document.getElementById('detailQuestionsAnswered').textContent = '0';
                     }
                 }
 
