@@ -1012,8 +1012,13 @@
             document.getElementById('waitingMessage').style.display = 'none';
             document.getElementById('questionCard').style.display = 'block';
 
-            // Set question text
-            document.getElementById('questionText').textContent = question.questionText;
+            // Set question text - replace [blank] with visual blank for fill-in-the-blank questions
+            let questionTextHtml = question.questionText || '';
+            if (questionType === 'fill_blank' || questionType === 'fillblank') {
+                // Replace [blank] with a styled blank (underline or input-like box)
+                questionTextHtml = questionTextHtml.replace(/\[blank\]/gi, '<span style="display: inline-block; min-width: 120px; border-bottom: 3px solid #4F46E5; margin: 0 8px; height: 1.5em; vertical-align: bottom;"></span>');
+            }
+            document.getElementById('questionText').innerHTML = questionTextHtml;
 
             // Set question number (if available)
             document.getElementById('questionNumber').textContent = `Question ${question.questionNumber || 1}`;

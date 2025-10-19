@@ -787,6 +787,15 @@
                     actions.className = 'question-item-actions';
                     
                     if (index > currentQuestionIndex) {
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn btn-secondary';
+                        editBtn.style.padding = '4px 8px';
+                        editBtn.style.fontSize = '12px';
+                        editBtn.style.marginRight = '4px';
+                        editBtn.textContent = 'Edit';
+                        editBtn.onclick = () => editQueueQuestion(index);
+                        actions.appendChild(editBtn);
+
                         const removeBtn = document.createElement('button');
                         removeBtn.className = 'btn btn-secondary';
                         removeBtn.style.padding = '4px 8px';
@@ -808,6 +817,78 @@
         function removeFromQueue(index) {
             questionQueue.splice(index, 1);
             updateQueueDisplay();
+        }
+
+        let editingQuestionIndex = null;
+
+        function editQueueQuestion(index) {
+            editingQuestionIndex = index;
+            const question = questionQueue[index];
+
+            // Open the question modal
+            document.getElementById('questionModal').style.display = 'block';
+
+            // Set question type and text
+            document.getElementById('modalQuestionType').value = question.type || 'mcq';
+            document.getElementById('modalQuestionText').value = question.text || question.questionText || '';
+
+            // Update options display
+            updateModalOptions();
+
+            // Pre-fill data based on question type
+            setTimeout(() => {
+                switch(question.type) {
+                    case 'mcq':
+                        if (question.optionTexts) {
+                            ['A', 'B', 'C', 'D'].forEach((letter, idx) => {
+                                const input = document.getElementById(`modalOption${letter}`);
+                                if (input && question.optionTexts[idx]) {
+                                    input.value = question.optionTexts[idx];
+                                }
+                                if (question.correctAnswer === letter || question.correctAnswer === idx) {
+                                    const radio = document.querySelector(`input[name="modalCorrect"][value="${letter}"]`);
+                                    if (radio) radio.checked = true;
+                                }
+                            });
+                        }
+                        break;
+
+                    case 'tf':
+                        const tfValue = question.correctAnswer === 'true' || question.correctAnswer === true ? 'true' : 'false';
+                        const tfRadio = document.querySelector(`input[name="modalTF"][value="${tfValue}"]`);
+                        if (tfRadio) tfRadio.checked = true;
+                        break;
+
+                    case 'matching':
+                        if (question.pairs) {
+                            question.pairs.forEach((pair, idx) => {
+                                const leftInput = document.getElementById(`modalMatch${idx + 1}Left`);
+                                const rightInput = document.getElementById(`modalMatch${idx + 1}Right`);
+                                if (leftInput) leftInput.value = pair.left || '';
+                                if (rightInput) rightInput.value = pair.right || '';
+                            });
+                        }
+                        break;
+
+                    case 'ordering':
+                        if (question.correctOrder) {
+                            question.correctOrder.forEach((item, idx) => {
+                                const input = document.getElementById(`modalOrder${idx + 1}`);
+                                if (input) input.value = item || '';
+                            });
+                        }
+                        break;
+
+                    case 'fillblank':
+                        const answerInput = document.getElementById('modalBlankAnswer');
+                        if (answerInput) answerInput.value = question.correctAnswer || '';
+                        break;
+                }
+            }, 100);
+
+            // Change modal title
+            const modalTitle = document.querySelector('#questionModal h2');
+            if (modalTitle) modalTitle.textContent = 'Edit Question';
         }
 
         async function sendNextQuestion() {
@@ -937,7 +1018,14 @@
 
         function displayCurrentQuestion(question) {
             document.getElementById('currentQuestionSection').style.display = 'block';
-            document.getElementById('questionText').textContent = question.text || question.questionText;
+
+            // Display question text with blanks rendered as visual blanks
+            let questionTextHtml = question.text || question.questionText || '';
+            if (question.type === 'fillblank') {
+                // Replace [blank] with a styled visual blank
+                questionTextHtml = questionTextHtml.replace(/\[blank\]/gi, '<span style="display: inline-block; min-width: 100px; border-bottom: 2px solid #4F46E5; margin: 0 6px; height: 1.2em; vertical-align: bottom;"></span>');
+            }
+            document.getElementById('questionText').innerHTML = questionTextHtml;
             
             // Display options based on question type
             const optionsDiv = document.getElementById('questionOptions');
@@ -984,6 +1072,11 @@
             // Clear form
             document.getElementById('modalQuestionText').value = '';
             document.getElementById('modalQuestionType').value = 'mcq';
+            // Reset editing mode
+            editingQuestionIndex = null;
+            // Reset modal title
+            const modalTitle = document.querySelector('#questionModal h2');
+            if (modalTitle) modalTitle.textContent = 'Create Question';
         }
 
         function showImportModal() {
@@ -1294,11 +1387,20 @@
                     break;
             }
             
-            // Add to queue
-            questionQueue.push(question);
+            // Add to queue or update existing
+            if (editingQuestionIndex !== null) {
+                // Update existing question
+                questionQueue[editingQuestionIndex] = question;
+                editingQuestionIndex = null;
+                showToast('Question updated', 'success');
+            } else {
+                // Add new question
+                questionQueue.push(question);
+                showToast('Question added to queue', 'success');
+            }
+
             updateQueueDisplay();
             closeQuestionModal();
-            showToast('Question added to queue', 'success');
         }
 
         // Load and Import Quizzes
