@@ -984,9 +984,12 @@
                     // Transform quiz questions to session format
                     const quizQuestions = (quiz.questions || []).map(q => {
                         const snapshot = q.questionSnapshot || {};
+                        // Check BOTH questionType (new schema) and type (old data) for backwards compatibility
+                        const questionType = snapshot.questionType || snapshot.type || 'mcq';
+
                         return {
                             text: snapshot.questionText || '',
-                            type: snapshot.type || 'mcq',
+                            type: questionType,
                             timeLimit: 60, // Default time limit
                             points: q.points || 10,
                             options: snapshot.options,
