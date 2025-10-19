@@ -1565,10 +1565,15 @@
 
                 console.log(`Checking option ${index}: letter=${optionLetter}, text=${optionText}, correct=${currentQuestion.correctAnswer}`);
 
-                // Check if this is the correct answer - match by letter OR by text
-                if (optionLetter === correctAnswerUpper ||
-                    optionTextUpper === correctAnswerUpper ||
-                    optionText === currentQuestion.correctAnswer) {
+                // Check if this is the correct answer - match by:
+                // 1. Index (for quiz questions that store correctAnswer as 0, 1, 2, 3)
+                // 2. Letter (for questions that store correctAnswer as 'A', 'B', 'C', 'D')
+                // 3. Text (for questions that store the full answer text)
+                const isCorrectByIndex = typeof currentQuestion.correctAnswer === 'number' && currentQuestion.correctAnswer === index;
+                const isCorrectByLetter = optionLetter === correctAnswerUpper;
+                const isCorrectByText = optionTextUpper === correctAnswerUpper || optionText === currentQuestion.correctAnswer;
+
+                if (isCorrectByIndex || isCorrectByLetter || isCorrectByText) {
                     console.log(`Match found! Highlighting option ${index}`);
                     optionEl.classList.add('correct');
                 }

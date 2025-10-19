@@ -825,10 +825,10 @@
 
             // Normalize question type for student interface compatibility
             const normalizedQuestion = {...question};
-            
+
             // Remove the original 'type' field to avoid confusion
             delete normalizedQuestion.type;
-            
+
             // Map our types to what the student interface expects
             const typeMap = {
                 'mcq': 'multiple_choice',
@@ -837,18 +837,34 @@
                 'ordering': 'ordering',
                 'fillblank': 'fill_blank'
             };
-            
+
             // Set both questionType and type to the mapped value
             const mappedType = typeMap[question.type] || question.type;
             normalizedQuestion.questionType = mappedType;
             normalizedQuestion.type = mappedType;
-            
+
             // Ensure questionText is set
             normalizedQuestion.questionText = question.text || question.questionText;
-            
-            // For true/false, ensure options are properly formatted
+
+            // Handle type-specific data
             if (question.type === 'tf') {
+                // For true/false, ensure options are properly formatted
                 normalizedQuestion.options = ['True', 'False'];
+            } else if (question.type === 'mcq') {
+                // Ensure MCQ has options and optionTexts
+                if (question.optionTexts) {
+                    normalizedQuestion.options = question.options;
+                    normalizedQuestion.optionTexts = question.optionTexts;
+                }
+            } else if (question.type === 'matching') {
+                // Ensure matching has pairs
+                normalizedQuestion.pairs = question.pairs || [];
+            } else if (question.type === 'ordering') {
+                // Ensure ordering has correctOrder
+                normalizedQuestion.correctOrder = question.correctOrder || [];
+            } else if (question.type === 'fillblank') {
+                // Ensure fill-in-blank has correctAnswer
+                normalizedQuestion.correctAnswer = question.correctAnswer || '';
             }
             
             // Debug logging
