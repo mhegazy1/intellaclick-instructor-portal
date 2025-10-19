@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.0.1-delete-button">
     <title>My Classes - IntellaClick</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary-color: #4F46E5;
@@ -47,6 +49,15 @@
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-content {
+            flex: 1;
         }
 
         .header h1 {
@@ -58,6 +69,40 @@
         .header p {
             color: var(--text-secondary);
             font-size: 16px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .welcome-message {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-right: 12px;
+        }
+
+        .welcome-name {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background-color: #DC2626;
+            transform: translateY(-1px);
         }
 
         .actions-bar {
@@ -513,14 +558,188 @@
             .class-actions {
                 grid-template-columns: 1fr;
             }
+
+            /* Filter controls responsive */
+            #yearFilter, #semesterFilter, #statusFilter, #classFilter {
+                width: 100%;
+            }
+        }
+
+        /* QR Code Modal Styles */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-modal.active {
+            display: flex;
+        }
+
+        .qr-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            text-align: center;
+        }
+
+        .qr-modal-header {
+            margin-bottom: 24px;
+        }
+
+        .qr-modal-header h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .qr-modal-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .qr-code-container {
+            display: flex;
+            justify-content: center;
+            margin: 24px 0;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .join-url-section {
+            margin: 24px 0;
+            padding: 16px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .join-url-section:hover {
+            background: #e5e7eb;
+        }
+
+        .join-code-large {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 0.2em;
+            color: var(--primary-color);
+            margin: 16px 0;
+        }
+
+        .qr-instructions {
+            text-align: left;
+            margin-top: 24px;
+            padding: 16px;
+            background: #eff6ff;
+            border-radius: 8px;
+            border: 1px solid #dbeafe;
+        }
+
+        .qr-instructions h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #1e40af;
+        }
+
+        .qr-instructions ol {
+            margin-left: 20px;
+            color: #3730a3;
+        }
+
+        .qr-instructions li {
+            margin-bottom: 8px;
+        }
+
+        .qr-btn {
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+            margin-left: 8px;
+        }
+
+        .qr-btn:hover {
+            background-color: #4f46e5;
+        }
+
+        .qr-btn svg {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 4px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>My Classes</h1>
-            <p>Manage your classes and track student engagement</p>
+            <div class="header-content">
+                <h1>My Classes</h1>
+                <p>Manage your classes and track student engagement</p>
+            </div>
+            <div class="header-actions">
+                <div class="welcome-message">
+                    Welcome, <span class="welcome-name" id="userName">Instructor</span>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <label style="font-weight: 500; color: var(--text-secondary);">Filters:</label>
+
+                    <select id="yearFilter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px;">
+                        <option value="">All Years</option>
+                    </select>
+
+                    <select id="semesterFilter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px;">
+                        <option value="">All Semesters</option>
+                        <option value="Spring">Spring</option>
+                        <option value="Summer">Summer</option>
+                        <option value="Fall">Fall</option>
+                        <option value="Winter">Winter</option>
+                    </select>
+
+                    <select id="statusFilter" onchange="applyFilters()">
+                        <option value="active">Active Classes</option>
+                        <option value="">All Classes</option>
+                        <option value="archived">Archived</option>
+                    </select>
+
+                    <select id="classFilter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px; display: none;">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-secondary" onclick="clearFilters()" style="padding: 8px 16px;">
+                    Clear Filters
+                </button>
+            </div>
         </div>
 
         <div class="stats-overview">
@@ -542,7 +761,7 @@
                 <div class="stat-icon purple">🎯</div>
                 <div class="stat-content">
                     <h3 id="totalSessions">0</h3>
-                    <p>Sessions This Term</p>
+                    <p>Total Sessions</p>
                 </div>
             </div>
             <div class="stat-card">
@@ -555,22 +774,38 @@
         </div>
 
         <div class="actions-bar">
-            <button class="btn btn-primary" onclick="showCreateClassModal()">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                Create New Class
-            </button>
-
-            <div class="filter-controls">
-                <select id="termFilter" onchange="loadClasses()">
-                    <option value="">All Terms</option>
-                </select>
-                <select id="statusFilter" onchange="loadClasses()">
-                    <option value="active">Active Classes</option>
-                    <option value="">All Classes</option>
-                    <option value="archived">Archived</option>
-                </select>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-primary" onclick="showCreateClassModal()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create New Class
+                </button>
+                <a href="/quizzes.html" class="btn btn-secondary">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    My Quizzes
+                </a>
+                <a href="/active-sessions.html" class="btn btn-primary" style="background-color: var(--secondary-color);">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    🔴 Active Sessions
+                </a>
+                <a href="/session-history.html" class="btn btn-secondary">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    📊 Session History
+                </a>
+                <a href="/gamification-dashboard.html" class="btn btn-secondary">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                    </svg>
+                    🏆 Gamification
+                </a>
             </div>
         </div>
 
@@ -638,6 +873,21 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="customJoinCode">Custom Join Code (Optional)</label>
+                    <input type="text" 
+                           id="customJoinCode" 
+                           placeholder="Leave empty for auto-generated code"
+                           maxlength="12"
+                           pattern="[A-Za-z0-9]{4,12}"
+                           title="4-12 characters, letters and numbers only"
+                           style="text-transform: uppercase;"
+                           oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')">
+                    <small style="color: #6B7280; display: block; margin-top: 4px;">
+                        4-12 characters, letters and numbers only. Leave empty for auto-generated code.
+                    </small>
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="hideModal('classModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Class</button>
@@ -655,16 +905,30 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
+            populateYearFilter();
             loadClasses();
             loadStats();
             setupEventListeners();
             populateYearDropdown();
         });
         
+        function populateYearFilter() {
+            const yearFilter = document.getElementById('yearFilter');
+            const currentYear = new Date().getFullYear();
+
+            // Add years from 2 years ago to 5 years in future
+            for (let year = currentYear + 5; year >= currentYear - 2; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            }
+        }
+
         function populateYearDropdown() {
             const yearSelect = document.getElementById('termYear');
             const currentYear = new Date().getFullYear();
-            
+
             // Add years from 2 years ago to 5 years in future
             for (let year = currentYear - 2; year <= currentYear + 5; year++) {
                 const option = document.createElement('option');
@@ -675,6 +939,68 @@
                 }
                 yearSelect.appendChild(option);
             }
+        }
+
+        function applyFilters() {
+            // Update class dropdown visibility and options
+            updateClassDropdown();
+
+            // Reload data with filters
+            loadClasses();
+            loadStats();
+        }
+
+        function clearFilters() {
+            document.getElementById('yearFilter').value = '';
+            document.getElementById('semesterFilter').value = '';
+            document.getElementById('statusFilter').value = 'active';
+            document.getElementById('classFilter').value = '';
+            document.getElementById('classFilter').style.display = 'none';
+            applyFilters();
+        }
+
+        function updateClassDropdown() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const classFilter = document.getElementById('classFilter');
+
+            // Show class dropdown only when status is selected (not "All Classes")
+            if (statusFilter) {
+                classFilter.style.display = 'block';
+                populateClassDropdown();
+            } else {
+                classFilter.style.display = 'none';
+                classFilter.value = '';
+            }
+        }
+
+        function populateClassDropdown() {
+            const classFilter = document.getElementById('classFilter');
+            const yearFilter = document.getElementById('yearFilter').value;
+            const semesterFilter = document.getElementById('semesterFilter').value;
+            const statusFilterValue = document.getElementById('statusFilter').value;
+
+            // Filter classes based on current filters
+            let filteredClasses = classes.filter(c => {
+                if (statusFilterValue && c.status !== statusFilterValue) return false;
+                if (yearFilter || semesterFilter) {
+                    const [semester, year] = c.term.split(' ');
+                    if (yearFilter && year !== yearFilter) return false;
+                    if (semesterFilter && semester !== semesterFilter) return false;
+                }
+                return true;
+            });
+
+            // Repopulate dropdown
+            const currentValue = classFilter.value;
+            classFilter.innerHTML = '<option value="">All Classes</option>';
+
+            filteredClasses.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls._id;
+                option.textContent = `${cls.name} (${cls.code})`;
+                if (cls._id === currentValue) option.selected = true;
+                classFilter.appendChild(option);
+            });
         }
 
         function checkAuth() {
@@ -689,11 +1015,13 @@
             // Debug user info
             console.log('Current user:', user);
             console.log('User role:', user.role);
+            console.log('Token exists:', !!token);
             
-            // Check if user is instructor or admin
-            if (user.role !== 'instructor' && user.role !== 'admin') {
-                console.error('User role:', user.role, 'Expected: instructor or admin');
-                alert(`Access denied. Your role is '${user.role}' but instructor privileges are required.`);
+            // Check if user is instructor or admin or has generic 'user' role
+            const allowedRoles = ['instructor', 'admin', 'teacher', 'professor', 'faculty', 'teaching_assistant', 'user'];
+            if (!allowedRoles.includes(user.role?.toLowerCase())) {
+                console.error('User role:', user.role, 'Expected one of:', allowedRoles);
+                alert(`Access denied. Your role is '${user.role}' but instructor privileges are required. Allowed roles: ${allowedRoles.join(', ')}`);
                 // Don't redirect yet so user can see the message
                 setTimeout(() => {
                     window.location.href = '/dashboard.html';
@@ -702,6 +1030,61 @@
             }
 
             currentUser = user;
+
+            // Display user's name in header
+            displayUserName(user);
+
+            // Also fetch fresh user data to ensure role is up to date
+            fetchUserProfile();
+        }
+
+        function displayUserName(user) {
+            const userNameElement = document.getElementById('userName');
+            if (userNameElement) {
+                // Try to get the full name, fall back to first name, then email
+                const name = user.name ||
+                           (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '') ||
+                           user.firstName ||
+                           user.email?.split('@')[0] ||
+                           'Instructor';
+                userNameElement.textContent = name;
+            }
+        }
+
+        function handleLogout() {
+            // Confirm logout
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear all auth data
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('refreshToken');
+
+                // Redirect to login
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function fetchUserProfile() {
+            try {
+                const response = await fetch('https://api.intellaclick.com/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.user) {
+                        // Update local storage with fresh user data
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        currentUser = data.user;
+                        displayUserName(data.user);
+                        console.log('Updated user profile:', data.user);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+            }
         }
 
         function setupEventListeners() {
@@ -717,32 +1100,80 @@
 
         async function loadStats() {
             try {
-                const response = await fetch('https://api.intellaclick.com/api/classes/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                // Get current filters
+                const yearFilter = document.getElementById('yearFilter').value;
+                const semesterFilter = document.getElementById('semesterFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const classFilter = document.getElementById('classFilter').value;
+
+                // Filter classes based on current filters
+                let filteredClasses = classes.filter(c => {
+                    // Status filter
+                    if (statusFilter && c.status !== statusFilter) return false;
+
+                    // Specific class filter
+                    if (classFilter && c._id !== classFilter) return false;
+
+                    // Year and semester filters
+                    if (yearFilter || semesterFilter) {
+                        const [semester, year] = c.term.split(' ');
+                        if (yearFilter && year !== yearFilter) return false;
+                        if (semesterFilter && semester !== semesterFilter) return false;
                     }
+
+                    return true;
                 });
 
-                if (response.ok) {
-                    const stats = await response.json();
-                    document.getElementById('totalClasses').textContent = stats.totalClasses || 0;
-                    document.getElementById('totalStudents').textContent = stats.totalStudents || 0;
-                    document.getElementById('totalSessions').textContent = stats.totalSessions || 0;
-                    document.getElementById('avgEngagement').textContent = `${stats.avgEngagement || 0}%`;
-                }
+                // Calculate stats from filtered classes
+                const totalClasses = filteredClasses.length;
+                const totalStudents = filteredClasses.reduce((sum, c) => {
+                    return sum + (c.enrollmentSummary?.totalEnrolled || 0);
+                }, 0);
+                const totalSessions = filteredClasses.reduce((sum, c) => {
+                    return sum + (c.stats?.sessionCount || 0);
+                }, 0);
+
+                // Calculate average engagement
+                let totalEngagement = 0;
+                let classesWithEngagement = 0;
+                filteredClasses.forEach(c => {
+                    // Try multiple data sources for attendance/engagement
+                    const attendance = c.enrollmentSummary?.avgAttendance
+                        || c.stats?.avgAttendance
+                        || c.stats?.avgParticipation;
+
+                    if (attendance) {
+                        totalEngagement += attendance;
+                        classesWithEngagement++;
+                    } else if (c.stats?.sessionCount > 0 && c.enrollmentSummary?.totalEnrolled > 0) {
+                        // Calculate engagement from session participation if available
+                        const participationRate = ((c.stats.totalParticipants || 0) /
+                            (c.stats.sessionCount * c.enrollmentSummary.totalEnrolled)) * 100;
+                        if (!isNaN(participationRate) && participationRate > 0) {
+                            totalEngagement += participationRate;
+                            classesWithEngagement++;
+                        }
+                    }
+                });
+                const avgEngagement = classesWithEngagement > 0
+                    ? Math.round(totalEngagement / classesWithEngagement)
+                    : 0;
+
+                // Update UI
+                document.getElementById('totalClasses').textContent = totalClasses;
+                document.getElementById('totalStudents').textContent = totalStudents;
+                document.getElementById('totalSessions').textContent = totalSessions;
+                document.getElementById('avgEngagement').textContent = `${avgEngagement}%`;
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
         }
 
         async function loadClasses() {
-            const termFilter = document.getElementById('termFilter').value;
-            const statusFilter = document.getElementById('statusFilter').value;
-            
             try {
+                // Fetch all classes first
                 const params = new URLSearchParams();
-                if (termFilter) params.append('term', termFilter);
-                if (statusFilter) params.append('status', statusFilter);
+                params.append('includeArchived', 'true'); // Get all classes
 
                 const response = await fetch(`https://api.intellaclick.com/api/classes?${params}`, {
                     headers: {
@@ -755,63 +1186,83 @@
                 const data = await response.json();
                 classes = data.classes || [];
                 
-                // Update term filter options
-                await loadTerms();
+                // Fix populated instructorId objects
+                classes = classes.map(cls => {
+                    if (typeof cls.instructorId === 'object' && cls.instructorId._id) {
+                        // Store the actual ID for deletion/comparison
+                        cls.instructorIdRaw = cls.instructorId._id;
+                        // Keep the object for display purposes (email, name)
+                    } else {
+                        cls.instructorIdRaw = cls.instructorId;
+                    }
+                    return cls;
+                });
                 
+                console.log('Loaded classes with instructor IDs:', classes.map(c => ({
+                    name: c.name,
+                    instructorId: c.instructorIdRaw,
+                    instructorEmail: typeof c.instructorId === 'object' ? c.instructorId.email : 'N/A'
+                })));
+
+                // Update class dropdown if needed
+                updateClassDropdown();
+
+                // Render filtered classes
                 renderClasses();
+
+                // Update stats after classes are loaded
+                loadStats();
             } catch (error) {
                 console.error('Error loading classes:', error);
                 showToast('Failed to load classes', 'error');
             }
         }
 
-        async function loadTerms() {
-            try {
-                const response = await fetch('https://api.intellaclick.com/api/classes/terms', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const termFilter = document.getElementById('termFilter');
-                    const currentValue = termFilter.value;
-                    
-                    termFilter.innerHTML = '<option value="">All Terms</option>';
-                    data.terms.forEach(term => {
-                        const option = document.createElement('option');
-                        option.value = term;
-                        option.textContent = term;
-                        if (term === currentValue) option.selected = true;
-                        termFilter.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading terms:', error);
-            }
-        }
-
         function renderClasses() {
             const container = document.getElementById('classesContainer');
-            
-            if (classes.length === 0) {
+
+            // Get current filters
+            const yearFilter = document.getElementById('yearFilter').value;
+            const semesterFilter = document.getElementById('semesterFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const classFilter = document.getElementById('classFilter').value;
+
+            // Filter classes
+            let filteredClasses = classes.filter(c => {
+                // Status filter
+                if (statusFilter && c.status !== statusFilter) return false;
+
+                // Specific class filter
+                if (classFilter && c._id !== classFilter) return false;
+
+                // Year and semester filters
+                if (yearFilter || semesterFilter) {
+                    const [semester, year] = c.term.split(' ');
+                    if (yearFilter && year !== yearFilter) return false;
+                    if (semesterFilter && semester !== semesterFilter) return false;
+                }
+
+                return true;
+            });
+
+            if (filteredClasses.length === 0) {
+                const hasClasses = classes.length > 0;
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h3>No classes yet</h3>
-                        <p>Create your first class to start engaging with students</p>
-                        <button class="btn btn-primary" onclick="showCreateClassModal()">
-                            Create Your First Class
-                        </button>
+                        <h3>${hasClasses ? 'No classes match your filters' : 'No classes yet'}</h3>
+                        <p>${hasClasses ? 'Try adjusting your filters to see more classes' : 'Create your first class to start engaging with students'}</p>
+                        ${hasClasses ? '<button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>' : '<button class="btn btn-primary" onclick="showCreateClassModal()">Create Your First Class</button>'}
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = classes.map(classData => {
+            container.innerHTML = filteredClasses.map(classData => {
                 const stats = classData.stats || {};
-                const totalEnrolled = stats.enrolledCount || 0;
-                const pendingCount = stats.pendingCount || 0;
+                const enrollmentSummary = classData.enrollmentSummary || {};
+                // Try both sources for enrollment count (backend sends different formats)
+                const totalEnrolled = enrollmentSummary.totalEnrolled || stats.enrolledCount || 0;
+                const pendingCount = enrollmentSummary.pending || stats.pendingCount || 0;
 
                 return `
                     <div class="class-card" onclick="viewClassDetails('${classData._id}')">
@@ -846,6 +1297,15 @@
                                         <button class="copy-btn" onclick="copyJoinCode(event, '${classData.joinCode}')">
                                             Copy
                                         </button>
+                                        <button class="qr-btn" onclick="showQRCode(event, '${classData.joinCode}', '${classData.name}')">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="3" width="7" height="7"></rect>
+                                                <rect x="14" y="3" width="7" height="7"></rect>
+                                                <rect x="3" y="14" width="7" height="7"></rect>
+                                                <rect x="14" y="14" width="7" height="7"></rect>
+                                            </svg>
+                                            QR Code
+                                        </button>
                                     </div>
                                 </div>
                             ` : ''}
@@ -864,6 +1324,11 @@
                                     <div class="enrollment-stat-label">Sessions</div>
                                 </div>
                             </div>
+                            
+                            <div style="background: #f3f4f6; padding: 8px; border-radius: 4px; margin-bottom: 16px; font-size: 11px; color: #666; font-family: monospace;">
+                                <strong>Class ID:</strong> <span style="user-select: all;">${classData._id}</span>
+                                <button class="copy-btn" style="float: right; font-size: 10px; padding: 2px 8px;" onclick="copyText(event, '${classData._id}')">Copy ID</button>
+                            </div>
 
                             <div class="class-actions">
                                 <button class="btn btn-secondary" onclick="manageRoster(event, '${classData._id}')">
@@ -877,6 +1342,9 @@
                                 </button>
                                 <button class="btn btn-secondary" onclick="editClass(event, '${classData._id}')">
                                     Settings
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteClass(event, '${classData._id}', '${classData.name.replace(/'/g, "\\'")}')">
+                                    Delete
                                 </button>
                             </div>
                         </div>
@@ -929,6 +1397,7 @@
             const season = document.getElementById('termSeason').value;
             const year = document.getElementById('termYear').value;
             
+            const customCode = document.getElementById('customJoinCode').value.trim();
             const formData = {
                 name: document.getElementById('className').value,
                 code: document.getElementById('classCode').value,
@@ -938,6 +1407,11 @@
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value
             };
+            
+            // Only include customJoinCode if provided
+            if (customCode) {
+                formData.customJoinCode = customCode;
+            }
 
             try {
                 const response = await fetch('https://api.intellaclick.com/api/classes', {
@@ -967,17 +1441,22 @@
 
         function copyJoinCode(event, code) {
             event.stopPropagation();
-            navigator.clipboard.writeText(code).then(() => {
-                showToast('Join code copied to clipboard!', 'success');
+            copyText(event, code, 'Join code');
+        }
+        
+        function copyText(event, text, label = 'Text') {
+            event.stopPropagation();
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`${label} copied to clipboard!`, 'success');
             }).catch(() => {
                 // Fallback for older browsers
                 const textArea = document.createElement('textarea');
-                textArea.value = code;
+                textArea.value = text;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                showToast('Join code copied!', 'success');
+                showToast(`${label} copied!`, 'success');
             });
         }
 
@@ -998,13 +1477,156 @@
 
         function viewAnalytics(event, classId) {
             event.stopPropagation();
-            window.location.href = `/analytics.html?id=${classId}`;
+            // Redirect to gamification dashboard which has analytics
+            window.location.href = `/gamification-dashboard.html`;
         }
 
         function editClass(event, classId) {
             event.stopPropagation();
-            // TODO: Implement edit functionality
-            showToast('Edit functionality coming soon', 'info');
+            // Open edit class modal
+            openEditClassModal(classId);
+        }
+
+        function openEditClassModal(classId) {
+            const classData = classes.find(c => c._id === classId);
+            if (!classData) return;
+
+            // Pre-fill the form with current class data
+            document.getElementById('editClassName').value = classData.name;
+            document.getElementById('editClassDescription').value = classData.description || '';
+            document.getElementById('editClassId').value = classId;
+
+            // Show modal
+            document.getElementById('editClassModal').classList.add('show');
+        }
+
+        async function saveClassEdits() {
+            const classId = document.getElementById('editClassId').value;
+            const name = document.getElementById('editClassName').value.trim();
+            const description = document.getElementById('editClassDescription').value.trim();
+
+            if (!name) {
+                showToast('Class name is required', 'error');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`https://api.intellaclick.com/api/classes/${classId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update class');
+                }
+
+                showToast('Class updated successfully!', 'success');
+                closeEditClassModal();
+                loadClasses(); // Reload classes to show updated data
+            } catch (error) {
+                console.error('Error updating class:', error);
+                showToast('Failed to update class', 'error');
+            }
+        }
+
+        function closeEditClassModal() {
+            document.getElementById('editClassModal').classList.remove('show');
+        }
+
+        async function deleteClass(event, classId, className) {
+            event.stopPropagation();
+            
+            if (!confirm(`Are you sure you want to delete "${className}"?`)) {
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                
+                // Debug logging
+                console.log('Delete class - Token exists:', !!token);
+                console.log('Delete class - User info:', {
+                    id: user.id,
+                    role: user.role,
+                    email: user.email
+                });
+                
+                let response = await fetch(`https://api.intellaclick.com/api/classes/${classId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Delete response status:', response.status);
+                console.log('Delete URL:', `https://api.intellaclick.com/api/classes/${classId}`);
+                console.log('Token being sent:', token ? 'Yes' : 'No');
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    console.error('Delete error response:', data);
+                    console.error('Full error details:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        error: data.error,
+                        userRole: data.userRole,
+                        requiredRoles: data.requiredRoles,
+                        classId: classId,
+                        headers: {
+                            'Authorization': `Bearer ${token ? token.substring(0, 20) + '...' : 'NO TOKEN'}`,
+                        }
+                    });
+                    
+                    // If there are active enrollments, ask for confirmation
+                    if (data.activeEnrollments && !response.url.includes('force=true')) {
+                        const confirmForce = confirm(
+                            `This class has ${data.activeEnrollments} active student(s). ` +
+                            `Are you sure you want to delete it anyway?`
+                        );
+                        
+                        if (confirmForce) {
+                            // Retry with force flag
+                            response = await fetch(`https://api.intellaclick.com/api/classes/${classId}?force=true`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                console.error('Delete with force error:', errorData);
+                                throw new Error(errorData.error || 'Failed to delete class');
+                            }
+                        } else {
+                            return; // User cancelled
+                        }
+                    } else {
+                        // Check if it's a role-related error
+                        if (data.error && data.error.includes('Instructor privileges required')) {
+                            showToast(`Access denied: ${data.error}. Your role is '${data.userRole || 'unknown'}'`, 'error');
+                            return;
+                        }
+                        throw new Error(data.error || 'Failed to delete class');
+                    }
+                }
+                
+                showToast('Class deleted successfully', 'success');
+                // Reload the class list
+                loadClasses();
+                loadStats();
+            } catch (error) {
+                console.error('Error deleting class:', error);
+                showToast(error.message || 'Failed to delete class', 'error');
+            }
         }
 
         function showModal(modalId) {
@@ -1027,6 +1649,117 @@
                 toast.classList.remove('show');
             }, 3000);
         }
+
+        function showQRCode(event, joinCode, className) {
+            event.stopPropagation();
+            event.preventDefault();
+            
+            const modal = document.getElementById('qrModal');
+            const qrContainer = document.getElementById('qrCodeContainer');
+            const codeDisplay = document.getElementById('qrJoinCode');
+            const urlDisplay = document.getElementById('qrJoinUrl');
+            const classNameDisplay = document.getElementById('qrClassName');
+            
+            // Clear previous QR code
+            qrContainer.innerHTML = '';
+            
+            // Set class info
+            classNameDisplay.textContent = className;
+            codeDisplay.textContent = joinCode;
+            
+            // Generate join URL
+            const joinUrl = `https://join.intellaclick.com/join-class?code=${joinCode}`;
+            urlDisplay.textContent = joinUrl;
+            
+            // Generate QR code
+            new QRCode(qrContainer, {
+                text: joinUrl,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Show modal
+            modal.classList.add('active');
+            
+            // Add click to copy functionality
+            urlDisplay.onclick = function() {
+                navigator.clipboard.writeText(joinUrl).then(() => {
+                    showToast('URL copied to clipboard!');
+                });
+            };
+        }
+        
+        function closeQRModal() {
+            const modal = document.getElementById('qrModal');
+            modal.classList.remove('active');
+        }
     </script>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="qr-modal" onclick="if(event.target === this) closeQRModal()">
+        <div class="qr-modal-content">
+            <button class="modal-close" onclick="closeQRModal()">&times;</button>
+            
+            <div class="qr-modal-header">
+                <h2>Join Class with QR Code</h2>
+                <p>Students can scan this code to join <strong id="qrClassName"></strong></p>
+            </div>
+            
+            <div class="join-code-large" id="qrJoinCode"></div>
+            
+            <div class="qr-code-container" id="qrCodeContainer"></div>
+            
+            <div class="join-url-section" id="qrJoinUrl" title="Click to copy"></div>
+            
+            <div class="qr-instructions">
+                <h3>How students can join:</h3>
+                <ol>
+                    <li>Open camera app on their phone</li>
+                    <li>Point at the QR code above</li>
+                    <li>Tap the notification that appears</li>
+                    <li>Sign in or register on the join page</li>
+                </ol>
+                <p style="margin-top: 12px; font-size: 14px; color: #4b5563;">
+                    Alternatively, they can visit the URL above and enter the join code manually.
+                </p>
+            </div>
+            
+            <div style="margin-top: 24px;">
+                <button class="btn btn-primary" onclick="closeQRModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Class Modal -->
+    <div id="editClassModal" class="modal" onclick="if(event.target === this) closeEditClassModal()">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Edit Class Settings</h2>
+                <p style="color: var(--text-secondary); font-size: 14px;">Update class name and description</p>
+            </div>
+
+            <div class="form-group">
+                <label for="editClassName">Class Name *</label>
+                <input type="text" id="editClassName" placeholder="e.g., Introduction to Psychology" required>
+            </div>
+
+            <div class="form-group">
+                <label for="editClassDescription">Description (optional)</label>
+                <textarea id="editClassDescription" placeholder="Brief description of the class..." rows="3"
+                          style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; resize: vertical;"></textarea>
+            </div>
+
+            <input type="hidden" id="editClassId">
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeEditClassModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveClassEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

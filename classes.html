@@ -1137,9 +1137,22 @@
                 let totalEngagement = 0;
                 let classesWithEngagement = 0;
                 filteredClasses.forEach(c => {
-                    if (c.enrollmentSummary?.avgAttendance) {
-                        totalEngagement += c.enrollmentSummary.avgAttendance;
+                    // Try multiple data sources for attendance/engagement
+                    const attendance = c.enrollmentSummary?.avgAttendance
+                        || c.stats?.avgAttendance
+                        || c.stats?.avgParticipation;
+
+                    if (attendance) {
+                        totalEngagement += attendance;
                         classesWithEngagement++;
+                    } else if (c.stats?.sessionCount > 0 && c.enrollmentSummary?.totalEnrolled > 0) {
+                        // Calculate engagement from session participation if available
+                        const participationRate = ((c.stats.totalParticipants || 0) /
+                            (c.stats.sessionCount * c.enrollmentSummary.totalEnrolled)) * 100;
+                        if (!isNaN(participationRate) && participationRate > 0) {
+                            totalEngagement += participationRate;
+                            classesWithEngagement++;
+                        }
                     }
                 });
                 const avgEngagement = classesWithEngagement > 0
