@@ -682,23 +682,31 @@
 
                 if (data.students && data.students.length > 0) {
                     // Transform enrollment data to analytics format
-                    analyticsData = data.students.map(enrollment => {
-                        const student = enrollment.studentId;
-                        const stats = enrollment.stats || {};
+                    analyticsData = data.students
+                        .filter(enrollment => enrollment.status === 'enrolled') // Only show active students
+                        .map(enrollment => {
+                            const stats = enrollment.stats || {};
 
-                        return {
-                            id: student._id || student.email,
-                            name: student.name || student.email,
-                            email: student.email,
-                            attendance: stats.attendanceRate || 0,
-                            performance: stats.averageScore || 0,
-                            engagement: stats.participationRate || 0,
-                            questionsAnswered: stats.questionsAnswered || 0,
-                            correctAnswers: stats.correctAnswers || 0,
-                            sessionsAttended: stats.sessionsAttended || 0,
-                            lastActive: stats.lastAttendanceDate ? new Date(stats.lastAttendanceDate) : new Date(enrollment.enrolledAt)
-                        };
-                    });
+                            // Calculate performance from correct answers
+                            const questionsAnswered = stats.questionsAnswered || 0;
+                            const correctAnswers = stats.correctAnswers || 0;
+                            const performance = questionsAnswered > 0
+                                ? Math.round((correctAnswers / questionsAnswered) * 100)
+                                : 0;
+
+                            return {
+                                id: enrollment.studentId,
+                                name: `${enrollment.firstName} ${enrollment.lastName}`,
+                                email: enrollment.email,
+                                attendance: stats.attendanceRate || 0,
+                                performance: performance,
+                                engagement: stats.attendanceRate || 0, // Use attendance as engagement
+                                questionsAnswered: questionsAnswered,
+                                correctAnswers: correctAnswers,
+                                sessionsAttended: stats.sessionsAttended || 0,
+                                lastActive: stats.lastAttendanceDate ? new Date(stats.lastAttendanceDate) : new Date(enrollment.enrolledAt)
+                            };
+                        });
                 } else {
                     // No students enrolled yet
                     analyticsData = [];
