@@ -1012,6 +1012,9 @@
             document.getElementById('waitingMessage').style.display = 'none';
             document.getElementById('questionCard').style.display = 'block';
 
+            // Get question type first (needed for multiple places)
+            const questionType = question.type || question.questionType;
+
             // Set question text - replace [blank] with visual blank for fill-in-the-blank questions
             let questionTextHtml = question.questionText || '';
             if (questionType === 'fill_blank' || questionType === 'fillblank') {
@@ -1026,8 +1029,6 @@
             // Display options based on question type
             const optionsGrid = document.getElementById('optionsGrid');
             optionsGrid.innerHTML = '';
-
-            const questionType = question.type || question.questionType;
 
             if (questionType === 'ordering') {
                 // For ordering questions, show items shuffled
