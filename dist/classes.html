@@ -1470,21 +1470,27 @@
         }
 
         function startSession(event, classId) {
+            event.preventDefault();
             event.stopPropagation();
             // Redirect to session creation or integrate with desktop app
             window.location.href = `/create-session.html?classId=${classId}`;
+            return false;
         }
 
         function viewAnalytics(event, classId) {
+            event.preventDefault();
             event.stopPropagation();
             // Redirect to class analytics page with class ID
             window.location.href = `/analytics.html?classId=${classId}`;
+            return false;
         }
 
         function editClass(event, classId) {
+            event.preventDefault();
             event.stopPropagation();
             // Open edit class modal
             openEditClassModal(classId);
+            return false;
         }
 
         function openEditClassModal(classId) {
