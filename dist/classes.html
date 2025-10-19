@@ -1477,8 +1477,8 @@
 
         function viewAnalytics(event, classId) {
             event.stopPropagation();
-            // Redirect to gamification dashboard which has analytics
-            window.location.href = `/gamification-dashboard.html`;
+            // Redirect to class analytics page with class ID
+            window.location.href = `/analytics.html?classId=${classId}`;
         }
 
         function editClass(event, classId) {

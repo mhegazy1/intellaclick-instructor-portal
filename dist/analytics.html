@@ -312,6 +312,123 @@
                 font-size: 14px;
             }
         }
+
+        /* Student Detail Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content-large {
+            position: relative;
+            background-color: var(--surface);
+            max-width: 1200px;
+            margin: 50px auto;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 32px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: var(--danger-color);
+        }
+
+        .student-detail-content {
+            padding: 24px;
+        }
+
+        .detail-section {
+            margin-bottom: 32px;
+        }
+
+        .detail-section h3 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .detail-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .detail-stat {
+            background-color: var(--background);
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .detail-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .sessions-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sessions-table th,
+        .sessions-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sessions-table th {
+            background-color: var(--background);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .student-table tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .student-table tbody tr:hover {
+            background-color: var(--background);
+        }
     </style>
 </head>
 <body>
@@ -427,6 +544,65 @@
         </a>
     </div>
 
+    <!-- Student Detail Modal -->
+    <div id="studentDetailModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeStudentDetail()"></div>
+        <div class="modal-content-large">
+            <div class="modal-header-detail">
+                <h2 id="studentDetailName">Student Details</h2>
+                <button onclick="closeStudentDetail()" class="close-btn">&times;</button>
+            </div>
+            <div class="student-detail-content">
+                <!-- Student Summary -->
+                <div class="detail-section">
+                    <h3>Overall Performance</h3>
+                    <div class="detail-stats">
+                        <div class="detail-stat">
+                            <div class="detail-label">Attendance Rate</div>
+                            <div class="detail-value" id="detailAttendance">0%</div>
+                        </div>
+                        <div class="detail-stat">
+                            <div class="detail-label">Average Score</div>
+                            <div class="detail-value" id="detailPerformance">0%</div>
+                        </div>
+                        <div class="detail-stat">
+                            <div class="detail-label">Total Sessions</div>
+                            <div class="detail-value" id="detailSessionsAttended">0</div>
+                        </div>
+                        <div class="detail-stat">
+                            <div class="detail-label">Questions Answered</div>
+                            <div class="detail-value" id="detailQuestionsAnswered">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Individual Sessions -->
+                <div class="detail-section">
+                    <h3>Individual Session Performance</h3>
+                    <div class="sessions-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Session Title</th>
+                                    <th>Questions</th>
+                                    <th>Correct</th>
+                                    <th>Score</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessionDetailBody">
+                                <tr>
+                                    <td colspan="6" class="loading">Loading session data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let classId;
         let classData;
@@ -436,8 +612,8 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
-            classId = urlParams.get('id');
-            
+            classId = urlParams.get('classId'); // Changed from 'id' to 'classId'
+
             if (!classId) {
                 window.location.href = '/classes.html';
                 return;
@@ -484,13 +660,41 @@
             const period = document.getElementById('periodFilter').value;
             
             try {
-                // For now, generate sample data
-                // In production, this would fetch from API
-                generateSampleAnalytics();
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // Fetch real analytics data from API
+                const response = await fetch(`${window.API_URL}/api/classes/${classId}/analytics?period=${period}`, {
+                    headers: {
+                        'x-auth-token': token
+                    }
+                });
+
+                if (!response.ok) {
+                    // If analytics endpoint doesn't exist, fall back to sample data
+                    console.log('Analytics endpoint not available, using sample data');
+                    generateSampleAnalytics();
+                } else {
+                    const data = await response.json();
+                    if (data.students && data.students.length > 0) {
+                        analyticsData = data.students;
+                    } else {
+                        // No data available, generate sample
+                        generateSampleAnalytics();
+                    }
+                }
+                
                 updateOverviewStats();
                 renderStudentTable();
             } catch (error) {
                 console.error('Error loading analytics:', error);
+                // Fall back to sample data on error
+                generateSampleAnalytics();
+                updateOverviewStats();
+                renderStudentTable();
             }
         }
 
@@ -551,16 +755,17 @@
             });
             
             tbody.innerHTML = sortedData.map(student => {
-                const performanceClass = student.performance >= 80 ? 'high' : 
+                const performanceClass = student.performance >= 80 ? 'high' :
                                        student.performance >= 60 ? 'medium' : 'low';
-                
+                const studentId = student.id || student.studentId || student.email;
+
                 return `
-                    <tr>
+                    <tr onclick="showStudentDetail('${studentId}', '${student.name.replace(/'/g, "\\'")}')">
                         <td class="student-name">${student.name}</td>
                         <td>
                             <div class="performance-bar">
                                 <div class="progress-bar">
-                                    <div class="progress-fill ${performanceClass}" 
+                                    <div class="progress-fill ${performanceClass}"
                                          style="width: ${student.attendance}%"></div>
                                 </div>
                                 <span>${student.attendance}%</span>
@@ -569,7 +774,7 @@
                         <td>
                             <div class="performance-bar">
                                 <div class="progress-bar">
-                                    <div class="progress-fill ${performanceClass}" 
+                                    <div class="progress-fill ${performanceClass}"
                                          style="width: ${student.performance}%"></div>
                                 </div>
                                 <span>${student.performance}%</span>
@@ -603,6 +808,100 @@
         async function exportAnalytics() {
             // In production, this would generate a PDF or CSV report
             alert('Export functionality would generate a downloadable report');
+        }
+
+        // Student Detail Modal Functions
+        async function showStudentDetail(studentId, studentName) {
+            const modal = document.getElementById('studentDetailModal');
+            modal.style.display = 'block';
+            document.getElementById('studentDetailName').textContent = studentName;
+
+            try {
+                const token = localStorage.getItem('token');
+
+                // Fetch student enrollment details
+                const enrollmentResponse = await fetch(`https://api.intellaclick.com/api/classes/${classId}/students`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (enrollmentResponse.ok) {
+                    const { students } = await enrollmentResponse.json();
+                    const student = students.find(s => s.studentId._id === studentId || s.studentId.email === studentId);
+
+                    if (student) {
+                        // Update overall stats
+                        document.getElementById('detailAttendance').textContent =
+                            `${student.stats?.attendanceRate || 0}%`;
+                        document.getElementById('detailPerformance').textContent =
+                            `${student.stats?.averageScore || 0}%`;
+                        document.getElementById('detailSessionsAttended').textContent =
+                            student.stats?.sessionsAttended || 0;
+                        document.getElementById('detailQuestionsAnswered').textContent =
+                            student.stats?.questionsAnswered || 0;
+                    }
+                }
+
+                // Fetch individual session data
+                const sessionsResponse = await fetch(`https://api.intellaclick.com/api/classes/${classId}/sessions`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (sessionsResponse.ok) {
+                    const { sessions } = await sessionsResponse.json();
+                    renderSessionDetails(sessions, studentId);
+                } else {
+                    document.getElementById('sessionDetailBody').innerHTML =
+                        '<tr><td colspan="6">No session data available</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading student details:', error);
+                document.getElementById('sessionDetailBody').innerHTML =
+                    '<tr><td colspan="6">Error loading session data</td></tr>';
+            }
+        }
+
+        function renderSessionDetails(sessions, studentId) {
+            const tbody = document.getElementById('sessionDetailBody');
+
+            if (!sessions || sessions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">No sessions yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sessions.map(session => {
+                // Find student's participation in this session
+                const participation = session.participants?.find(p =>
+                    p.studentId === studentId || p.studentId._id === studentId
+                );
+
+                const questionsAnswered = participation?.responses?.length || 0;
+                const correctAnswers = participation?.responses?.filter(r => r.isCorrect).length || 0;
+                const score = questionsAnswered > 0
+                    ? Math.round((correctAnswers / questionsAnswered) * 100)
+                    : 0;
+                const status = participation ? 'Attended' : 'Absent';
+
+                return `
+                    <tr>
+                        <td>${new Date(session.createdAt).toLocaleDateString()}</td>
+                        <td>${session.title || 'Untitled Session'}</td>
+                        <td>${questionsAnswered}</td>
+                        <td>${correctAnswers}</td>
+                        <td>${score}%</td>
+                        <td>
+                            <span class="status-badge ${status.toLowerCase()}">${status}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function closeStudentDetail() {
+            document.getElementById('studentDetailModal').style.display = 'none';
         }
     </script>
 </body>
