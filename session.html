@@ -1489,14 +1489,28 @@
                         // Get question data from snapshot if available
                         const snapshot = q.questionSnapshot || q;
 
-                        questionQueue.push({
+                        const question = {
                             text: snapshot.questionText || q.text || '',
                             type: snapshot.type || 'mcq',
                             options: snapshot.options || [],
                             correctAnswer: snapshot.correctAnswer || 0,
                             timeLimit: snapshot.timeLimit || q.timeLimit || 60,
                             points: snapshot.points || q.points || 10
-                        });
+                        };
+
+                        // Add matching question data
+                        if (question.type === 'matching' && snapshot.pairs) {
+                            question.pairs = snapshot.pairs;
+                            console.log('📦 Imported matching question with pairs:', snapshot.pairs);
+                        }
+
+                        // Add ordering question data
+                        if (question.type === 'ordering' && snapshot.correctOrder) {
+                            question.correctOrder = snapshot.correctOrder;
+                            console.log('📦 Imported ordering question with correctOrder:', snapshot.correctOrder);
+                        }
+
+                        questionQueue.push(question);
                     });
 
                     updateQueueDisplay();

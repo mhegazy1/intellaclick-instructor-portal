@@ -1754,27 +1754,57 @@
 
                 // For matching questions, convert pairs format to left/right columns
                 if (question.type === 'matching') {
+                    console.log('🔵 MATCHING QUESTION - Original data:', {
+                        hasPairs: !!question.pairs,
+                        pairsLength: question.pairs?.length,
+                        pairs: question.pairs,
+                        hasLeftColumn: !!question.leftColumn,
+                        hasRightColumn: !!question.rightColumn
+                    });
+
                     if (question.pairs && Array.isArray(question.pairs)) {
                         // Convert pairs to separate columns
                         normalizedQuestion.leftColumn = question.pairs.map(p => p.left);
                         normalizedQuestion.rightColumn = question.pairs.map(p => p.right);
                         normalizedQuestion.pairs = question.pairs; // Keep pairs too
+                        console.log('🔵 MATCHING - Normalized to:', {
+                            leftColumn: normalizedQuestion.leftColumn,
+                            rightColumn: normalizedQuestion.rightColumn,
+                            pairs: normalizedQuestion.pairs
+                        });
                     } else if (question.leftColumn && question.rightColumn) {
                         normalizedQuestion.leftColumn = question.leftColumn;
                         normalizedQuestion.rightColumn = question.rightColumn;
+                    } else {
+                        console.warn('⚠️ MATCHING QUESTION HAS NO DATA - pairs, leftColumn, and rightColumn all missing!');
                     }
                     if (question.correctPairs) normalizedQuestion.correctPairs = question.correctPairs;
                 }
 
                 // For ordering questions, ensure items field is present
                 if (question.type === 'ordering') {
+                    console.log('🟢 ORDERING QUESTION - Original data:', {
+                        hasCorrectOrder: !!question.correctOrder,
+                        correctOrderLength: question.correctOrder?.length,
+                        correctOrder: question.correctOrder,
+                        hasItems: !!question.items,
+                        itemsLength: question.items?.length,
+                        items: question.items
+                    });
+
                     // Send as items (what display expects) and also correctOrder (what was saved)
                     if (question.correctOrder) {
                         normalizedQuestion.items = question.correctOrder;
                         normalizedQuestion.correctOrder = question.correctOrder;
+                        console.log('🟢 ORDERING - Normalized to:', {
+                            items: normalizedQuestion.items,
+                            correctOrder: normalizedQuestion.correctOrder
+                        });
                     } else if (question.items) {
                         normalizedQuestion.items = question.items;
                         normalizedQuestion.correctOrder = question.items;
+                    } else {
+                        console.warn('⚠️ ORDERING QUESTION HAS NO DATA - both correctOrder and items are missing!');
                     }
                 }
 
