@@ -1027,6 +1027,17 @@
             const questionType = question.type || question.questionType;
             const questionText = question.text || question.questionText || '';
 
+            // DEBUG: Log question data
+            console.log('📺 DISPLAYING QUESTION IN SESSION CONTROL:', {
+                questionType,
+                questionText,
+                hasPairs: !!question.pairs,
+                pairs: question.pairs,
+                hasCorrectOrder: !!question.correctOrder,
+                correctOrder: question.correctOrder,
+                fullQuestion: question
+            });
+
             // Display question text with blanks rendered as visual blanks
             let questionTextHtml = questionText;
             if (questionType === 'fillblank' || questionType === 'fill_blank') {
