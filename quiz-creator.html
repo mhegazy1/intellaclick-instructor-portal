@@ -757,6 +757,18 @@
                 })
             };
 
+            // DEBUG: Log what we're about to save
+            console.log('💾 SAVING QUIZ DATA:');
+            console.log('Questions array:', questions);
+            console.log('Quiz data being sent:', quizData);
+            console.log('Question snapshots:', quizData.questions.map(q => ({
+                type: q.questionSnapshot.type,
+                hasPairs: !!q.questionSnapshot.pairs,
+                hasCorrectOrder: !!q.questionSnapshot.correctOrder,
+                pairs: q.questionSnapshot.pairs,
+                correctOrder: q.questionSnapshot.correctOrder
+            })));
+
             try {
                 const method = editingQuizId ? 'PUT' : 'POST';
                 const url = editingQuizId
