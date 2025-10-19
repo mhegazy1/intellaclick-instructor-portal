@@ -1491,34 +1491,79 @@
             const classData = classes.find(c => c._id === classId);
             if (!classData) return;
 
+            // Populate year dropdown for edit modal
+            const editYearSelect = document.getElementById('editTermYear');
+            editYearSelect.innerHTML = '<option value="">Select Year</option>';
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear - 2; year <= currentYear + 5; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                editYearSelect.appendChild(option);
+            }
+
+            // Parse term (e.g., "Fall 2024" -> season="Fall", year="2024")
+            const [season, year] = classData.term ? classData.term.split(' ') : ['', ''];
+
             // Pre-fill the form with current class data
             document.getElementById('editClassName').value = classData.name;
+            document.getElementById('editClassCode').value = classData.code;
+            document.getElementById('editClassSection').value = classData.section || '';
+            document.getElementById('editTermSeason').value = season;
+            document.getElementById('editTermYear').value = year;
             document.getElementById('editClassDescription').value = classData.description || '';
+            document.getElementById('editStartDate').value = classData.startDate ? classData.startDate.split('T')[0] : '';
+            document.getElementById('editEndDate').value = classData.endDate ? classData.endDate.split('T')[0] : '';
+            document.getElementById('editCustomJoinCode').value = ''; // Leave empty to keep current
             document.getElementById('editClassId').value = classId;
 
             // Show modal
             document.getElementById('editClassModal').classList.add('show');
         }
 
-        async function saveClassEdits() {
+        async function saveClassEdits(event) {
+            event.preventDefault();
+
             const classId = document.getElementById('editClassId').value;
             const name = document.getElementById('editClassName').value.trim();
+            const code = document.getElementById('editClassCode').value.trim();
+            const section = document.getElementById('editClassSection').value.trim();
+            const termSeason = document.getElementById('editTermSeason').value;
+            const termYear = document.getElementById('editTermYear').value;
             const description = document.getElementById('editClassDescription').value.trim();
+            const startDate = document.getElementById('editStartDate').value;
+            const endDate = document.getElementById('editEndDate').value;
+            const customJoinCode = document.getElementById('editCustomJoinCode').value.trim();
 
-            if (!name) {
-                showToast('Class name is required', 'error');
+            if (!name || !code || !termSeason || !termYear || !startDate || !endDate) {
+                showToast('Please fill in all required fields', 'error');
                 return;
+            }
+
+            const updateData = {
+                name,
+                code,
+                section,
+                term: `${termSeason} ${termYear}`,
+                description,
+                startDate,
+                endDate
+            };
+
+            // Only include joinCode if a new one is provided
+            if (customJoinCode) {
+                updateData.joinCode = customJoinCode;
             }
 
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`https://api.intellaclick.com/api/classes/${classId}`, {
-                    method: 'PATCH',
+                    method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name, description })
+                    body: JSON.stringify(updateData)
                 });
 
                 if (!response.ok) {
@@ -1735,29 +1780,86 @@
 
     <!-- Edit Class Modal -->
     <div id="editClassModal" class="modal" onclick="if(event.target === this) closeEditClassModal()">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content">
             <div class="modal-header">
                 <h2>Edit Class Settings</h2>
-                <p style="color: var(--text-secondary); font-size: 14px;">Update class name and description</p>
+                <p style="color: var(--text-secondary); font-size: 14px;">Update class information</p>
             </div>
 
-            <div class="form-group">
-                <label for="editClassName">Class Name *</label>
-                <input type="text" id="editClassName" placeholder="e.g., Introduction to Psychology" required>
-            </div>
+            <form id="editClassForm" onsubmit="saveClassEdits(event)">
+                <div class="form-group">
+                    <label for="editClassName">Class Name *</label>
+                    <input type="text" id="editClassName" required placeholder="e.g., Introduction to Psychology">
+                </div>
 
-            <div class="form-group">
-                <label for="editClassDescription">Description (optional)</label>
-                <textarea id="editClassDescription" placeholder="Brief description of the class..." rows="3"
-                          style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; resize: vertical;"></textarea>
-            </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editClassCode">Course Code *</label>
+                        <input type="text" id="editClassCode" required placeholder="e.g., PSY101">
+                    </div>
+                    <div class="form-group">
+                        <label for="editClassSection">Section</label>
+                        <input type="text" id="editClassSection" placeholder="e.g., 001">
+                    </div>
+                </div>
 
-            <input type="hidden" id="editClassId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editTermSeason">Term Season *</label>
+                        <select id="editTermSeason" required>
+                            <option value="">Select Season</option>
+                            <option value="Spring">Spring</option>
+                            <option value="Summer">Summer</option>
+                            <option value="Fall">Fall</option>
+                            <option value="Winter">Winter</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTermYear">Term Year *</label>
+                        <select id="editTermYear" required>
+                            <option value="">Select Year</option>
+                        </select>
+                    </div>
+                </div>
 
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeEditClassModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveClassEdits()">Save Changes</button>
-            </div>
+                <div class="form-group">
+                    <label for="editClassDescription">Description</label>
+                    <textarea id="editClassDescription" placeholder="Brief description of the class (optional)"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editStartDate">Start Date *</label>
+                        <input type="date" id="editStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEndDate">End Date *</label>
+                        <input type="date" id="editEndDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editCustomJoinCode">Custom Join Code</label>
+                    <input type="text"
+                           id="editCustomJoinCode"
+                           placeholder="Current code will be kept if empty"
+                           maxlength="12"
+                           pattern="[A-Za-z0-9]{4,12}"
+                           title="4-12 characters, letters and numbers only"
+                           style="text-transform: uppercase;"
+                           oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')">
+                    <small style="color: #6B7280; display: block; margin-top: 4px;">
+                        4-12 characters, letters and numbers only. Leave empty to keep current code.
+                    </small>
+                </div>
+
+                <input type="hidden" id="editClassId">
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditClassModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
 
