@@ -981,8 +981,24 @@
                     const quizData = await quizResponse.json();
                     const quiz = quizData.quiz || quizData;
 
+                    // Transform quiz questions to session format
+                    const quizQuestions = (quiz.questions || []).map(q => {
+                        const snapshot = q.questionSnapshot || {};
+                        return {
+                            text: snapshot.questionText || '',
+                            type: snapshot.type || 'mcq',
+                            timeLimit: 60, // Default time limit
+                            points: q.points || 10,
+                            options: snapshot.options,
+                            correctAnswer: snapshot.correctAnswer,
+                            pairs: snapshot.pairs,
+                            correctOrder: snapshot.correctOrder,
+                            optionTexts: snapshot.options // For MCQ
+                        };
+                    });
+
                     // Add quiz questions to session
-                    sessionData.questions = quiz.questions || [];
+                    sessionData.questions = quizQuestions;
                     sessionData.quizId = quizId;
                     sessionData.quizTitle = quiz.title;
 
@@ -1042,7 +1058,7 @@
                 showToast(`Session created! Code: ${session.sessionCode || sessionCode}`, 'success');
 
                 // Store all questions in sessionStorage for the session page to use
-                if (selectedType === 'quick' && sessionData.questions) {
+                if (sessionData.questions && sessionData.questions.length > 0) {
                     sessionStorage.setItem('pendingQuestions', JSON.stringify(sessionData.questions));
                     sessionStorage.setItem('currentQuestionIndex', '0'); // Start with first question
                 }

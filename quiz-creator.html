@@ -549,12 +549,17 @@
                 case 'fillblank':
                     return `
                         <div class="form-group">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="insertBlankInQuestion(${index})" style="margin-bottom: 8px;">
+                                Insert [blank] at cursor
+                            </button>
+                            <small style="color: var(--text-secondary); display: block; margin-bottom: 12px;">Click the button above to insert a blank in your question text</small>
+                        </div>
+                        <div class="form-group">
                             <label>Correct Answer</label>
                             <input type="text"
                                    placeholder="Enter the correct answer"
                                    value="${q.correctAnswer || ''}"
                                    onchange="updateQuestion(${index}, 'correctAnswer', this.value)">
-                            <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Use [blank] in your question text where the answer should go</small>
                         </div>
                     `;
 
@@ -619,6 +624,30 @@
                 questions[questionIndex].correctOrder = [];
             }
             questions[questionIndex].correctOrder[itemIndex] = value;
+        }
+
+        function insertBlankInQuestion(questionIndex) {
+            // Get the question text input field
+            const inputs = document.querySelectorAll('.question-card');
+            const questionCard = inputs[questionIndex];
+            const textInput = questionCard.querySelector('input[placeholder="Enter your question"]');
+
+            if (textInput) {
+                const start = textInput.selectionStart;
+                const end = textInput.selectionEnd;
+                const currentText = textInput.value;
+
+                // Insert [blank] at cursor position
+                const newText = currentText.substring(0, start) + '[blank]' + currentText.substring(end);
+                textInput.value = newText;
+
+                // Update the question data
+                questions[questionIndex].text = newText;
+
+                // Move cursor after [blank]
+                textInput.focus();
+                textInput.selectionStart = textInput.selectionEnd = start + 7;
+            }
         }
 
         async function saveQuiz() {
