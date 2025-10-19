@@ -659,7 +659,7 @@
 
         async function loadAnalytics() {
             const period = document.getElementById('periodFilter').value;
-            
+
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
@@ -667,33 +667,48 @@
                     return;
                 }
 
-                // Fetch real analytics data from API
-                const response = await fetch(`${window.API_URL}/api/classes/${classId}/analytics?period=${period}`, {
+                // Fetch real student enrollment data
+                const response = await fetch(`https://api.intellaclick.com/api/classes/${classId}/students`, {
                     headers: {
-                        'x-auth-token': token
+                        'Authorization': `Bearer ${token}`
                     }
                 });
 
                 if (!response.ok) {
-                    // If analytics endpoint doesn't exist, fall back to sample data
-                    console.log('Analytics endpoint not available, using sample data');
-                    generateSampleAnalytics();
-                } else {
-                    const data = await response.json();
-                    if (data.students && data.students.length > 0) {
-                        analyticsData = data.students;
-                    } else {
-                        // No data available, generate sample
-                        generateSampleAnalytics();
-                    }
+                    throw new Error('Failed to load student data');
                 }
-                
+
+                const data = await response.json();
+
+                if (data.students && data.students.length > 0) {
+                    // Transform enrollment data to analytics format
+                    analyticsData = data.students.map(enrollment => {
+                        const student = enrollment.studentId;
+                        const stats = enrollment.stats || {};
+
+                        return {
+                            id: student._id || student.email,
+                            name: student.name || student.email,
+                            email: student.email,
+                            attendance: stats.attendanceRate || 0,
+                            performance: stats.averageScore || 0,
+                            engagement: stats.participationRate || 0,
+                            questionsAnswered: stats.questionsAnswered || 0,
+                            correctAnswers: stats.correctAnswers || 0,
+                            sessionsAttended: stats.sessionsAttended || 0,
+                            lastActive: stats.lastAttendanceDate ? new Date(stats.lastAttendanceDate) : new Date(enrollment.enrolledAt)
+                        };
+                    });
+                } else {
+                    // No students enrolled yet
+                    analyticsData = [];
+                }
+
                 updateOverviewStats();
                 renderStudentTable();
             } catch (error) {
                 console.error('Error loading analytics:', error);
-                // Fall back to sample data on error
-                generateSampleAnalytics();
+                analyticsData = [];
                 updateOverviewStats();
                 renderStudentTable();
             }
@@ -719,6 +734,14 @@
         }
 
         function updateOverviewStats() {
+            if (analyticsData.length === 0) {
+                document.getElementById('avgAttendance').textContent = '0%';
+                document.getElementById('avgPerformance').textContent = '0%';
+                document.getElementById('totalSessions').textContent = '0';
+                document.getElementById('engagementRate').textContent = '0%';
+                return;
+            }
+
             const avgAttendance = Math.round(
                 analyticsData.reduce((sum, s) => sum + s.attendance, 0) / analyticsData.length
             );
@@ -729,32 +752,42 @@
                 analyticsData.reduce((sum, s) => sum + s.engagement, 0) / analyticsData.length
             );
 
-            document.getElementById('avgAttendance').textContent = `${avgAttendance}%`;
-            document.getElementById('avgPerformance').textContent = `${avgPerformance}%`;
-            document.getElementById('totalSessions').textContent = '24';
-            document.getElementById('engagementRate').textContent = `${avgEngagement}%`;
+            // Count total sessions from student data
+            const totalSessions = analyticsData.length > 0
+                ? Math.max(...analyticsData.map(s => s.sessionsAttended || 0))
+                : 0;
+
+            document.getElementById('avgAttendance').textContent = `${avgAttendance || 0}%`;
+            document.getElementById('avgPerformance').textContent = `${avgPerformance || 0}%`;
+            document.getElementById('totalSessions').textContent = totalSessions;
+            document.getElementById('engagementRate').textContent = `${avgEngagement || 0}%`;
         }
 
         function renderStudentTable() {
             const tbody = document.getElementById('studentTableBody');
-            
+
+            if (analyticsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">No students enrolled yet</td></tr>';
+                return;
+            }
+
             // Sort data
             const sortedData = [...analyticsData].sort((a, b) => {
                 let aVal = a[currentSort.field];
                 let bVal = b[currentSort.field];
-                
+
                 if (currentSort.field === 'lastActive') {
                     aVal = aVal.getTime();
                     bVal = bVal.getTime();
                 }
-                
+
                 if (currentSort.direction === 'asc') {
                     return aVal > bVal ? 1 : -1;
                 } else {
                     return aVal < bVal ? 1 : -1;
                 }
             });
-            
+
             tbody.innerHTML = sortedData.map(student => {
                 const performanceClass = student.performance >= 80 ? 'high' :
                                        student.performance >= 60 ? 'medium' : 'low';
