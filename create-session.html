@@ -438,6 +438,12 @@
                     <select id="quizSelect">
                         <option value="">Loading quizzes...</option>
                     </select>
+                    <div id="noQuizzesMessage" style="display: none; margin-top: 12px; padding: 12px; background-color: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px;">
+                        <p style="margin: 0; color: #92400E; font-size: 14px;">
+                            No quizzes available yet.
+                            <a href="/quiz-creator.html" style="color: var(--primary-color); font-weight: 500;">Create your first quiz</a>
+                        </p>
+                    </div>
                 </div>
 
                 <div id="desktopInstructions" style="display: none;">
@@ -673,9 +679,35 @@
         }
 
         async function loadQuizzes() {
-            // TODO: Implement quiz loading from API
-            const select = document.getElementById('quizSelect');
-            select.innerHTML = '<option value="">No quizzes available yet</option>';
+            try {
+                const response = await fetch('https://api.intellaclick.com/api/quizzes', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+                const select = document.getElementById('quizSelect');
+                const noQuizzesMessage = document.getElementById('noQuizzesMessage');
+
+                if (data.success && data.quizzes && data.quizzes.length > 0) {
+                    // Populate dropdown with quizzes
+                    select.innerHTML = '<option value="">Select a quiz...</option>' +
+                        data.quizzes.map(quiz =>
+                            `<option value="${quiz._id}">${quiz.title} (${quiz.questionCount || 0} questions)</option>`
+                        ).join('');
+                    noQuizzesMessage.style.display = 'none';
+                } else {
+                    // No quizzes found
+                    select.innerHTML = '<option value="">No quizzes available</option>';
+                    noQuizzesMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading quizzes:', error);
+                const select = document.getElementById('quizSelect');
+                select.innerHTML = '<option value="">Error loading quizzes</option>';
+                showToast('Failed to load quizzes', 'error');
+            }
         }
 
         function showDesktopInstructions() {
@@ -926,6 +958,43 @@
 
                 // Use all questions from the array
                 sessionData.questions = quickPollQuestions;
+            } else if (selectedType === 'quiz') {
+                // Get selected quiz
+                const quizId = document.getElementById('quizSelect').value;
+                if (!quizId) {
+                    showToast('Please select a quiz', 'error');
+                    return;
+                }
+
+                // Fetch quiz data
+                try {
+                    const quizResponse = await fetch(`https://api.intellaclick.com/api/quizzes/${quizId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+
+                    if (!quizResponse.ok) {
+                        throw new Error('Failed to load quiz');
+                    }
+
+                    const quizData = await quizResponse.json();
+                    const quiz = quizData.quiz || quizData;
+
+                    // Add quiz questions to session
+                    sessionData.questions = quiz.questions || [];
+                    sessionData.quizId = quizId;
+                    sessionData.quizTitle = quiz.title;
+
+                    if (sessionData.questions.length === 0) {
+                        showToast('Selected quiz has no questions', 'error');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error loading quiz:', error);
+                    showToast('Failed to load quiz data', 'error');
+                    return;
+                }
             }
             
             try {
