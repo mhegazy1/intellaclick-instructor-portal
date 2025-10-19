@@ -341,13 +341,44 @@
                     document.getElementById('shuffleQuestions').checked = data.quiz.settings?.shuffleQuestions || false;
                     document.getElementById('showResults').checked = data.quiz.settings?.showResults !== false;
 
-                    // Load questions
-                    questions = (data.quiz.questions || []).map(q => ({
-                        text: q.questionSnapshot?.questionText || '',
-                        options: q.questionSnapshot?.options || ['', '', '', ''],
-                        correctAnswer: q.questionSnapshot?.correctAnswer || 0,
-                        points: q.points || 1
-                    }));
+                    // Load questions with proper type handling
+                    questions = (data.quiz.questions || []).map(q => {
+                        const snapshot = q.questionSnapshot || {};
+                        const questionType = snapshot.type || 'mcq';
+
+                        const baseQuestion = {
+                            type: questionType,
+                            text: snapshot.questionText || '',
+                            points: q.points || 1
+                        };
+
+                        // Load type-specific data
+                        switch(questionType) {
+                            case 'mcq':
+                                baseQuestion.options = snapshot.options || ['', '', '', ''];
+                                baseQuestion.correctAnswer = snapshot.correctAnswer || 0;
+                                break;
+                            case 'tf':
+                                baseQuestion.correctAnswer = snapshot.correctAnswer || 'true';
+                                break;
+                            case 'matching':
+                                baseQuestion.pairs = snapshot.pairs || [{left: '', right: ''}, {left: '', right: ''}, {left: '', right: ''}, {left: '', right: ''}];
+                                break;
+                            case 'ordering':
+                                baseQuestion.correctOrder = snapshot.correctOrder || ['', '', '', ''];
+                                break;
+                            case 'fillblank':
+                                baseQuestion.correctAnswer = snapshot.correctAnswer || '';
+                                break;
+                            default:
+                                // Fallback to MCQ for unknown types
+                                baseQuestion.type = 'mcq';
+                                baseQuestion.options = ['', '', '', ''];
+                                baseQuestion.correctAnswer = 0;
+                        }
+
+                        return baseQuestion;
+                    });
 
                     renderQuestions();
                 }
@@ -359,6 +390,7 @@
 
         function addQuestion() {
             questions.push({
+                type: 'mcq',
                 text: '',
                 options: ['', '', '', ''],
                 correctAnswer: 0,
@@ -382,7 +414,10 @@
                 return;
             }
 
-            container.innerHTML = questions.map((q, index) => `
+            container.innerHTML = questions.map((q, index) => {
+                const questionType = q.type || 'mcq';
+
+                return `
                 <div class="question-card">
                     <div class="question-header">
                         <span class="question-number">Question ${index + 1}</span>
@@ -392,30 +427,25 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Question Text *</label>
-                        <input type="text"
-                               placeholder="Enter your question"
-                               value="${q.text}"
-                               onchange="updateQuestion(${index}, 'text', this.value)">
+                        <label>Question Type</label>
+                        <select onchange="updateQuestionType(${index}, this.value)" style="width: auto; padding: 8px;">
+                            <option value="mcq" ${questionType === 'mcq' ? 'selected' : ''}>Multiple Choice</option>
+                            <option value="tf" ${questionType === 'tf' ? 'selected' : ''}>True/False</option>
+                            <option value="matching" ${questionType === 'matching' ? 'selected' : ''}>Matching</option>
+                            <option value="ordering" ${questionType === 'ordering' ? 'selected' : ''}>Put in Order</option>
+                            <option value="fillblank" ${questionType === 'fillblank' ? 'selected' : ''}>Fill in the Blank</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
-                        <label>Answer Options (select the correct answer)</label>
-                        <div class="option-group">
-                            ${q.options.map((opt, optIndex) => `
-                                <div class="option-item">
-                                    <input type="radio"
-                                           name="correct_${index}"
-                                           ${q.correctAnswer === optIndex ? 'checked' : ''}
-                                           onchange="updateQuestion(${index}, 'correctAnswer', ${optIndex})">
-                                    <input type="text"
-                                           placeholder="Option ${optIndex + 1}"
-                                           value="${opt}"
-                                           onchange="updateOption(${index}, ${optIndex}, this.value)">
-                                </div>
-                            `).join('')}
-                        </div>
+                        <label>Question Text *</label>
+                        <input type="text"
+                               placeholder="Enter your question"
+                               value="${q.text || ''}"
+                               onchange="updateQuestion(${index}, 'text', this.value)">
                     </div>
+
+                    ${renderQuestionTypeOptions(q, index)}
 
                     <div class="form-group">
                         <label>Points</label>
@@ -426,7 +456,111 @@
                                onchange="updateQuestion(${index}, 'points', parseInt(this.value))">
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
+        }
+
+        function renderQuestionTypeOptions(q, index) {
+            const questionType = q.type || 'mcq';
+
+            switch(questionType) {
+                case 'mcq':
+                    return `
+                        <div class="form-group">
+                            <label>Answer Options (select the correct answer)</label>
+                            <div class="option-group">
+                                ${(q.options || ['', '', '', '']).map((opt, optIndex) => `
+                                    <div class="option-item">
+                                        <input type="radio"
+                                               name="correct_${index}"
+                                               ${q.correctAnswer === optIndex ? 'checked' : ''}
+                                               onchange="updateQuestion(${index}, 'correctAnswer', ${optIndex})">
+                                        <input type="text"
+                                               placeholder="Option ${optIndex + 1}"
+                                               value="${opt || ''}"
+                                               onchange="updateOption(${index}, ${optIndex}, this.value)">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                case 'tf':
+                    return `
+                        <div class="form-group">
+                            <label>Correct Answer</label>
+                            <div class="option-group">
+                                <div class="option-item">
+                                    <input type="radio"
+                                           name="tfanswer_${index}"
+                                           value="true"
+                                           ${q.correctAnswer === 'true' ? 'checked' : ''}
+                                           onchange="updateQuestion(${index}, 'correctAnswer', 'true')">
+                                    <label style="margin: 0;">True</label>
+                                </div>
+                                <div class="option-item">
+                                    <input type="radio"
+                                           name="tfanswer_${index}"
+                                           value="false"
+                                           ${q.correctAnswer === 'false' ? 'checked' : ''}
+                                           onchange="updateQuestion(${index}, 'correctAnswer', 'false')">
+                                    <label style="margin: 0;">False</label>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                case 'matching':
+                    const pairs = q.pairs || [{left: '', right: ''}, {left: '', right: ''}, {left: '', right: ''}, {left: '', right: ''}];
+                    return `
+                        <div class="form-group">
+                            <label>Matching Pairs</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                                ${pairs.map((pair, pairIndex) => `
+                                    <input type="text"
+                                           placeholder="Item ${pairIndex + 1}"
+                                           value="${pair.left || ''}"
+                                           onchange="updateMatchingPair(${index}, ${pairIndex}, 'left', this.value)">
+                                    <input type="text"
+                                           placeholder="Match ${pairIndex + 1}"
+                                           value="${pair.right || ''}"
+                                           onchange="updateMatchingPair(${index}, ${pairIndex}, 'right', this.value)">
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                case 'ordering':
+                    const items = q.correctOrder || ['', '', '', ''];
+                    return `
+                        <div class="form-group">
+                            <label>Items in Correct Order</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                                ${items.map((item, itemIndex) => `
+                                    <input type="text"
+                                           placeholder="${itemIndex + 1}${itemIndex === 0 ? 'st' : itemIndex === 1 ? 'nd' : itemIndex === 2 ? 'rd' : 'th'} item"
+                                           value="${item || ''}"
+                                           onchange="updateOrderItem(${index}, ${itemIndex}, this.value)">
+                                `).join('')}
+                            </div>
+                            <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Enter items in the correct order</small>
+                        </div>
+                    `;
+
+                case 'fillblank':
+                    return `
+                        <div class="form-group">
+                            <label>Correct Answer</label>
+                            <input type="text"
+                                   placeholder="Enter the correct answer"
+                                   value="${q.correctAnswer || ''}"
+                                   onchange="updateQuestion(${index}, 'correctAnswer', this.value)">
+                            <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Use [blank] in your question text where the answer should go</small>
+                        </div>
+                    `;
+
+                default:
+                    return '';
+            }
         }
 
         function updateQuestion(index, field, value) {
@@ -435,6 +569,56 @@
 
         function updateOption(questionIndex, optionIndex, value) {
             questions[questionIndex].options[optionIndex] = value;
+        }
+
+        function updateQuestionType(index, newType) {
+            const q = questions[index];
+            q.type = newType;
+
+            // Initialize data structures for new type
+            switch(newType) {
+                case 'mcq':
+                    q.options = ['', '', '', ''];
+                    q.correctAnswer = 0;
+                    break;
+                case 'tf':
+                    delete q.options;
+                    q.correctAnswer = 'true';
+                    break;
+                case 'matching':
+                    delete q.options;
+                    q.pairs = [{left: '', right: ''}, {left: '', right: ''}, {left: '', right: ''}, {left: '', right: ''}];
+                    delete q.correctAnswer;
+                    break;
+                case 'ordering':
+                    delete q.options;
+                    q.correctOrder = ['', '', '', ''];
+                    delete q.correctAnswer;
+                    break;
+                case 'fillblank':
+                    delete q.options;
+                    q.correctAnswer = '';
+                    break;
+            }
+
+            renderQuestions();
+        }
+
+        function updateMatchingPair(questionIndex, pairIndex, side, value) {
+            if (!questions[questionIndex].pairs) {
+                questions[questionIndex].pairs = [];
+            }
+            if (!questions[questionIndex].pairs[pairIndex]) {
+                questions[questionIndex].pairs[pairIndex] = {left: '', right: ''};
+            }
+            questions[questionIndex].pairs[pairIndex][side] = value;
+        }
+
+        function updateOrderItem(questionIndex, itemIndex, value) {
+            if (!questions[questionIndex].correctOrder) {
+                questions[questionIndex].correctOrder = [];
+            }
+            questions[questionIndex].correctOrder[itemIndex] = value;
         }
 
         async function saveQuiz() {
@@ -450,15 +634,52 @@
                 return;
             }
 
-            // Validate all questions have text and options
+            // Validate all questions
             for (let i = 0; i < questions.length; i++) {
-                if (!questions[i].text.trim()) {
+                const q = questions[i];
+                if (!q.text.trim()) {
                     showMessage(`Question ${i + 1} is missing text`, 'error');
                     return;
                 }
-                if (questions[i].options.every(opt => !opt.trim())) {
-                    showMessage(`Question ${i + 1} needs at least one option`, 'error');
-                    return;
+
+                // Type-specific validation
+                switch(q.type) {
+                    case 'mcq':
+                        if (!q.options || q.options.every(opt => !opt.trim())) {
+                            showMessage(`Question ${i + 1} needs at least one option`, 'error');
+                            return;
+                        }
+                        break;
+                    case 'tf':
+                        if (!q.correctAnswer) {
+                            showMessage(`Question ${i + 1} needs a correct answer`, 'error');
+                            return;
+                        }
+                        break;
+                    case 'matching':
+                        const validPairs = (q.pairs || []).filter(p => p.left.trim() && p.right.trim());
+                        if (validPairs.length < 2) {
+                            showMessage(`Question ${i + 1} needs at least 2 matching pairs`, 'error');
+                            return;
+                        }
+                        break;
+                    case 'ordering':
+                        const validItems = (q.correctOrder || []).filter(item => item.trim());
+                        if (validItems.length < 2) {
+                            showMessage(`Question ${i + 1} needs at least 2 items to order`, 'error');
+                            return;
+                        }
+                        break;
+                    case 'fillblank':
+                        if (!q.correctAnswer || !q.correctAnswer.trim()) {
+                            showMessage(`Question ${i + 1} needs a correct answer`, 'error');
+                            return;
+                        }
+                        if (!q.text.includes('[blank]')) {
+                            showMessage(`Question ${i + 1} must include [blank] in the question text`, 'error');
+                            return;
+                        }
+                        break;
                 }
             }
 
@@ -472,16 +693,39 @@
                     shuffleQuestions: document.getElementById('shuffleQuestions').checked,
                     showResults: document.getElementById('showResults').checked
                 },
-                questions: questions.map((q, index) => ({
-                    order: index,
-                    points: q.points,
-                    questionSnapshot: {
-                        questionText: q.text,
-                        type: 'multiple_choice',
-                        options: q.options.filter(opt => opt.trim()),
-                        correctAnswer: q.correctAnswer
+                questions: questions.map((q, index) => {
+                    const baseQuestion = {
+                        order: index,
+                        points: q.points,
+                        questionSnapshot: {
+                            questionText: q.text,
+                            type: q.type || 'mcq'
+                        }
+                    };
+
+                    // Add type-specific data
+                    switch(q.type) {
+                        case 'mcq':
+                            baseQuestion.questionSnapshot.options = q.options.filter(opt => opt.trim());
+                            baseQuestion.questionSnapshot.correctAnswer = q.correctAnswer;
+                            break;
+                        case 'tf':
+                            baseQuestion.questionSnapshot.options = ['True', 'False'];
+                            baseQuestion.questionSnapshot.correctAnswer = q.correctAnswer;
+                            break;
+                        case 'matching':
+                            baseQuestion.questionSnapshot.pairs = q.pairs.filter(p => p.left.trim() && p.right.trim());
+                            break;
+                        case 'ordering':
+                            baseQuestion.questionSnapshot.correctOrder = q.correctOrder.filter(item => item.trim());
+                            break;
+                        case 'fillblank':
+                            baseQuestion.questionSnapshot.correctAnswer = q.correctAnswer;
+                            break;
                     }
-                }))
+
+                    return baseQuestion;
+                })
             };
 
             try {
