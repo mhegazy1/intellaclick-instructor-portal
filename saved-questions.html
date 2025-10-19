@@ -137,15 +137,45 @@
             font-size: 0.875rem;
             color: var(--text-secondary);
         }
+
+        .bulk-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .set-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin-right: 12px;
+        }
+
+        .question-set-header-with-checkbox {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .question-set-header-content {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>Saved Question Sets</h1>
-            <button class="btn btn-secondary" onclick="window.history.back()">
-                ← Back
-            </button>
+            <div class="bulk-actions">
+                <button class="btn btn-secondary" onclick="toggleSelectAll()">
+                    <span id="selectAllText">Select All</span>
+                </button>
+                <button class="btn btn-danger" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                    Delete Selected (<span id="selectedCount">0</span>)
+                </button>
+                <button class="btn btn-secondary" onclick="window.history.back()">
+                    ← Back
+                </button>
+            </div>
         </div>
 
         <div class="stats-bar">
@@ -294,6 +324,7 @@
 
     <script>
         let allQuestionSets = [];
+        let selectedSets = new Set();
 
         console.log('🔵 Saved Questions Page Loaded - Version 1.0.2-button-fix');
 
@@ -383,15 +414,24 @@
                 }).join('');
 
                 const setId = set._id || set.id;
+                const isSelected = selectedSets.has(setId);
 
                 return `
                     <div class="question-set-card">
-                        <div class="question-set-header">
-                            <div>
-                                <div class="question-set-title">${set.name}</div>
-                                <div class="question-set-meta">${date} at ${time}</div>
+                        <div class="question-set-header-with-checkbox">
+                            <input type="checkbox" class="set-checkbox"
+                                   data-set-id="${setId}"
+                                   ${isSelected ? 'checked' : ''}
+                                   onclick="toggleSetSelection('${setId}')">
+                            <div class="question-set-header-content">
+                                <div class="question-set-header">
+                                    <div>
+                                        <div class="question-set-title">${set.name}</div>
+                                        <div class="question-set-meta">${date} at ${time}</div>
+                                    </div>
+                                    <span class="question-count-badge">${set.questionCount} Q's</span>
+                                </div>
                             </div>
-                            <span class="question-count-badge">${set.questionCount} Q's</span>
                         </div>
 
                         <div class="question-preview">
@@ -416,6 +456,7 @@
                     </div>
                 `;
             }).join('');
+            updateSelectionUI();
         }
 
         function getTypeLabel(type) {
@@ -1088,6 +1129,75 @@
             } catch (error) {
                 console.error('Error updating question set:', error);
                 alert(`Failed to update question set: ${error.message}`);
+            }
+        }
+
+        // ========== BULK SELECTION FUNCTIONS ==========
+
+        function toggleSetSelection(setId) {
+            if (selectedSets.has(setId)) {
+                selectedSets.delete(setId);
+            } else {
+                selectedSets.add(setId);
+            }
+            renderQuestionSets(allQuestionSets);
+        }
+
+        function toggleSelectAll() {
+            const visibleSets = allQuestionSets;
+
+            if (selectedSets.size === visibleSets.length && visibleSets.length > 0) {
+                // Deselect all
+                selectedSets.clear();
+            } else {
+                // Select all visible
+                visibleSets.forEach(set => {
+                    const setId = set._id || set.id;
+                    selectedSets.add(setId);
+                });
+            }
+
+            renderQuestionSets(allQuestionSets);
+        }
+
+        function updateSelectionUI() {
+            const count = selectedSets.size;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('deleteSelectedBtn').disabled = count === 0;
+
+            const visibleSets = allQuestionSets;
+            const allSelected = count > 0 && count === visibleSets.length;
+            document.getElementById('selectAllText').textContent = allSelected ? 'Deselect All' : 'Select All';
+        }
+
+        async function deleteSelected() {
+            const count = selectedSets.size;
+            if (count === 0) return;
+
+            if (!confirm(`Are you sure you want to delete ${count} question set${count > 1 ? 's' : ''}? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const deletePromises = Array.from(selectedSets).map(setId =>
+                    fetch(`https://api.intellaclick.com/api/question-sets/${setId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    })
+                );
+
+                await Promise.all(deletePromises);
+
+                alert(`Successfully deleted ${count} question set${count > 1 ? 's' : ''}!`);
+                selectedSets.clear();
+                loadQuestionSets();
+            } catch (error) {
+                console.error('Error deleting question sets:', error);
+                alert('Some question sets could not be deleted. Please try again.');
+                loadQuestionSets();
             }
         }
 
