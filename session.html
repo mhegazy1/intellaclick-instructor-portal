@@ -829,11 +829,13 @@
             document.getElementById('questionModal').style.display = 'block';
 
             // Set question type and text
-            document.getElementById('modalQuestionType').value = question.type || 'mcq';
+            const questionType = question.type || question.questionType || 'mcq';
+            console.log('Editing question with type:', questionType);
+            document.getElementById('modalQuestionType').value = questionType;
             document.getElementById('modalQuestionText').value = question.text || question.questionText || '';
 
-            // Update options display
-            updateModalOptions();
+            // Update options display after type is set
+            setTimeout(() => updateModalOptions(), 10);
 
             // Pre-fill data based on question type
             setTimeout(() => {
@@ -982,15 +984,17 @@
                 showToast('Question sent successfully!', 'success');
                 document.getElementById('stopBtn').disabled = false;
                 document.getElementById('resultsBtn').disabled = false;
-                
-                // Display current question
+
+                // Display current question immediately
                 displayCurrentQuestion(question);
-                
+
                 // Update queue display
                 updateQueueDisplay();
-                
-                // Reload session to get updated state
-                await loadSession();
+
+                // Wait a bit for server to save, then reload session
+                setTimeout(async () => {
+                    await loadSession();
+                }, 500);
             } catch (error) {
                 console.error('Error sending question:', error);
                 
@@ -1019,28 +1023,36 @@
         function displayCurrentQuestion(question) {
             document.getElementById('currentQuestionSection').style.display = 'block';
 
+            // Normalize question format (handle both local queue format and server format)
+            const questionType = question.type || question.questionType;
+            const questionText = question.text || question.questionText || '';
+
             // Display question text with blanks rendered as visual blanks
-            let questionTextHtml = question.text || question.questionText || '';
-            if (question.type === 'fillblank') {
+            let questionTextHtml = questionText;
+            if (questionType === 'fillblank' || questionType === 'fill_blank') {
                 // Replace [blank] with a styled visual blank
                 questionTextHtml = questionTextHtml.replace(/\[blank\]/gi, '<span style="display: inline-block; min-width: 100px; border-bottom: 2px solid #4F46E5; margin: 0 6px; height: 1.2em; vertical-align: bottom;"></span>');
             }
             document.getElementById('questionText').innerHTML = questionTextHtml;
-            
+
             // Display options based on question type
             const optionsDiv = document.getElementById('questionOptions');
             optionsDiv.innerHTML = '';
-            
-            if (question.type === 'mcq' && question.optionTexts) {
-                question.options.forEach((option, index) => {
-                    const optionEl = document.createElement('div');
-                    optionEl.style.marginTop = '8px';
-                    optionEl.textContent = `${option}: ${question.optionTexts[index]}`;
-                    optionsDiv.appendChild(optionEl);
+
+            if ((questionType === 'mcq' || questionType === 'multiple_choice') && (question.optionTexts || question.options)) {
+                const optionTexts = question.optionTexts || question.options;
+                const optionLetters = question.options && question.optionTexts ? question.options : ['A', 'B', 'C', 'D'];
+                optionLetters.forEach((option, index) => {
+                    if (optionTexts[index]) {
+                        const optionEl = document.createElement('div');
+                        optionEl.style.marginTop = '8px';
+                        optionEl.textContent = `${option}: ${optionTexts[index]}`;
+                        optionsDiv.appendChild(optionEl);
+                    }
                 });
-            } else if (question.type === 'tf') {
+            } else if (questionType === 'tf' || questionType === 'boolean') {
                 optionsDiv.innerHTML = '<div style="margin-top: 8px;">A: True</div><div style="margin-top: 8px;">B: False</div>';
-            } else if (question.type === 'matching' && question.pairs) {
+            } else if (questionType === 'matching' && question.pairs) {
                 optionsDiv.innerHTML = '<strong>Match the following:</strong>';
                 question.pairs.forEach((pair, index) => {
                     const pairEl = document.createElement('div');
@@ -1048,7 +1060,7 @@
                     pairEl.textContent = `${index + 1}. ${pair.left} → ?`;
                     optionsDiv.appendChild(pairEl);
                 });
-            } else if (question.type === 'ordering' && question.correctOrder) {
+            } else if ((questionType === 'ordering' || questionType === 'ordering') && question.correctOrder) {
                 optionsDiv.innerHTML = '<strong>Put in correct order:</strong>';
                 // Shuffle the items for display
                 const shuffled = [...question.correctOrder].sort(() => Math.random() - 0.5);
