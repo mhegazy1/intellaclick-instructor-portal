@@ -344,7 +344,8 @@
                     // Load questions with proper type handling
                     questions = (data.quiz.questions || []).map(q => {
                         const snapshot = q.questionSnapshot || {};
-                        const questionType = snapshot.type || 'mcq';
+                        // Check both questionType (new schema) and type (old data) for backwards compatibility
+                        const questionType = snapshot.questionType || snapshot.type || 'mcq';
 
                         const baseQuestion = {
                             type: questionType,
@@ -728,7 +729,8 @@
                         points: q.points,
                         questionSnapshot: {
                             questionText: q.text,
-                            type: q.type || 'mcq'
+                            type: q.type || 'mcq',  // Keep for backwards compatibility
+                            questionType: q.type || 'mcq'  // Schema expects this field!
                         }
                     };
 

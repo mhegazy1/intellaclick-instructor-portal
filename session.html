@@ -1489,9 +1489,12 @@
                         // Get question data from snapshot if available
                         const snapshot = q.questionSnapshot || q;
 
+                        // Check both questionType (new schema) and type (old data) for backwards compatibility
+                        const questionType = snapshot.questionType || snapshot.type || 'mcq';
+
                         const question = {
                             text: snapshot.questionText || q.text || '',
-                            type: snapshot.type || 'mcq',
+                            type: questionType,
                             options: snapshot.options || [],
                             correctAnswer: snapshot.correctAnswer || 0,
                             timeLimit: snapshot.timeLimit || q.timeLimit || 60,
