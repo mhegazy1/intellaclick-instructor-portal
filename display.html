@@ -1506,9 +1506,9 @@
                         const showCorrect = document.getElementById('showCorrectAnswer').checked;
                         console.log('=== END QUESTION - ANSWER DISPLAY CHECK ===');
                         console.log('showCorrectAnswer checkbox checked?', showCorrect);
-                        console.log('currentQuestion has correctAnswer?', !!currentQuestion.correctAnswer);
-                        console.log('Will highlight answer?', showCorrect && currentQuestion.correctAnswer);
-                        if (showCorrect && currentQuestion.correctAnswer) {
+                        console.log('currentQuestion has correctAnswer?', currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null);
+                        console.log('Will highlight answer?', showCorrect && (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null));
+                        if (showCorrect && (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null)) {
                             console.log('CALLING highlightCorrectAnswer()');
                             highlightCorrectAnswer();
                         } else {
