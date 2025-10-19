@@ -558,6 +558,11 @@
             .class-actions {
                 grid-template-columns: 1fr;
             }
+
+            /* Filter controls responsive */
+            #yearFilter, #semesterFilter, #statusFilter, #classFilter {
+                width: 100%;
+            }
         }
 
         /* QR Code Modal Styles */
@@ -702,6 +707,41 @@
             </div>
         </div>
 
+        <!-- Filters Section -->
+        <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <label style="font-weight: 500; color: var(--text-secondary);">Filters:</label>
+
+                    <select id="yearFilter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px;">
+                        <option value="">All Years</option>
+                    </select>
+
+                    <select id="semesterFilter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px;">
+                        <option value="">All Semesters</option>
+                        <option value="Spring">Spring</option>
+                        <option value="Summer">Summer</option>
+                        <option value="Fall">Fall</option>
+                        <option value="Winter">Winter</option>
+                    </select>
+
+                    <select id="statusFilter" onchange="applyFilters()">
+                        <option value="active">Active Classes</option>
+                        <option value="">All Classes</option>
+                        <option value="archived">Archived</option>
+                    </select>
+
+                    <select id="classFilter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px; display: none;">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-secondary" onclick="clearFilters()" style="padding: 8px 16px;">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+
         <div class="stats-overview">
             <div class="stat-card">
                 <div class="stat-icon blue">📚</div>
@@ -721,7 +761,7 @@
                 <div class="stat-icon purple">🎯</div>
                 <div class="stat-content">
                     <h3 id="totalSessions">0</h3>
-                    <p>Sessions This Term</p>
+                    <p>Total Sessions</p>
                 </div>
             </div>
             <div class="stat-card">
@@ -766,17 +806,6 @@
                     </svg>
                     🏆 Gamification
                 </a>
-            </div>
-
-            <div class="filter-controls">
-                <select id="termFilter" onchange="loadClasses()">
-                    <option value="">All Terms</option>
-                </select>
-                <select id="statusFilter" onchange="loadClasses()">
-                    <option value="active">Active Classes</option>
-                    <option value="">All Classes</option>
-                    <option value="archived">Archived</option>
-                </select>
             </div>
         </div>
 
@@ -876,16 +905,30 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
+            populateYearFilter();
             loadClasses();
             loadStats();
             setupEventListeners();
             populateYearDropdown();
         });
         
+        function populateYearFilter() {
+            const yearFilter = document.getElementById('yearFilter');
+            const currentYear = new Date().getFullYear();
+
+            // Add years from 2 years ago to 5 years in future
+            for (let year = currentYear + 5; year >= currentYear - 2; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            }
+        }
+
         function populateYearDropdown() {
             const yearSelect = document.getElementById('termYear');
             const currentYear = new Date().getFullYear();
-            
+
             // Add years from 2 years ago to 5 years in future
             for (let year = currentYear - 2; year <= currentYear + 5; year++) {
                 const option = document.createElement('option');
@@ -896,6 +939,68 @@
                 }
                 yearSelect.appendChild(option);
             }
+        }
+
+        function applyFilters() {
+            // Update class dropdown visibility and options
+            updateClassDropdown();
+
+            // Reload data with filters
+            loadClasses();
+            loadStats();
+        }
+
+        function clearFilters() {
+            document.getElementById('yearFilter').value = '';
+            document.getElementById('semesterFilter').value = '';
+            document.getElementById('statusFilter').value = 'active';
+            document.getElementById('classFilter').value = '';
+            document.getElementById('classFilter').style.display = 'none';
+            applyFilters();
+        }
+
+        function updateClassDropdown() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const classFilter = document.getElementById('classFilter');
+
+            // Show class dropdown only when status is selected (not "All Classes")
+            if (statusFilter) {
+                classFilter.style.display = 'block';
+                populateClassDropdown();
+            } else {
+                classFilter.style.display = 'none';
+                classFilter.value = '';
+            }
+        }
+
+        function populateClassDropdown() {
+            const classFilter = document.getElementById('classFilter');
+            const yearFilter = document.getElementById('yearFilter').value;
+            const semesterFilter = document.getElementById('semesterFilter').value;
+            const statusFilterValue = document.getElementById('statusFilter').value;
+
+            // Filter classes based on current filters
+            let filteredClasses = classes.filter(c => {
+                if (statusFilterValue && c.status !== statusFilterValue) return false;
+                if (yearFilter || semesterFilter) {
+                    const [semester, year] = c.term.split(' ');
+                    if (yearFilter && year !== yearFilter) return false;
+                    if (semesterFilter && semester !== semesterFilter) return false;
+                }
+                return true;
+            });
+
+            // Repopulate dropdown
+            const currentValue = classFilter.value;
+            classFilter.innerHTML = '<option value="">All Classes</option>';
+
+            filteredClasses.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls._id;
+                option.textContent = `${cls.name} (${cls.code})`;
+                if (cls._id === currentValue) option.selected = true;
+                classFilter.appendChild(option);
+            });
         }
 
         function checkAuth() {
@@ -995,32 +1100,67 @@
 
         async function loadStats() {
             try {
-                const response = await fetch('https://api.intellaclick.com/api/classes/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                // Get current filters
+                const yearFilter = document.getElementById('yearFilter').value;
+                const semesterFilter = document.getElementById('semesterFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const classFilter = document.getElementById('classFilter').value;
+
+                // Filter classes based on current filters
+                let filteredClasses = classes.filter(c => {
+                    // Status filter
+                    if (statusFilter && c.status !== statusFilter) return false;
+
+                    // Specific class filter
+                    if (classFilter && c._id !== classFilter) return false;
+
+                    // Year and semester filters
+                    if (yearFilter || semesterFilter) {
+                        const [semester, year] = c.term.split(' ');
+                        if (yearFilter && year !== yearFilter) return false;
+                        if (semesterFilter && semester !== semesterFilter) return false;
                     }
+
+                    return true;
                 });
 
-                if (response.ok) {
-                    const stats = await response.json();
-                    document.getElementById('totalClasses').textContent = stats.totalClasses || 0;
-                    document.getElementById('totalStudents').textContent = stats.totalStudents || 0;
-                    document.getElementById('totalSessions').textContent = stats.totalSessions || 0;
-                    document.getElementById('avgEngagement').textContent = `${stats.avgEngagement || 0}%`;
-                }
+                // Calculate stats from filtered classes
+                const totalClasses = filteredClasses.length;
+                const totalStudents = filteredClasses.reduce((sum, c) => {
+                    return sum + (c.enrollmentSummary?.totalEnrolled || 0);
+                }, 0);
+                const totalSessions = filteredClasses.reduce((sum, c) => {
+                    return sum + (c.stats?.sessionCount || 0);
+                }, 0);
+
+                // Calculate average engagement
+                let totalEngagement = 0;
+                let classesWithEngagement = 0;
+                filteredClasses.forEach(c => {
+                    if (c.enrollmentSummary?.avgAttendance) {
+                        totalEngagement += c.enrollmentSummary.avgAttendance;
+                        classesWithEngagement++;
+                    }
+                });
+                const avgEngagement = classesWithEngagement > 0
+                    ? Math.round(totalEngagement / classesWithEngagement)
+                    : 0;
+
+                // Update UI
+                document.getElementById('totalClasses').textContent = totalClasses;
+                document.getElementById('totalStudents').textContent = totalStudents;
+                document.getElementById('totalSessions').textContent = totalSessions;
+                document.getElementById('avgEngagement').textContent = `${avgEngagement}%`;
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
         }
 
         async function loadClasses() {
-            const termFilter = document.getElementById('termFilter').value;
-            const statusFilter = document.getElementById('statusFilter').value;
-            
             try {
+                // Fetch all classes first
                 const params = new URLSearchParams();
-                if (termFilter) params.append('term', termFilter);
-                if (statusFilter) params.append('status', statusFilter);
+                params.append('includeArchived', 'true'); // Get all classes
 
                 const response = await fetch(`https://api.intellaclick.com/api/classes?${params}`, {
                     headers: {
@@ -1050,61 +1190,61 @@
                     instructorId: c.instructorIdRaw,
                     instructorEmail: typeof c.instructorId === 'object' ? c.instructorId.email : 'N/A'
                 })));
-                
-                // Update term filter options
-                await loadTerms();
-                
+
+                // Update class dropdown if needed
+                updateClassDropdown();
+
+                // Render filtered classes
                 renderClasses();
+
+                // Update stats after classes are loaded
+                loadStats();
             } catch (error) {
                 console.error('Error loading classes:', error);
                 showToast('Failed to load classes', 'error');
             }
         }
 
-        async function loadTerms() {
-            try {
-                const response = await fetch('https://api.intellaclick.com/api/classes/terms', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const termFilter = document.getElementById('termFilter');
-                    const currentValue = termFilter.value;
-                    
-                    termFilter.innerHTML = '<option value="">All Terms</option>';
-                    data.terms.forEach(term => {
-                        const option = document.createElement('option');
-                        option.value = term;
-                        option.textContent = term;
-                        if (term === currentValue) option.selected = true;
-                        termFilter.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading terms:', error);
-            }
-        }
-
         function renderClasses() {
             const container = document.getElementById('classesContainer');
-            
-            if (classes.length === 0) {
+
+            // Get current filters
+            const yearFilter = document.getElementById('yearFilter').value;
+            const semesterFilter = document.getElementById('semesterFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const classFilter = document.getElementById('classFilter').value;
+
+            // Filter classes
+            let filteredClasses = classes.filter(c => {
+                // Status filter
+                if (statusFilter && c.status !== statusFilter) return false;
+
+                // Specific class filter
+                if (classFilter && c._id !== classFilter) return false;
+
+                // Year and semester filters
+                if (yearFilter || semesterFilter) {
+                    const [semester, year] = c.term.split(' ');
+                    if (yearFilter && year !== yearFilter) return false;
+                    if (semesterFilter && semester !== semesterFilter) return false;
+                }
+
+                return true;
+            });
+
+            if (filteredClasses.length === 0) {
+                const hasClasses = classes.length > 0;
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h3>No classes yet</h3>
-                        <p>Create your first class to start engaging with students</p>
-                        <button class="btn btn-primary" onclick="showCreateClassModal()">
-                            Create Your First Class
-                        </button>
+                        <h3>${hasClasses ? 'No classes match your filters' : 'No classes yet'}</h3>
+                        <p>${hasClasses ? 'Try adjusting your filters to see more classes' : 'Create your first class to start engaging with students'}</p>
+                        ${hasClasses ? '<button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>' : '<button class="btn btn-primary" onclick="showCreateClassModal()">Create Your First Class</button>'}
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = classes.map(classData => {
+            container.innerHTML = filteredClasses.map(classData => {
                 const stats = classData.stats || {};
                 const enrollmentSummary = classData.enrollmentSummary || {};
                 // Try both sources for enrollment count (backend sends different formats)
