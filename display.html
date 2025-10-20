@@ -1124,7 +1124,7 @@
                 infoDiv.style.color = 'var(--text-secondary)';
                 infoDiv.style.fontStyle = 'italic';
                 infoDiv.style.padding = '2rem';
-                infoDiv.textContent = 'Students will type their answer where [blank] appears';
+                infoDiv.textContent = 'Fill in the blank';
                 optionsGrid.appendChild(infoDiv);
             } else {
                 // Standard multiple choice or true/false
@@ -1548,7 +1548,7 @@
             }
 
             // For MCQ and True/False
-            if (!currentQuestion.correctAnswer) {
+            if (currentQuestion.correctAnswer === undefined || currentQuestion.correctAnswer === null) {
                 console.log('No correct answer to highlight');
                 return;
             }
