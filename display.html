@@ -1430,11 +1430,24 @@
 
                         // Show correct answer if setting is enabled
                         const showCorrect = document.getElementById('showCorrectAnswer').checked;
+                        const questionType = currentQuestion.type || currentQuestion.questionType;
+
                         console.log('=== END QUESTION - ANSWER DISPLAY CHECK ===');
                         console.log('showCorrectAnswer checkbox checked?', showCorrect);
+                        console.log('Question type:', questionType);
                         console.log('currentQuestion has correctAnswer?', currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null);
-                        console.log('Will highlight answer?', showCorrect && (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null));
-                        if (showCorrect && (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null)) {
+                        console.log('currentQuestion has pairs?', !!(currentQuestion.pairs));
+                        console.log('currentQuestion has correctOrder?', !!(currentQuestion.correctOrder));
+
+                        // Check if question has answer data (different fields for different question types)
+                        const hasAnswerData = (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null) ||
+                                            (questionType === 'matching' && currentQuestion.pairs) ||
+                                            (questionType === 'ordering' && currentQuestion.correctOrder);
+
+                        console.log('Has answer data?', hasAnswerData);
+                        console.log('Will highlight answer?', showCorrect && hasAnswerData);
+
+                        if (showCorrect && hasAnswerData) {
                             console.log('CALLING highlightCorrectAnswer()');
                             highlightCorrectAnswer();
                         } else {
