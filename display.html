@@ -1333,28 +1333,25 @@
             title.style.fontWeight = '600';
             title.style.marginBottom = '1rem';
             title.style.color = 'var(--text-primary)';
-            title.textContent = 'Student Responses:';
+            title.textContent = `${responses.length} student${responses.length === 1 ? '' : 's'} answered`;
             container.appendChild(title);
 
-            if (responses.length === 0) {
-                const empty = document.createElement('div');
-                empty.style.color = 'var(--text-secondary)';
-                empty.style.fontStyle = 'italic';
-                empty.textContent = 'No responses yet';
-                container.appendChild(empty);
-                return;
+            // Show correct answer if question ended and setting is enabled
+            if (questionEnded && document.getElementById('showCorrectAnswer').checked) {
+                if (currentQuestion.correctAnswer) {
+                    const correctDiv = document.createElement('div');
+                    correctDiv.style.padding = '1rem';
+                    correctDiv.style.marginTop = '1rem';
+                    correctDiv.style.background = 'rgba(76, 175, 80, 0.1)';
+                    correctDiv.style.border = '2px solid #4caf50';
+                    correctDiv.style.borderRadius = '8px';
+                    correctDiv.style.fontSize = '1.1rem';
+                    correctDiv.style.fontWeight = '600';
+                    correctDiv.style.color = '#2e7d32';
+                    correctDiv.innerHTML = `<div style="margin-bottom: 0.5rem;">Correct Answer:</div><div style="font-size: 1.2rem;">${currentQuestion.correctAnswer}</div>`;
+                    container.appendChild(correctDiv);
+                }
             }
-
-            responses.forEach((response, idx) => {
-                const responseDiv = document.createElement('div');
-                responseDiv.style.padding = '0.75rem';
-                responseDiv.style.marginBottom = '0.5rem';
-                responseDiv.style.background = 'rgba(248, 249, 250, 0.6)';
-                responseDiv.style.borderRadius = '8px';
-                responseDiv.style.fontSize = '0.9rem';
-                responseDiv.innerHTML = `<strong>${idx + 1}.</strong> ${response.answer}`;
-                container.appendChild(responseDiv);
-            });
         }
 
         function renderMatchingResponses(responses, container) {
@@ -1365,47 +1362,8 @@
             title.textContent = `${responses.length} student${responses.length === 1 ? '' : 's'} answered`;
             container.appendChild(title);
 
-            // If question ended, show detailed results
-            if (questionEnded && responses.length > 0) {
-                responses.forEach((response, idx) => {
-                    const responseDiv = document.createElement('div');
-                    responseDiv.style.padding = '0.75rem';
-                    responseDiv.style.marginBottom = '0.5rem';
-                    responseDiv.style.background = 'rgba(248, 249, 250, 0.6)';
-                    responseDiv.style.borderRadius = '8px';
-                    responseDiv.style.fontSize = '0.9rem';
-
-                    // Try to parse and display matching pairs
-                    let displayText = 'Invalid format';
-                    try {
-                        const matches = typeof response.answer === 'string' ? JSON.parse(response.answer) : response.answer;
-                        if (typeof matches === 'object' && matches !== null) {
-                            // Handle object format: { "0": "rightText", "1": "rightText2" }
-                            const pairs = currentQuestion.pairs || [];
-                            const matchList = Object.entries(matches).map(([leftIdx, rightText]) => {
-                                const leftText = pairs[parseInt(leftIdx)]?.left || `Item ${String.fromCharCode(65 + parseInt(leftIdx))}`;
-                                return `${leftText} → ${rightText}`;
-                            });
-                            displayText = matchList.join(', ');
-                        } else if (Array.isArray(matches)) {
-                            // Handle array format: [{ left: "A", right: "1" }]
-                            displayText = matches.map(m => `${m.left} → ${m.right}`).join(', ');
-                        }
-                    } catch (e) {
-                        console.error('Error parsing matching answer:', e, response.answer);
-                    }
-
-                    responseDiv.innerHTML = `<strong>Student ${idx + 1}:</strong> ${displayText}`;
-                    container.appendChild(responseDiv);
-                });
-            } else if (!questionEnded) {
-                // Show note while question is active
-                const note = document.createElement('div');
-                note.style.color = 'var(--text-secondary)';
-                note.style.fontStyle = 'italic';
-                note.textContent = 'Detailed matching results will appear after question ends';
-                container.appendChild(note);
-            }
+            // Correct answer is shown via highlightMatchingCorrectAnswer() if setting is enabled
+            // Don't show individual student answers
         }
 
         function renderOrderingResponses(responses, container) {
@@ -1413,43 +1371,11 @@
             title.style.fontWeight = '600';
             title.style.marginBottom = '1rem';
             title.style.color = 'var(--text-primary)';
-            title.textContent = 'Student Order:';
+            title.textContent = `${responses.length} student${responses.length === 1 ? '' : 's'} answered`;
             container.appendChild(title);
 
-            if (responses.length === 0) {
-                const empty = document.createElement('div');
-                empty.style.color = 'var(--text-secondary)';
-                empty.style.fontStyle = 'italic';
-                empty.textContent = 'No responses yet';
-                container.appendChild(empty);
-                return;
-            }
-
-            responses.forEach((response, idx) => {
-                const responseDiv = document.createElement('div');
-                responseDiv.style.padding = '0.75rem';
-                responseDiv.style.marginBottom = '0.5rem';
-                responseDiv.style.background = 'rgba(248, 249, 250, 0.6)';
-                responseDiv.style.borderRadius = '8px';
-                responseDiv.style.fontSize = '0.9rem';
-
-                // Format ordering response (usually comma-separated or array)
-                let displayText = response.answer;
-                try {
-                    const order = JSON.parse(response.answer);
-                    if (Array.isArray(order)) {
-                        displayText = order.join(' → ');
-                    }
-                } catch (e) {
-                    // If not JSON, check if comma-separated
-                    if (typeof response.answer === 'string' && response.answer.includes(',')) {
-                        displayText = response.answer.split(',').join(' → ');
-                    }
-                }
-
-                responseDiv.innerHTML = `<strong>${idx + 1}.</strong> ${displayText}`;
-                container.appendChild(responseDiv);
-            });
+            // Correct answer is shown via highlightOrderingCorrectAnswer() if setting is enabled
+            // Don't show individual student answers
         }
 
         async function addTime(seconds) {
