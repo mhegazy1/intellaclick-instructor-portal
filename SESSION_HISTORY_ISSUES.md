@@ -217,10 +217,23 @@ if (isNaN(studentNum)) {
 }
 ```
 
+### Why the Fix Didn't Work Initially:
+**DUPLICATE CODE** - The compareAnswers() function was created but only applied to 2 out of 4 locations:
+- ✅ Line 834 - Student stats (fixed in 80f65b4)
+- ✅ Line 940 - Question details (fixed in 80f65b4)
+- ❌ Line 1034 - CSV export stats (MISSED)
+- ❌ Line 1070 - CSV export details (MISSED)
+
+When viewing session on screen → worked (used fixed locations)
+When exporting CSV → broken (used unfixed locations)
+
+**Solution**: Fixed ALL 4 locations to use compareAnswers() function.
+
+**Root Cause Documentation**: See CODE_DUPLICATION_PROBLEM.md for full analysis and prevention strategy.
+
 ### Testing Needed:
-- [x] MCQ with answer A (letter "A" → number 0)
-- [ ] MCQ with answer B (letter "B" → number 1)
-- [ ] MCQ with answer C (letter "C" → number 2)
-- [ ] MCQ with answer D (letter "D" → number 3)
-- [ ] Verify all students now show correct points (1/1 instead of 0/1)
+- [x] MCQ with answer A (letter "A" → number 0) - UI display
+- [x] MCQ with answer A (letter "A" → number 0) - CSV export
+- [ ] MCQ with answer B, C, D - Both UI and CSV
+- [ ] Verify all students show correct points (1/1 instead of 0/1) in both UI and CSV
 

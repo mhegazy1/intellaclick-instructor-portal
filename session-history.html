@@ -1031,7 +1031,7 @@
                         } else if (r.score !== undefined) {
                             earnedPoints = r.score;
                         } else {
-                            const isCorrectAnswer = String(r.answer).toLowerCase().trim() === String(r.correctAnswer || question?.correctAnswer).toLowerCase().trim();
+                            const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question?.correctAnswer, question?.questionType || question?.type);
                             earnedPoints = isCorrectAnswer ? (question?.points || 10) : 0;
                         }
                         studentStats[r.participantId].totalPoints += earnedPoints;
@@ -1066,8 +1066,8 @@
                     } else if (r.score !== undefined) {
                         earnedPoints = r.score;
                     } else {
-                        // Calculate based on correct answer match
-                        const isCorrectAnswer = String(r.answer).toLowerCase().trim() === String(r.correctAnswer || question?.correctAnswer).toLowerCase().trim();
+                        // Calculate based on correct answer match using proper comparison
+                        const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question?.correctAnswer, question?.questionType || question?.type);
                         earnedPoints = isCorrectAnswer ? (question?.points || 10) : 0;
                     }
 
