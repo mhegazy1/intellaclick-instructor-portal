@@ -1218,18 +1218,44 @@
             if (!confirm('Are you sure you want to end this session?')) return;
 
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ status: 'ended' })
-                });
+                // Check if gamification is enabled for this session
+                const hasGamification = sessionData?.gamificationEnabled && sessionData?.classId;
+
+                let response;
+                if (hasGamification) {
+                    console.log('Ending session with gamification processing...');
+                    // Use gamification endpoint which processes points, levels, achievements
+                    response = await fetch(`https://api.intellaclick.com/api/sessions-gamified/${sessionId}/end-with-gamification`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                } else {
+                    console.log('Ending session (no gamification)...');
+                    // Use regular endpoint
+                    response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/status`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({ status: 'ended' })
+                    });
+                }
 
                 if (!response.ok) throw new Error('Failed to end session');
 
-                showToast('Session ended', 'success');
+                const result = await response.json();
+                console.log('Session ended:', result);
+
+                if (hasGamification && result.gamificationResults) {
+                    showToast(`Session ended - ${result.gamificationResults.length} students earned points!`, 'success');
+                } else {
+                    showToast('Session ended', 'success');
+                }
+
                 stopPolling();
                 setTimeout(() => window.location.href = '/classes.html', 2000);
             } catch (error) {
