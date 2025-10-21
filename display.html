@@ -1218,7 +1218,7 @@
             console.log('Will highlight answer?', showCorrect && currentQuestion && currentQuestion.correctAnswer);
 
             // Show correct answer if setting is enabled (independent of keepResults)
-            if (showCorrect && currentQuestion && currentQuestion.correctAnswer) {
+            if (showCorrect && currentQuestion && (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null)) {
                 console.log('CALLING highlightCorrectAnswer() from timer expiration');
                 highlightCorrectAnswer();
                 // Disable timer controls
@@ -1227,7 +1227,7 @@
                 document.getElementById('endBtn').disabled = true;
             } else {
                 console.log('NOT highlighting answer on timer expiration');
-                console.log('  Reason: showCorrect=', showCorrect, 'hasQuestion=', !!currentQuestion, 'hasAnswer=', currentQuestion ? !!currentQuestion.correctAnswer : false);
+                console.log('  Reason: showCorrect=', showCorrect, 'hasQuestion=', !!currentQuestion, 'hasAnswer=', currentQuestion ? (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null) : false);
             }
         }
 
@@ -1338,7 +1338,7 @@
 
             // Show correct answer if question ended and setting is enabled
             if (questionEnded && document.getElementById('showCorrectAnswer').checked) {
-                if (currentQuestion.correctAnswer) {
+                if (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null) {
                     const correctDiv = document.createElement('div');
                     correctDiv.style.padding = '1rem';
                     correctDiv.style.marginTop = '1rem';
