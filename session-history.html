@@ -759,11 +759,36 @@
                     return false;
                 }
 
+                // Helper to convert letter to number (A=0, B=1, C=2, D=3, etc.)
+                const letterToNumber = (val) => {
+                    if (typeof val === 'string' && val.length === 1 && /^[A-Z]$/i.test(val)) {
+                        return val.toUpperCase().charCodeAt(0) - 65; // A=0, B=1, C=2, etc.
+                    }
+                    return null;
+                };
+
                 // For MCQ/True-False with numeric answers (including 0!)
                 if (typeof studentAnswer === 'number' || typeof correctAnswer === 'number') {
                     // Convert both to numbers for comparison
-                    const studentNum = typeof studentAnswer === 'number' ? studentAnswer : parseInt(studentAnswer);
-                    const correctNum = typeof correctAnswer === 'number' ? correctAnswer : parseInt(correctAnswer);
+                    let studentNum = typeof studentAnswer === 'number' ? studentAnswer : parseInt(studentAnswer);
+                    let correctNum = typeof correctAnswer === 'number' ? correctAnswer : parseInt(correctAnswer);
+
+                    // If parseInt failed, try letter-to-number conversion
+                    if (isNaN(studentNum)) {
+                        const converted = letterToNumber(studentAnswer);
+                        if (converted !== null) {
+                            studentNum = converted;
+                            console.log(`🔄 Converted letter "${studentAnswer}" to number ${studentNum}`);
+                        }
+                    }
+                    if (isNaN(correctNum)) {
+                        const converted = letterToNumber(correctAnswer);
+                        if (converted !== null) {
+                            correctNum = converted;
+                            console.log(`🔄 Converted letter "${correctAnswer}" to number ${correctNum}`);
+                        }
+                    }
+
                     if (!isNaN(studentNum) && !isNaN(correctNum)) {
                         const result = studentNum === correctNum;
                         console.log(`${result ? '✅' : '❌'} Numeric comparison: ${studentNum} === ${correctNum} → ${result}`);

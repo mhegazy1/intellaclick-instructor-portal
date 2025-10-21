@@ -176,35 +176,51 @@ Updated both calculation locations to use the new function.
 
 ---
 
-## Update 2025-10-20: Points Still Showing 0/1 Despite Fix
+## Update 2025-10-20: Points Still Showing 0/1 - ROOT CAUSE FOUND ✅
 
-### Current Status:
-The compareAnswers() function has been implemented, but users are still reporting 0/1 points for correct answers.
+### Root Cause Identified:
+Student answers stored as **letters** ("A", "B", "C", "D") but correctAnswer stored as **numbers** (0, 1, 2, 3).
 
-### Debug Logging Added:
-Enhanced session-history.html with comprehensive console logging to diagnose the issue:
-- Lines 747-754: Log all inputs to compareAnswers (student answer, correct answer, question type)
-- Lines 758-799: Log which comparison path is used (numeric, object/array, string) and the result
-- Lines 817-836: Log response data and question data before comparison
-- Lines 924-942: Same logging for question details view
+**Example from console:**
+```javascript
+answer: "A"           // Student answered with letter "A"
+correctAnswer: 0      // Correct answer is number 0 (which represents option A)
+```
 
-### How to Debug:
-1. Open session history page
-2. Open browser console (F12)
-3. Click on a session with incorrect points
-4. Look for console logs showing:
-   - 📊 "Calculating points for response" - shows all data being compared
-   - 🔍 "compareAnswers called" - shows the actual values and types
-   - ✅/❌ Comparison result with actual values
-   - 💰 "Earned points" - final points awarded
+When comparing "A" === 0, the comparison fails → 0 points awarded.
 
-### Possible Root Causes to Investigate:
-1. **Backend not providing correctAnswer**: Response object might not include r.correctAnswer field
-2. **Question not found**: questions.find() might not find matching question
-3. **correctAnswer field missing**: Question object might not have correctAnswer field saved
-4. **Data type mismatch**: Answer might be string "0" while correctAnswer is number 0
-5. **Field name mismatch**: correctAnswer might be stored as different field name
+### Fix Applied:
+Added letter-to-number conversion in `compareAnswers()` function:
+- A → 0, B → 1, C → 2, D → 3, etc.
+- Works bidirectionally (letter to number or number to letter)
+- Preserves numeric comparisons for questions using numeric answers
 
-### Next Steps:
-Once console output is captured, we can identify exact root cause and fix accordingly.
+**Location:** session-history.html lines 762-797
+
+### How It Works:
+```javascript
+// Helper to convert letter to number (A=0, B=1, C=2, D=3, etc.)
+const letterToNumber = (val) => {
+    if (typeof val === 'string' && val.length === 1 && /^[A-Z]$/i.test(val)) {
+        return val.toUpperCase().charCodeAt(0) - 65; // A=0, B=1, C=2, etc.
+    }
+    return null;
+};
+
+// If parseInt fails, try letter-to-number conversion
+if (isNaN(studentNum)) {
+    const converted = letterToNumber(studentAnswer);
+    if (converted !== null) {
+        studentNum = converted;
+        console.log(`🔄 Converted letter "${studentAnswer}" to number ${studentNum}`);
+    }
+}
+```
+
+### Testing Needed:
+- [x] MCQ with answer A (letter "A" → number 0)
+- [ ] MCQ with answer B (letter "B" → number 1)
+- [ ] MCQ with answer C (letter "C" → number 2)
+- [ ] MCQ with answer D (letter "D" → number 3)
+- [ ] Verify all students now show correct points (1/1 instead of 0/1)
 
