@@ -145,5 +145,31 @@ if (r.points !== undefined) {
 **HIGH** - Both issues affect core functionality and user experience
 
 ## Status:
-🔴 **NOT FIXED** - Documented for future session
+✅ **FIXED** - Both issues resolved (2025-10-19)
+
+---
+
+## What Was Fixed:
+
+### Fix 1: Class Filter (session-history.html:629)
+```javascript
+// BEFORE:
+const matchesClass = classId === 'all' || session.classId === classId;
+
+// AFTER:
+const sessionClassId = session.classId || session.class || session.class_id || session.classID;
+const matchesClass = classId === 'all' || sessionClassId === classId;
+```
+Now checks multiple possible field names for backwards compatibility.
+
+### Fix 2: Points Calculation (session-history.html:746-782, 805, 900)
+Added `compareAnswers()` helper function that:
+- Handles numeric answers (including 0 for option A)
+- Compares objects/arrays for matching/ordering questions
+- Case-insensitive string comparison for text answers
+- Type-aware comparison for all question types
+
+Updated both calculation locations to use the new function.
+
+**Commit:** `80f65b4` - Fix session history: class filter checks multiple field names + proper answer comparison for all question types
 
