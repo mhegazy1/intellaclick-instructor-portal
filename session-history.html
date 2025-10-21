@@ -624,9 +624,15 @@
                 const matchesSearch = session.title.toLowerCase().includes(searchTerm) ||
                                     session.sessionCode.toLowerCase().includes(searchTerm);
                 const matchesStatus = status === 'all' || session.status === status;
-                const matchesClass = classId === 'all' || session.classId === classId;
+
+                // Check multiple possible field names for class ID (backwards compatibility)
+                const sessionClassId = session.classId || session.class || session.class_id || session.classID;
+                const matchesClass = classId === 'all' || sessionClassId === classId;
+
                 return matchesSearch && matchesStatus && matchesClass;
             });
+
+            console.log(`Filter: classId="${classId}", found ${filteredSessions.length} sessions`);
 
             // Reset to first page when filtering
             currentPage = 1;
@@ -736,6 +742,45 @@
                 return typeMap[type] || type;
             }
 
+            // Helper function to compare answers (handles different question types properly)
+            function compareAnswers(studentAnswer, correctAnswer, questionType) {
+                // Handle null/undefined
+                if (studentAnswer === null || studentAnswer === undefined || correctAnswer === null || correctAnswer === undefined) {
+                    return false;
+                }
+
+                // For MCQ/True-False with numeric answers (including 0!)
+                if (typeof studentAnswer === 'number' || typeof correctAnswer === 'number') {
+                    // Convert both to numbers for comparison
+                    const studentNum = typeof studentAnswer === 'number' ? studentAnswer : parseInt(studentAnswer);
+                    const correctNum = typeof correctAnswer === 'number' ? correctAnswer : parseInt(correctAnswer);
+                    if (!isNaN(studentNum) && !isNaN(correctNum)) {
+                        return studentNum === correctNum;
+                    }
+                }
+
+                // For matching/ordering (objects/arrays) - compare JSON representation
+                if (questionType === 'matching' || questionType === 'ordering') {
+                    try {
+                        // If they're already objects/arrays, stringify them
+                        const studentStr = typeof studentAnswer === 'object' ? JSON.stringify(studentAnswer) : studentAnswer;
+                        const correctStr = typeof correctAnswer === 'object' ? JSON.stringify(correctAnswer) : correctAnswer;
+                        return studentStr === correctStr;
+                    } catch (e) {
+                        console.warn('Error comparing complex answer:', e);
+                        return false;
+                    }
+                }
+
+                // For string answers (case-insensitive)
+                if (typeof studentAnswer === 'string' && typeof correctAnswer === 'string') {
+                    return studentAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+                }
+
+                // Fallback: string comparison
+                return String(studentAnswer).toLowerCase().trim() === String(correctAnswer).toLowerCase().trim();
+            }
+
             // Calculate student performance summary
             const studentStats = {};
             participants.forEach(p => {
@@ -757,7 +802,7 @@
                         earnedPoints = r.score;
                     } else {
                         const question = questions.find(q => q.questionId === r.questionId);
-                        const isCorrectAnswer = String(r.answer).toLowerCase().trim() === String(r.correctAnswer || question?.correctAnswer).toLowerCase().trim();
+                        const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question?.correctAnswer, question?.questionType || question?.type);
                         earnedPoints = isCorrectAnswer ? (question?.points || 10) : 0;
                     }
 
@@ -851,8 +896,8 @@
                                     } else if (r.score !== undefined) {
                                         earnedPoints = r.score;
                                     } else {
-                                        // Calculate based on correct answer match
-                                        const isCorrectAnswer = String(r.answer).toLowerCase().trim() === String(r.correctAnswer || question.correctAnswer).toLowerCase().trim();
+                                        // Calculate based on correct answer match using proper comparison
+                                        const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question.correctAnswer, question.questionType);
                                         earnedPoints = isCorrectAnswer ? (question.points || 10) : 0;
                                     }
 
