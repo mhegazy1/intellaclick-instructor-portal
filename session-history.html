@@ -744,8 +744,18 @@
 
             // Helper function to compare answers (handles different question types properly)
             function compareAnswers(studentAnswer, correctAnswer, questionType) {
+                // DEBUG LOGGING
+                console.log('🔍 compareAnswers called:', {
+                    studentAnswer,
+                    studentAnswerType: typeof studentAnswer,
+                    correctAnswer,
+                    correctAnswerType: typeof correctAnswer,
+                    questionType
+                });
+
                 // Handle null/undefined
                 if (studentAnswer === null || studentAnswer === undefined || correctAnswer === null || correctAnswer === undefined) {
+                    console.log('❌ Answer comparison failed: null/undefined value');
                     return false;
                 }
 
@@ -755,7 +765,9 @@
                     const studentNum = typeof studentAnswer === 'number' ? studentAnswer : parseInt(studentAnswer);
                     const correctNum = typeof correctAnswer === 'number' ? correctAnswer : parseInt(correctAnswer);
                     if (!isNaN(studentNum) && !isNaN(correctNum)) {
-                        return studentNum === correctNum;
+                        const result = studentNum === correctNum;
+                        console.log(`${result ? '✅' : '❌'} Numeric comparison: ${studentNum} === ${correctNum} → ${result}`);
+                        return result;
                     }
                 }
 
@@ -765,20 +777,26 @@
                         // If they're already objects/arrays, stringify them
                         const studentStr = typeof studentAnswer === 'object' ? JSON.stringify(studentAnswer) : studentAnswer;
                         const correctStr = typeof correctAnswer === 'object' ? JSON.stringify(correctAnswer) : correctAnswer;
-                        return studentStr === correctStr;
+                        const result = studentStr === correctStr;
+                        console.log(`${result ? '✅' : '❌'} Object/Array comparison: ${studentStr} === ${correctStr} → ${result}`);
+                        return result;
                     } catch (e) {
-                        console.warn('Error comparing complex answer:', e);
+                        console.warn('❌ Error comparing complex answer:', e);
                         return false;
                     }
                 }
 
                 // For string answers (case-insensitive)
                 if (typeof studentAnswer === 'string' && typeof correctAnswer === 'string') {
-                    return studentAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+                    const result = studentAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+                    console.log(`${result ? '✅' : '❌'} String comparison: "${studentAnswer}" === "${correctAnswer}" → ${result}`);
+                    return result;
                 }
 
                 // Fallback: string comparison
-                return String(studentAnswer).toLowerCase().trim() === String(correctAnswer).toLowerCase().trim();
+                const result = String(studentAnswer).toLowerCase().trim() === String(correctAnswer).toLowerCase().trim();
+                console.log(`${result ? '✅' : '❌'} Fallback comparison: "${studentAnswer}" === "${correctAnswer}" → ${result}`);
+                return result;
             }
 
             // Calculate student performance summary
@@ -798,12 +816,24 @@
                     let earnedPoints = 0;
                     if (r.points !== undefined) {
                         earnedPoints = r.points;
+                        console.log('✓ Using backend-provided points:', r.points);
                     } else if (r.score !== undefined) {
                         earnedPoints = r.score;
+                        console.log('✓ Using backend-provided score:', r.score);
                     } else {
                         const question = questions.find(q => q.questionId === r.questionId);
+                        console.log('📊 Calculating points for response:', {
+                            participantId: r.participantId,
+                            questionId: r.questionId,
+                            studentAnswer: r.answer,
+                            responseCorrectAnswer: r.correctAnswer,
+                            questionCorrectAnswer: question?.correctAnswer,
+                            questionType: question?.questionType || question?.type,
+                            questionPoints: question?.points
+                        });
                         const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question?.correctAnswer, question?.questionType || question?.type);
                         earnedPoints = isCorrectAnswer ? (question?.points || 10) : 0;
+                        console.log(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer})`);
                     }
 
                     studentStats[r.participantId].totalPoints += earnedPoints;
@@ -893,12 +923,23 @@
                                     let earnedPoints = 0;
                                     if (r.points !== undefined) {
                                         earnedPoints = r.points;
+                                        console.log('✓ Using backend-provided points:', r.points);
                                     } else if (r.score !== undefined) {
                                         earnedPoints = r.score;
+                                        console.log('✓ Using backend-provided score:', r.score);
                                     } else {
+                                        console.log('📊 Calculating points (question details):', {
+                                            participantId: r.participantId,
+                                            studentAnswer: r.answer,
+                                            responseCorrectAnswer: r.correctAnswer,
+                                            questionCorrectAnswer: question.correctAnswer,
+                                            questionType: question.questionType,
+                                            questionPoints: question.points
+                                        });
                                         // Calculate based on correct answer match using proper comparison
                                         const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question.correctAnswer, question.questionType);
                                         earnedPoints = isCorrectAnswer ? (question.points || 10) : 0;
+                                        console.log(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer})`);
                                     }
 
                                     const isCorrect = earnedPoints > 0;

@@ -145,7 +145,8 @@ if (r.points !== undefined) {
 **HIGH** - Both issues affect core functionality and user experience
 
 ## Status:
-✅ **FIXED** - Both issues resolved (2025-10-19)
+✅ **FIXED** - Class filter resolved (2025-10-19)
+🔍 **DEBUGGING** - Points calculation still showing 0/1 (debug logging added 2025-10-20)
 
 ---
 
@@ -172,4 +173,38 @@ Added `compareAnswers()` helper function that:
 Updated both calculation locations to use the new function.
 
 **Commit:** `80f65b4` - Fix session history: class filter checks multiple field names + proper answer comparison for all question types
+
+---
+
+## Update 2025-10-20: Points Still Showing 0/1 Despite Fix
+
+### Current Status:
+The compareAnswers() function has been implemented, but users are still reporting 0/1 points for correct answers.
+
+### Debug Logging Added:
+Enhanced session-history.html with comprehensive console logging to diagnose the issue:
+- Lines 747-754: Log all inputs to compareAnswers (student answer, correct answer, question type)
+- Lines 758-799: Log which comparison path is used (numeric, object/array, string) and the result
+- Lines 817-836: Log response data and question data before comparison
+- Lines 924-942: Same logging for question details view
+
+### How to Debug:
+1. Open session history page
+2. Open browser console (F12)
+3. Click on a session with incorrect points
+4. Look for console logs showing:
+   - 📊 "Calculating points for response" - shows all data being compared
+   - 🔍 "compareAnswers called" - shows the actual values and types
+   - ✅/❌ Comparison result with actual values
+   - 💰 "Earned points" - final points awarded
+
+### Possible Root Causes to Investigate:
+1. **Backend not providing correctAnswer**: Response object might not include r.correctAnswer field
+2. **Question not found**: questions.find() might not find matching question
+3. **correctAnswer field missing**: Question object might not have correctAnswer field saved
+4. **Data type mismatch**: Answer might be string "0" while correctAnswer is number 0
+5. **Field name mismatch**: correctAnswer might be stored as different field name
+
+### Next Steps:
+Once console output is captured, we can identify exact root cause and fix accordingly.
 
