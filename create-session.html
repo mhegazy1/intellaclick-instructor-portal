@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Session - IntellaClick</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <link rel="stylesheet" href="styles/create-session.css">
+</head>
+<body>
+    <div class="container">
+        <a href="classes.html" class="back-link">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Classes
+        </a>
+
+        <div class="header">
+            <h1>Start New Session</h1>
+            <div class="class-info" id="classInfo">
+                Loading class information...
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>Session Types</h3>
+            <p>Choose how you want to run your clicker session. You can use the web interface for quick polls or integrate with the desktop app for PowerPoint integration.</p>
+        </div>
+
+        <div class="section">
+            <h2>Choose Session Type</h2>
+            <div class="session-options">
+                <div class="option-card" onclick="selectSessionType('quick')" id="quickOption">
+                    <h3>Quick Poll</h3>
+                    <p>Start a simple multiple choice or true/false poll instantly</p>
+                </div>
+                <div class="option-card" onclick="selectSessionType('quiz')" id="quizOption">
+                    <h3>Quiz Session</h3>
+                    <p>Run a prepared quiz with multiple questions</p>
+                </div>
+                <div class="option-card" onclick="selectSessionType('desktop')" id="desktopOption">
+                    <h3>Desktop App</h3>
+                    <p>Use with PowerPoint and advanced features</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" id="sessionConfig" style="display: none;">
+            <h2>Session Configuration</h2>
+            <form id="sessionForm">
+                <div class="form-group">
+                    <label for="sessionName">Session Name</label>
+                    <input type="text" id="sessionName" placeholder="e.g., Week 3 Review" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="customSessionCode">
+                        Custom Session Code (Optional)
+                        <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                            Leave blank for random code, or enter your own (e.g., BIO3002025). Same code can be reused for multiple sessions.
+                        </small>
+                    </label>
+                    <input
+                        type="text"
+                        id="customSessionCode"
+                        placeholder="e.g., BIO3002025"
+                        maxlength="20"
+                        pattern="[A-Za-z0-9]{4,20}"
+                        title="4-20 characters, letters and numbers only"
+                        style="text-transform: uppercase;"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="enableGamification" checked style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-weight: 600; font-size: 14px;">🏆 Enable Gamification</span>
+                            <span style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">
+                                Students will earn points, achievements, and level up during this session
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-group" id="quickPollConfig" style="display: none;">
+                    <!-- Load Saved Questions Button -->
+                    <div style="margin-bottom: 16px;">
+                        <button type="button" class="btn btn-secondary" onclick="goToSavedQuestions()" style="width: 100%;">
+                            📂 Manage Saved Question Sets
+                        </button>
+                    </div>
+
+                    <!-- Questions List -->
+                    <div id="questionsList" style="margin-bottom: 20px;"></div>
+
+                    <label for="questionText">Add Question</label>
+                    <textarea id="questionText" rows="3" placeholder="Enter your question here..."></textarea>
+                    <button type="button" class="btn btn-secondary" onclick="insertBlank()" style="margin-top: 8px; font-size: 0.9rem; padding: 0.5rem 1rem;">
+                        Insert [blank] at cursor
+                    </button>
+
+                    <label style="margin-top: 16px;">Question Type</label>
+                    <select id="questionType" onchange="updateQuestionOptions()">
+                        <option value="mcq">Multiple Choice</option>
+                        <option value="tf">True/False</option>
+                        <option value="matching">Matching</option>
+                        <option value="ordering">Put in Order</option>
+                        <option value="fillblank">Fill in the Blank</option>
+                    </select>
+                    
+                    <!-- Multiple Choice Options -->
+                    <div id="mcqOptions" style="margin-top: 16px;">
+                        <label>Answer Options</label>
+                        <div class="radio-group" style="flex-direction: column; gap: 10px;">
+                            <div class="radio-option">
+                                <input type="radio" name="correctAnswer" value="A" checked>
+                                <input type="text" id="optionA" placeholder="Option A" style="width: calc(100% - 40px); margin-left: 8px;">
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="correctAnswer" value="B">
+                                <input type="text" id="optionB" placeholder="Option B" style="width: calc(100% - 40px); margin-left: 8px;">
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="correctAnswer" value="C">
+                                <input type="text" id="optionC" placeholder="Option C" style="width: calc(100% - 40px); margin-left: 8px;">
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="correctAnswer" value="D">
+                                <input type="text" id="optionD" placeholder="Option D" style="width: calc(100% - 40px); margin-left: 8px;">
+                            </div>
+                        </div>
+                        <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Select the radio button next to the correct answer</small>
+                    </div>
+                    
+                    <!-- True/False Options -->
+                    <div id="tfOptions" style="margin-top: 16px; display: none;">
+                        <label>Correct Answer</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" name="tfAnswer" value="true" checked>
+                                <label>True</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="tfAnswer" value="false">
+                                <label>False</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Matching Options -->
+                    <div id="matchingOptions" style="margin-top: 16px; display: none;">
+                        <label>Matching Pairs</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+                            <input type="text" id="match1Left" placeholder="Item 1">
+                            <input type="text" id="match1Right" placeholder="Match 1">
+                            <input type="text" id="match2Left" placeholder="Item 2">
+                            <input type="text" id="match2Right" placeholder="Match 2">
+                            <input type="text" id="match3Left" placeholder="Item 3">
+                            <input type="text" id="match3Right" placeholder="Match 3">
+                            <input type="text" id="match4Left" placeholder="Item 4">
+                            <input type="text" id="match4Right" placeholder="Match 4">
+                        </div>
+                    </div>
+                    
+                    <!-- Ordering Options -->
+                    <div id="orderingOptions" style="margin-top: 16px; display: none;">
+                        <label>Items in Correct Order</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                            <input type="text" id="order1" placeholder="1st item">
+                            <input type="text" id="order2" placeholder="2nd item">
+                            <input type="text" id="order3" placeholder="3rd item">
+                            <input type="text" id="order4" placeholder="4th item">
+                        </div>
+                        <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Enter items in the correct order</small>
+                    </div>
+                    
+                    <!-- Fill in the Blank Options -->
+                    <div id="fillblankOptions" style="margin-top: 16px; display: none;">
+                        <label>Correct Answer(s)</label>
+                        <input type="text" id="blankAnswer" placeholder="Enter the correct answer" style="margin-top: 8px;">
+                        <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Use [blank] in your question text where the answer should go</small>
+                    </div>
+
+                    <!-- Add Question Button -->
+                    <div style="margin-top: 16px;">
+                        <button type="button" class="btn btn-primary" onclick="addQuickPollQuestion()">+ Add This Question</button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="quizConfig" style="display: none;">
+                    <label for="quizSelect">Select Quiz</label>
+                    <select id="quizSelect">
+                        <option value="">Loading quizzes...</option>
+                    </select>
+                    <div id="noQuizzesMessage" style="display: none; margin-top: 12px; padding: 12px; background-color: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px;">
+                        <p style="margin: 0; color: #92400E; font-size: 14px;">
+                            No quizzes available yet.
+                            <a href="saved-questions.html" style="color: var(--primary-color); font-weight: 500;">Create your first quiz</a>
+                        </p>
+                    </div>
+                </div>
+
+                <div id="desktopInstructions" style="display: none;">
+                    <div class="info-box">
+                        <h3>Launch from Desktop App</h3>
+                        <p>To use PowerPoint integration and advanced features:</p>
+                        <ol style="margin-left: 20px; margin-top: 12px;">
+                            <li>Open the IntellaClick desktop application</li>
+                            <li>Select this class: <strong id="desktopClassName"></strong></li>
+                            <li>Click "Start Session" in the desktop app</li>
+                            <li>Students can join using code: <strong id="desktopJoinCode"></strong></li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="form-group" id="sessionSettings" style="display: block;">
+                    <label for="duration">Time Limit (seconds)</label>
+                    <input type="number" id="duration" value="60" min="10" max="300">
+                </div>
+
+                <div class="form-group" id="sessionOptions" style="display: block;">
+                    <label style="display: block; margin-bottom: 8px;">
+                        <input type="checkbox" id="allowAnonymous">
+                        Allow anonymous responses
+                    </label>
+                    <label style="display: block; margin-bottom: 8px;">
+                        <input type="checkbox" id="openToAll">
+                        Open to all (allow non-enrolled students)
+                    </label>
+                    <label style="display: block; margin-bottom: 8px;">
+                        <input type="checkbox" id="allowAnswerChange">
+                        Allow students to change their answer
+                    </label>
+                    <label style="display: block; margin-bottom: 8px;">
+                        <input type="checkbox" id="showCorrectAnswer">
+                        Show correct answer when question ends
+                    </label>
+                    <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                        By default, only enrolled students can join. Check "Open to all" to allow anyone with the code.
+                    </small>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="cancelSession()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="startButton">Start Session</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script type="module">
+        import { auth, sessions, classes as classesAPI } from '../utils/api.js';
+        import toast from '../utils/toast.js';
+        import logger from '../utils/logger.js';
+        import loading from '../utils/loading.js';
+        import confirm from '../utils/confirm.js';
+
+        let classId;
+        let classData;
+        let selectedType = null;
+        let quickPollQuestions = []; // Store multiple questions for quick poll
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            classId = urlParams.get('classId');
+
+            if (!classId) {
+                window.location.href = '../pages/classes.html';
+                return;
+            }
+
+            checkAuth();
+            loadClassInfo();
+
+            document.getElementById('sessionForm').addEventListener('submit', handleStartSession);
+
+            // Load saved session settings from previous session
+            loadSavedSettings();
+
+            // Auto-select Quick Poll if there are saved questions waiting
+            const fromSavedSet = sessionStorage.getItem('fromSavedSet');
+            const pendingQuestions = sessionStorage.getItem('pendingQuestions');
+
+            logger.debug('🔵 Page loaded - checking for pending questions');
+            logger.debug('fromSavedSet:', fromSavedSet);
+            logger.debug('pendingQuestions:', pendingQuestions ? 'exists' : 'none');
+
+            if (fromSavedSet === 'true' && pendingQuestions) {
+                logger.debug('✅ Auto-selecting Quick Poll mode');
+                setTimeout(() => {
+                    selectSessionType('quick');
+                }, 500); // Small delay to ensure UI is ready
+            }
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '../pages/login.html';
+            }
+        }
+
+        async function loadSavedSettings() {
+            try {
+                // Load settings from backend API instead of localStorage
+                const response = await fetch('https://api.intellaclick.com/api/users/session-settings', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const settings = data.settings;
+
+                    // Apply saved settings to checkboxes
+                    if (settings.allowAnonymous !== undefined) {
+                        document.getElementById('allowAnonymous').checked = settings.allowAnonymous;
+                    }
+                    if (settings.openToAll !== undefined) {
+                        document.getElementById('openToAll').checked = settings.openToAll;
+                    }
+                    if (settings.allowAnswerChange !== undefined) {
+                        document.getElementById('allowAnswerChange').checked = settings.allowAnswerChange;
+                    }
+                    if (settings.showCorrectAnswer !== undefined) {
+                        document.getElementById('showCorrectAnswer').checked = settings.showCorrectAnswer;
+                    }
+                    if (settings.enableGamification !== undefined) {
+                        document.getElementById('enableGamification').checked = settings.enableGamification;
+                    }
+
+                    logger.debug('✅ Loaded saved session settings from backend:', settings);
+                } else {
+                    logger.debug('No saved settings found, using defaults');
+                }
+            } catch (error) {
+                logger.error('Error loading saved settings:', error);
+                // Don't show error to user - just use defaults if loading fails
+            }
+        }
+
+        async function loadClassInfo() {
+            try {
+                const data = await classesAPI.getById(classId);
+                classData = data.class || data;
+
+                document.getElementById('classInfo').innerHTML = `
+                    <strong>${classData.name}</strong> - ${classData.code} ${classData.section ? '(' + classData.section + ')' : ''}
+                `;
+
+                // Set default session name
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                document.getElementById('sessionName').value = `${classData.name} Session - ${dateStr} ${timeStr}`;
+            } catch (error) {
+                logger.error('Error loading class:', error);
+                toast.error('Failed to load class information');
+            }
+        }
+
+        function selectSessionType(type) {
+            logger.debug('=== selectSessionType called ===');
+            logger.debug('type:', type);
+            selectedType = type;
+
+            // Clear quick poll questions when switching session type
+            if (type !== 'quick') {
+                quickPollQuestions = [];
+            } else {
+                // Check if there are saved questions to load
+                const fromSavedSet = sessionStorage.getItem('fromSavedSet');
+                const pendingQuestions = sessionStorage.getItem('pendingQuestions');
+
+                logger.debug('fromSavedSet:', fromSavedSet);
+                logger.debug('pendingQuestions:', pendingQuestions ? `${pendingQuestions.length} chars` : 'null');
+
+                if (fromSavedSet === 'true' && pendingQuestions) {
+                    try {
+                        quickPollQuestions = JSON.parse(pendingQuestions);
+                        logger.debug('✅ Loaded questions:', quickPollQuestions.length);
+                        sessionStorage.removeItem('fromSavedSet'); // Clear flag
+                        sessionStorage.removeItem('pendingQuestions'); // Also clear questions
+                        toast.success(`Loaded ${quickPollQuestions.length} questions from saved set`);
+                    } catch (e) {
+                        logger.error('❌ Error loading saved questions:', e);
+                    }
+                } else {
+                    logger.debug('No pending questions found');
+                }
+
+                renderQuestionsList(); // Show existing questions if any
+            }
+
+            // Update UI
+            document.querySelectorAll('.option-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.getElementById(type + 'Option').classList.add('selected');
+
+            // Show configuration section
+            document.getElementById('sessionConfig').style.display = 'block';
+
+            // Show/hide specific configs
+            document.getElementById('quickPollConfig').style.display = type === 'quick' ? 'block' : 'none';
+            document.getElementById('quizConfig').style.display = type === 'quiz' ? 'block' : 'none';
+            document.getElementById('desktopInstructions').style.display = type === 'desktop' ? 'block' : 'none';
+
+            // Show/hide session settings based on type
+            const showSettings = type !== 'desktop';
+            document.getElementById('sessionSettings').style.display = showSettings ? 'block' : 'none';
+            document.getElementById('sessionOptions').style.display = showSettings ? 'block' : 'none';
+            document.getElementById('sessionName').parentElement.style.display = showSettings ? 'block' : 'none';
+
+            // Update start button
+            document.getElementById('startButton').style.display = type === 'desktop' ? 'none' : 'inline-block';
+
+            if (type === 'quiz') {
+                loadQuizzes();
+            } else if (type === 'desktop') {
+                showDesktopInstructions();
+            }
+
+            // Set default session name
+            const now = new Date();
+            document.getElementById('sessionName').value = `${classData.name} - ${now.toLocaleDateString()}`;
+        }
+
+        async function loadQuizzes() {
+            try {
+                const response = await fetch('https://api.intellaclick.com/api/quizzes', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+                const select = document.getElementById('quizSelect');
+                const noQuizzesMessage = document.getElementById('noQuizzesMessage');
+
+                if (data.success && data.quizzes && data.quizzes.length > 0) {
+                    // Populate dropdown with quizzes
+                    select.innerHTML = '<option value="">Select a quiz...</option>' +
+                        data.quizzes.map(quiz =>
+                            `<option value="${quiz._id}">${quiz.title} (${quiz.questionCount || 0} questions)</option>`
+                        ).join('');
+                    noQuizzesMessage.style.display = 'none';
+                } else {
+                    // No quizzes found
+                    select.innerHTML = '<option value="">No quizzes available</option>';
+                    noQuizzesMessage.style.display = 'block';
+                }
+            } catch (error) {
+                logger.error('Error loading quizzes:', error);
+                const select = document.getElementById('quizSelect');
+                select.innerHTML = '<option value="">Error loading quizzes</option>';
+                toast.error('Failed to load quizzes');
+            }
+        }
+
+        function showDesktopInstructions() {
+            // Update the desktop instructions with class info
+            document.getElementById('desktopClassName').textContent = classData.name;
+            document.getElementById('desktopJoinCode').textContent = classData.joinCode || 'N/A';
+        }
+        
+        function updateQuestionOptions() {
+            const questionType = document.getElementById('questionType').value;
+
+            // Hide all option divs
+            document.getElementById('mcqOptions').style.display = 'none';
+            document.getElementById('tfOptions').style.display = 'none';
+            document.getElementById('matchingOptions').style.display = 'none';
+            document.getElementById('orderingOptions').style.display = 'none';
+            document.getElementById('fillblankOptions').style.display = 'none';
+
+            // Show the selected one
+            switch(questionType) {
+                case 'mcq':
+                    document.getElementById('mcqOptions').style.display = 'block';
+                    break;
+                case 'tf':
+                    document.getElementById('tfOptions').style.display = 'block';
+                    break;
+                case 'matching':
+                    document.getElementById('matchingOptions').style.display = 'block';
+                    break;
+                case 'ordering':
+                    document.getElementById('orderingOptions').style.display = 'block';
+                    break;
+                case 'fillblank':
+                    document.getElementById('fillblankOptions').style.display = 'block';
+                    break;
+            }
+        }
+
+        function addQuickPollQuestion() {
+            const questionType = document.getElementById('questionType').value;
+            const questionText = document.getElementById('questionText').value.trim();
+
+            if (!questionText) {
+                toast.error('Please enter a question');
+                return;
+            }
+
+            // Read timeLimit from the duration input
+            const timeLimit = parseInt(document.getElementById('duration').value) || 60;
+
+            let question = {
+                text: questionText,
+                type: questionType,
+                timeLimit: timeLimit,
+                points: 10  // Default points
+            };
+
+            // Validate and add question-specific data
+            try {
+                switch(questionType) {
+                    case 'mcq':
+                        const options = [];
+                        const optionTexts = [];
+                        let correctAnswer = null;
+
+                        ['A', 'B', 'C', 'D'].forEach(letter => {
+                            const optionInput = document.getElementById(`option${letter}`);
+                            if (optionInput && optionInput.value.trim()) {
+                                options.push(letter);
+                                optionTexts.push(optionInput.value.trim());
+                                const radioButton = document.querySelector(`input[name="correctAnswer"][value="${letter}"]`);
+                                if (radioButton && radioButton.checked) {
+                                    correctAnswer = letter;
+                                }
+                            }
+                        });
+
+                        if (options.length < 2) {
+                            toast.error('Please provide at least 2 answer options');
+                            return;
+                        }
+
+                        question.options = options;
+                        question.optionTexts = optionTexts;
+                        question.correctAnswer = correctAnswer;
+                        break;
+
+                    case 'tf':
+                        question.options = ['True', 'False'];
+                        question.correctAnswer = document.querySelector('input[name="tfAnswer"]:checked').value;
+                        break;
+
+                    case 'matching':
+                        const pairs = [];
+                        for (let i = 1; i <= 4; i++) {
+                            const left = document.getElementById(`match${i}Left`).value.trim();
+                            const right = document.getElementById(`match${i}Right`).value.trim();
+                            if (left && right) {
+                                pairs.push({ left, right });
+                            }
+                        }
+
+                        if (pairs.length < 2) {
+                            toast.error('Please provide at least 2 matching pairs');
+                            return;
+                        }
+
+                        question.pairs = pairs;
+                        break;
+
+                    case 'ordering':
+                        const items = [];
+                        for (let i = 1; i <= 4; i++) {
+                            const item = document.getElementById(`order${i}`).value.trim();
+                            if (item) {
+                                items.push(item);
+                            }
+                        }
+
+                        if (items.length < 2) {
+                            toast.error('Please provide at least 2 items to order');
+                            return;
+                        }
+
+                        question.correctOrder = items;
+                        break;
+
+                    case 'fillblank':
+                        const blankAnswer = document.getElementById('blankAnswer').value.trim();
+                        if (!blankAnswer) {
+                            toast.error('Please provide the correct answer');
+                            return;
+                        }
+
+                        if (!questionText.includes('[blank]')) {
+                            toast.error('Please include [blank] in your question where the answer should go');
+                            return;
+                        }
+
+                        question.correctAnswer = blankAnswer;
+                        break;
+                }
+
+                // Add question to array
+                quickPollQuestions.push(question);
+
+                // Clear form
+                clearQuestionForm();
+
+                // Render questions list
+                renderQuestionsList();
+
+                toast.success('Question added successfully!');
+
+            } catch (error) {
+                toast.error('Error adding question: ' + error.message);
+            }
+        }
+
+        function clearQuestionForm() {
+            document.getElementById('questionText').value = '';
+            ['A', 'B', 'C', 'D'].forEach(letter => {
+                const input = document.getElementById(`option${letter}`);
+                if (input) input.value = '';
+            });
+            for (let i = 1; i <= 4; i++) {
+                const matchLeft = document.getElementById(`match${i}Left`);
+                const matchRight = document.getElementById(`match${i}Right`);
+                const order = document.getElementById(`order${i}`);
+                if (matchLeft) matchLeft.value = '';
+                if (matchRight) matchRight.value = '';
+                if (order) order.value = '';
+            }
+            const blankAnswer = document.getElementById('blankAnswer');
+            if (blankAnswer) blankAnswer.value = '';
+        }
+
+        function removeQuickPollQuestion(index) {
+            if (confirm('Remove this question?')) {
+                quickPollQuestions.splice(index, 1);
+                renderQuestionsList();
+            }
+        }
+
+        function renderQuestionsList() {
+            const container = document.getElementById('questionsList');
+
+            if (quickPollQuestions.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); font-size: 14px;">No questions added yet.</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="margin-bottom: 12px;">
+                    <strong>${quickPollQuestions.length} Question(s) Added:</strong>
+                </div>
+                ${quickPollQuestions.map((q, index) => `
+                    <div style="background-color: #F9FAFB; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; margin-bottom: 4px;">Q${index + 1}: ${q.text}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Type: ${q.type.toUpperCase()}</div>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-small" onclick="removeQuickPollQuestion(${index})" style="margin-left: 12px;">Remove</button>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        async function handleStartSession(e) {
+            e.preventDefault();
+            
+            if (!selectedType) {
+                toast.error('Please select a session type');
+                return;
+            }
+            
+            if (selectedType === 'desktop') {
+                // Desktop sessions are started from the desktop app
+                return;
+            }
+            
+            // Get custom session code or generate a random one
+            const customCode = document.getElementById('customSessionCode').value.trim();
+            const sessionCode = customCode || Math.random().toString(36).substring(2, 8).toUpperCase();
+
+            const sessionData = {
+                sessionCode: sessionCode,
+                title: document.getElementById('sessionName').value,
+                description: `${selectedType === 'quick' ? 'Quick Poll' : 'Quiz Session'} for ${classData.name}`,
+                requireLogin: !document.getElementById('allowAnonymous').checked, // Invert anonymous flag
+                classId: classId, // Add class ID for enrollment checking
+                restrictToEnrolled: !document.getElementById('openToAll').checked, // Restrict by default
+                gamification: { enabled: document.getElementById('enableGamification').checked }, // Gamification settings object
+                allowAnswerChange: document.getElementById('allowAnswerChange').checked, // Allow students to change answer
+                showCorrectAnswer: document.getElementById('showCorrectAnswer').checked // Show correct answer when question ends
+            };
+
+            logger.debug('=== CREATING SESSION WITH SETTINGS ===');
+            logger.debug('showCorrectAnswer checkbox value:', document.getElementById('showCorrectAnswer').checked);
+            logger.debug('Session data being sent:', sessionData);
+            
+            if (selectedType === 'quick') {
+                // Check if there are questions added
+                if (quickPollQuestions.length === 0) {
+                    toast.error('Please add at least one question to the quick poll');
+                    return;
+                }
+
+                // Use all questions from the array
+                sessionData.questions = quickPollQuestions;
+            } else if (selectedType === 'quiz') {
+                // Get selected quiz
+                const quizId = document.getElementById('quizSelect').value;
+                if (!quizId) {
+                    toast.error('Please select a quiz');
+                    return;
+                }
+
+                // Fetch quiz data
+                try {
+                    const quizResponse = await fetch(`https://api.intellaclick.com/api/quizzes/${quizId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+
+                    if (!quizResponse.ok) {
+                        throw new Error('Failed to load quiz');
+                    }
+
+                    const quizData = await quizResponse.json();
+                    const quiz = quizData.quiz || quizData;
+
+                    // Transform quiz questions to session format
+                    const quizQuestions = (quiz.questions || []).map(q => {
+                        const snapshot = q.questionSnapshot || {};
+                        // Check BOTH questionType (new schema) and type (old data) for backwards compatibility
+                        const questionType = snapshot.questionType || snapshot.type || 'mcq';
+
+                        return {
+                            text: snapshot.questionText || '',
+                            type: questionType,
+                            timeLimit: 60, // Default time limit
+                            points: q.points || 10,
+                            options: snapshot.options,
+                            correctAnswer: snapshot.correctAnswer,
+                            pairs: snapshot.pairs,
+                            correctOrder: snapshot.correctOrder,
+                            optionTexts: snapshot.options // For MCQ
+                        };
+                    });
+
+                    // Add quiz questions to session
+                    sessionData.questions = quizQuestions;
+                    sessionData.quizId = quizId;
+                    sessionData.quizTitle = quiz.title;
+
+                    if (sessionData.questions.length === 0) {
+                        toast.error('Selected quiz has no questions');
+                        return;
+                    }
+                } catch (error) {
+                    logger.error('Error loading quiz:', error);
+                    toast.error('Failed to load quiz data');
+                    return;
+                }
+            }
+            
+            try {
+                const result = await sessions.create(sessionData);
+                const session = result.session || result;
+
+                // Save session settings to backend for next time (don't wait for this)
+                const sessionSettings = {
+                    allowAnonymous: document.getElementById('allowAnonymous').checked,
+                    openToAll: document.getElementById('openToAll').checked,
+                    allowAnswerChange: document.getElementById('allowAnswerChange').checked,
+                    showCorrectAnswer: document.getElementById('showCorrectAnswer').checked,
+                    enableGamification: document.getElementById('enableGamification').checked
+                };
+
+                // Save to backend (async, don't wait)
+                fetch('https://api.intellaclick.com/api/users/session-settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(sessionSettings)
+                }).then(() => {
+                    logger.debug('✅ Saved session settings to backend for next time');
+                }).catch(err => {
+                    logger.error('Failed to save settings (non-critical):', err);
+                });
+
+                // Show session code in toast for instructor to share
+                toast.success(`Session created! Code: ${session.sessionCode || sessionCode}`);
+
+                // Store all questions in sessionStorage for the session page to use
+                if (sessionData.questions && sessionData.questions.length > 0) {
+                    sessionStorage.setItem('pendingQuestions', JSON.stringify(sessionData.questions));
+                    sessionStorage.setItem('currentQuestionIndex', '0'); // Start with first question
+                }
+
+                // AUTO-SAVE: Save questions for reuse (for ALL session types with questions)
+                if (sessionData.questions && sessionData.questions.length > 0) {
+                    // Don't wait for auto-save to complete - let it run in background
+                    autoSaveQuestions(sessionData.title, sessionData.questions);
+                }
+
+                // Redirect to session management page with session info
+                // Increased delay to give more time to see console logs
+                setTimeout(() => {
+                    logger.debug('=== REDIRECTING NOW ===');
+                    window.location.href = `../pages/session.html?id=${session.id || session._id}&code=${session.sessionCode || sessionCode}&type=${selectedType}`;
+                }, 5000); // Give 5 seconds to see auto-save logs
+                
+            } catch (error) {
+                logger.error('Error creating session:', error);
+                toast.error(error.message || 'Failed to create session');
+            }
+        }
+
+        function cancelSession() {
+            if (confirm('Are you sure you want to cancel?')) {
+                window.location.href = '../pages/classes.html';
+            }
+        }
+
+
+        function goToSavedQuestions() {
+            // Save current URL so we can return here
+            const returnUrl = window.location.href;
+            sessionStorage.setItem('createSessionUrl', returnUrl);
+
+            logger.debug('Navigating to saved questions, returnUrl:', returnUrl);
+
+            // Navigate with returnUrl parameter
+            window.location.href = `../pages/saved-questions.html?returnUrl=${encodeURIComponent(returnUrl)}`;
+        }
+
+        // Legacy function name for compatibility
+        function loadSavedQuestions() {
+            goToSavedQuestions();
+        }
+
+        function insertBlank() {
+            const textarea = document.getElementById('questionText');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+
+            // Insert [blank] at cursor position
+            const newText = text.substring(0, start) + '[blank]' + text.substring(end);
+            textarea.value = newText;
+
+            // Move cursor after [blank]
+            textarea.selectionStart = textarea.selectionEnd = start + 7;
+            textarea.focus();
+        }
+
+        async function autoSaveQuestions(sessionName, questions) {
+            logger.debug('=== AUTO-SAVE CALLED ===');
+            logger.debug('Session name:', sessionName);
+            logger.debug('Questions array:', questions);
+            logger.debug('Questions length:', questions?.length);
+
+            if (!questions || questions.length === 0) {
+                logger.debug('❌ No questions to save - skipping auto-save');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                logger.warn('⚠️ No authentication token - skipping auto-save (silent)');
+                return;
+            }
+
+            logger.debug(`🔄 Auto-saving "${sessionName}" with ${questions.length} questions to cloud...`);
+
+            const payload = {
+                name: sessionName,
+                questions: questions,
+                classId: null
+            };
+            logger.debug('Payload being sent:', JSON.stringify(payload, null, 2));
+
+            try {
+                const response = await fetch('https://api.intellaclick.com/api/question-sets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                logger.debug('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    logger.error('❌ Cloud API save failed:', errorData);
+                    logger.error('Response status:', response.status);
+                    logger.warn('⚠️ Question set auto-save failed, but session will continue');
+                    return;
+                }
+
+                const data = await response.json();
+                logger.debug('✅ Question set auto-saved to cloud successfully:', data);
+            } catch (error) {
+                logger.error('❌ Error auto-saving question set:', error);
+                logger.error('Error stack:', error.stack);
+                logger.warn('⚠️ Question set auto-save failed, but session will continue');
+            }
+        }
+
+        // Expose functions to window object for onclick handlers
+        window.selectSessionType = selectSessionType;
+        window.goToSavedQuestions = goToSavedQuestions;
+        window.insertBlank = insertBlank;
+        window.updateQuestionOptions = updateQuestionOptions;
+        window.addQuickPollQuestion = addQuickPollQuestion;
+        window.cancelSession = cancelSession;
+        window.removeQuickPollQuestion = removeQuickPollQuestion;
+    </script>
+</body>
+</html>

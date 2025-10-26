@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Quizzes - IntellaClick</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <link rel="stylesheet" href="styles/quizzes.css">
+</head>
+<body>
+    <div class="container">
+        <a href="classes.html" class="back-link">← Back to Classes</a>
+        <div class="header">
+            <h1>My Quizzes</h1>
+            <div class="bulk-actions">
+                <button class="btn btn-secondary" onclick="toggleSelectAll()">
+                    <span id="selectAllText">Select All</span>
+                </button>
+                <button class="btn btn-danger" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                    Delete Selected (<span id="selectedCount">0</span>)
+                </button>
+                <a href="quiz-creator.html" class="btn btn-primary">+ Create Quiz</a>
+            </div>
+        </div>
+
+        <div id="quizzesContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading quizzes...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { quizzes } from '../utils/api.js';
+        import toast from '../utils/toast.js';
+        import logger from '../utils/logger.js';
+
+        let selectedQuizzes = new Set();
+        let allQuizzes = [];
+
+        logger.debug('🔵 Quizzes Page Loaded - Version 1.0.0-modular');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            logger.debug('🔵 DOMContentLoaded - initializing page');
+            checkAuth();
+            loadQuizzes();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '../pages/login.html';
+            }
+        }
+
+        async function loadQuizzes() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Not authenticated. Please log in.');
+                }
+
+                logger.debug('Loading quizzes from cloud API...');
+
+                const data = await quizzes.getAll();
+                allQuizzes = data.quizzes || [];
+
+                logger.debug(`✅ Loaded ${allQuizzes.length} quizzes from cloud`);
+
+                renderQuizzes(allQuizzes);
+            } catch (error) {
+                logger.error('Error loading quizzes:', error);
+                toast.error(`Failed to load quizzes: ${error.message}`);
+                showError('Network error. Please try again.');
+            }
+        }
+
+        function renderQuizzes(quizzes) {
+            const container = document.getElementById('quizzesContainer');
+
+            if (quizzes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Quizzes Yet</h3>
+                        <p>Create your first quiz to get started</p>
+                        <br>
+                        <a href="quiz-creator.html" class="btn btn-primary">Create Quiz</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="quiz-grid">
+                    ${quizzes.map(quiz => {
+                        const isSelected = selectedQuizzes.has(quiz._id);
+                        return `
+                        <div class="quiz-card">
+                            <div class="quiz-card-header">
+                                <input type="checkbox" class="quiz-checkbox"
+                                       data-quiz-id="${quiz._id}"
+                                       ${isSelected ? 'checked' : ''}
+                                       onclick="toggleQuizSelection('${quiz._id}')">
+                                <div class="quiz-card-content">
+                                    <div class="quiz-title">${escapeHtml(quiz.title)}</div>
+                                    <div class="quiz-description">${escapeHtml(quiz.description || 'No description')}</div>
+                                </div>
+                            </div>
+                            <div class="quiz-meta">
+                                <div class="quiz-meta-item">
+                                    <span>📝</span>
+                                    <span>${quiz.questionCount || 0} questions</span>
+                                </div>
+                                <div class="quiz-meta-item">
+                                    <span>⭐</span>
+                                    <span>${quiz.totalPoints || 0} points</span>
+                                </div>
+                            </div>
+                            <div class="quiz-actions">
+                                <a href="quiz-creator.html?id=${quiz._id}" class="btn btn-secondary btn-small">Edit</a>
+                                <button class="btn btn-secondary btn-small" onclick="duplicateQuiz('${quiz._id}')">Duplicate</button>
+                                <button class="btn btn-danger btn-small" onclick="deleteQuiz('${quiz._id}', '${escapeHtml(quiz.title)}')">Delete</button>
+                            </div>
+                        </div>
+                    `}).join('')}
+                </div>
+            `;
+            updateSelectionUI();
+        }
+
+        async function duplicateQuiz(quizId) {
+            if (!confirm('Create a copy of this quiz?')) return;
+
+            try {
+                const data = await quizzes.duplicate(quizId);
+
+                if (data.success) {
+                    toast.success('Quiz duplicated successfully!');
+                    loadQuizzes();
+                } else {
+                    toast.error(data.message || 'Failed to duplicate quiz');
+                }
+            } catch (error) {
+                logger.error('Error duplicating quiz:', error);
+                toast.error(`Failed to duplicate quiz: ${error.message}`);
+            }
+        }
+
+        async function deleteQuiz(quizId, quizTitle) {
+            if (!confirm(`Are you sure you want to delete "${quizTitle}"? This action cannot be undone.`)) return;
+
+            try {
+                const data = await quizzes.delete(quizId);
+
+                if (data.success) {
+                    toast.success('Quiz deleted successfully!');
+                    loadQuizzes();
+                } else {
+                    toast.error(data.message || 'Failed to delete quiz');
+                }
+            } catch (error) {
+                logger.error('Error deleting quiz:', error);
+                toast.error(`Failed to delete quiz: ${error.message}`);
+            }
+        }
+
+        function showError(message) {
+            const container = document.getElementById('quizzesContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                    <br>
+                    <button class="btn btn-primary" onclick="loadQuizzes()">Retry</button>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Bulk selection functions
+        function toggleQuizSelection(quizId) {
+            if (selectedQuizzes.has(quizId)) {
+                selectedQuizzes.delete(quizId);
+            } else {
+                selectedQuizzes.add(quizId);
+            }
+            renderQuizzes(allQuizzes);
+        }
+
+        function toggleSelectAll() {
+            const visibleQuizzes = allQuizzes;
+
+            if (selectedQuizzes.size === visibleQuizzes.length && visibleQuizzes.length > 0) {
+                // Deselect all
+                selectedQuizzes.clear();
+            } else {
+                // Select all visible
+                visibleQuizzes.forEach(quiz => {
+                    selectedQuizzes.add(quiz._id);
+                });
+            }
+
+            renderQuizzes(allQuizzes);
+        }
+
+        function updateSelectionUI() {
+            const count = selectedQuizzes.size;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('deleteSelectedBtn').disabled = count === 0;
+
+            const visibleQuizzes = allQuizzes;
+            const allSelected = count > 0 && count === visibleQuizzes.length;
+            document.getElementById('selectAllText').textContent = allSelected ? 'Deselect All' : 'Select All';
+        }
+
+        async function deleteSelected() {
+            const count = selectedQuizzes.size;
+            if (count === 0) return;
+
+            if (!confirm(`Are you sure you want to delete ${count} quiz${count > 1 ? 'zes' : ''}? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const deletePromises = Array.from(selectedQuizzes).map(quizId =>
+                    quizzes.delete(quizId)
+                );
+
+                await Promise.all(deletePromises);
+
+                toast.success(`Successfully deleted ${count} quiz${count > 1 ? 'zes' : ''}!`);
+                selectedQuizzes.clear();
+                loadQuizzes();
+            } catch (error) {
+                logger.error('Error deleting quizzes:', error);
+                toast.error('Some quizzes could not be deleted. Please try again.');
+                loadQuizzes();
+            }
+        }
+
+        // Expose functions to window for onclick handlers
+        window.toggleQuizSelection = toggleQuizSelection;
+        window.toggleSelectAll = toggleSelectAll;
+        window.deleteSelected = deleteSelected;
+        window.duplicateQuiz = duplicateQuiz;
+        window.deleteQuiz = deleteQuiz;
+        window.loadQuizzes = loadQuizzes;
+    </script>
+</body>
+</html>

@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="2.0.0-modular">
+    <title>My Classes - IntellaClick</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="styles/common.css">
+    <link rel="stylesheet" href="styles/classes.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>My Classes</h1>
+                <p>Manage your classes and track student engagement</p>
+            </div>
+            <div class="header-actions">
+                <div class="welcome-message">
+                    Welcome, <span class="welcome-name" id="userName">Instructor</span>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <label style="font-weight: 500; color: var(--text-secondary);">Filters:</label>
+
+                    <select id="yearFilter" onchange="applyFilters()" style="width: auto; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px;">
+                        <option value="">All Years</option>
+                    </select>
+
+                    <select id="semesterFilter" onchange="applyFilters()" style="width: auto; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px;">
+                        <option value="">All Semesters</option>
+                        <option value="Spring">Spring</option>
+                        <option value="Summer">Summer</option>
+                        <option value="Fall">Fall</option>
+                        <option value="Winter">Winter</option>
+                    </select>
+
+                    <select id="statusFilter" onchange="applyFilters()" style="width: auto; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px;">
+                        <option value="active">Active Classes</option>
+                        <option value="">All Classes</option>
+                        <option value="archived">Archived</option>
+                    </select>
+
+                    <select id="classFilter" onchange="applyFilters()" style="width: auto; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 14px; display: none;">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-secondary" onclick="clearFilters()" style="padding: 8px 16px;">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-icon blue">📚</div>
+                <div class="stat-content">
+                    <h3 id="totalClasses">0</h3>
+                    <p>Total Classes</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">👥</div>
+                <div class="stat-content">
+                    <h3 id="totalStudents">0</h3>
+                    <p>Total Students</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">🎯</div>
+                <div class="stat-content">
+                    <h3 id="totalSessions">0</h3>
+                    <p>Total Sessions</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon yellow">📊</div>
+                <div class="stat-content">
+                    <h3 id="avgEngagement">0%</h3>
+                    <p>Avg. Engagement</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-bar">
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-primary" onclick="showCreateClassModal()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create New Class
+                </button>
+                <a href="quizzes.html" class="btn btn-secondary">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    My Quizzes
+                </a>
+                <a href="active-sessions.html" class="btn btn-primary" style="background-color: var(--secondary-color);">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    🔴 Active Sessions
+                </a>
+                <a href="session-history.html" class="btn btn-secondary">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    📊 Session History
+                </a>
+                <a href="gamification-dashboard.html" class="btn btn-secondary">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                    </svg>
+                    🏆 Gamification
+                </a>
+            </div>
+        </div>
+
+        <div id="classesContainer" class="classes-grid">
+            <div class="loading">Loading your classes...</div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Class Modal -->
+    <div id="classModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create New Class</h2>
+                <p>Set up a new class for your students</p>
+            </div>
+            <form id="classForm">
+                <div class="form-group">
+                    <label for="className">Class Name *</label>
+                    <input type="text" id="className" required placeholder="e.g., Introduction to Psychology">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="classCode">Course Code *</label>
+                        <input type="text" id="classCode" required placeholder="e.g., PSY101">
+                    </div>
+                    <div class="form-group">
+                        <label for="classSection">Section</label>
+                        <input type="text" id="classSection" placeholder="e.g., 001">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="termSeason">Term Season *</label>
+                        <select id="termSeason" required>
+                            <option value="">Select Season</option>
+                            <option value="Spring">Spring</option>
+                            <option value="Summer">Summer</option>
+                            <option value="Fall">Fall</option>
+                            <option value="Winter">Winter</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="termYear">Term Year *</label>
+                        <select id="termYear" required>
+                            <option value="">Select Year</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="classDescription">Description</label>
+                    <textarea id="classDescription" placeholder="Brief description of the class (optional)"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startDate">Start Date *</label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">End Date *</label>
+                        <input type="date" id="endDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="customJoinCode">Custom Join Code (Optional)</label>
+                    <input type="text"
+                           id="customJoinCode"
+                           placeholder="Leave empty for auto-generated code"
+                           maxlength="12"
+                           pattern="[A-Za-z0-9]{4,12}"
+                           title="4-12 characters, letters and numbers only"
+                           style="text-transform: uppercase;"
+                           oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')">
+                    <small style="color: #6B7280; display: block; margin-top: 4px;">
+                        4-12 characters, letters and numbers only. Leave empty for auto-generated code.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="enrollmentLimit">Enrollment Limit (Optional)</label>
+                    <input type="number"
+                           id="enrollmentLimit"
+                           placeholder="Leave empty for no limit"
+                           min="1"
+                           step="1">
+                    <small style="color: #6B7280; display: block; margin-top: 4px;">
+                        Maximum number of students allowed to enroll. Leave empty for unlimited enrollment.
+                    </small>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideModal('classModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Class</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { auth, classes as classesAPI } from '../utils/api.js';
+        import toast from '../utils/toast.js';
+        import logger from '../utils/logger.js';
+        import loading from '../utils/loading.js';
+        import confirm from '../utils/confirm.js';
+
+        let currentUser = null;
+        let classes = [];
+
+        // Note: Functions need to be on window for inline onclick handlers to work
+        // This is a temporary solution - ideally we'd use addEventListener instead
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            populateYearFilter();
+            loadClasses();
+            loadStats();
+            setupEventListeners();
+            populateYearDropdown();
+        });
+        
+        function populateYearFilter() {
+            const yearFilter = document.getElementById('yearFilter');
+            const currentYear = new Date().getFullYear();
+
+            // Add years from 2 years ago to 5 years in future
+            for (let year = currentYear + 5; year >= currentYear - 2; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            }
+        }
+
+        function populateYearDropdown() {
+            const yearSelect = document.getElementById('termYear');
+            const currentYear = new Date().getFullYear();
+
+            // Add years from 2 years ago to 5 years in future
+            for (let year = currentYear - 2; year <= currentYear + 5; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            }
+        }
+
+        function applyFilters() {
+            // Update class dropdown visibility and options
+            updateClassDropdown();
+
+            // Reload data with filters
+            loadClasses();
+            loadStats();
+        }
+
+        function clearFilters() {
+            document.getElementById('yearFilter').value = '';
+            document.getElementById('semesterFilter').value = '';
+            document.getElementById('statusFilter').value = 'active';
+            document.getElementById('classFilter').value = '';
+            document.getElementById('classFilter').style.display = 'none';
+            applyFilters();
+        }
+
+        function updateClassDropdown() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const classFilter = document.getElementById('classFilter');
+
+            // Show class dropdown only when status is selected (not "All Classes")
+            if (statusFilter) {
+                classFilter.style.display = 'block';
+                populateClassDropdown();
+            } else {
+                classFilter.style.display = 'none';
+                classFilter.value = '';
+            }
+        }
+
+        function populateClassDropdown() {
+            const classFilter = document.getElementById('classFilter');
+            const yearFilter = document.getElementById('yearFilter').value;
+            const semesterFilter = document.getElementById('semesterFilter').value;
+            const statusFilterValue = document.getElementById('statusFilter').value;
+
+            // Filter classes based on current filters
+            let filteredClasses = classes.filter(c => {
+                if (statusFilterValue && c.status !== statusFilterValue) return false;
+                if (yearFilter || semesterFilter) {
+                    const [semester, year] = c.term.split(' ');
+                    if (yearFilter && year !== yearFilter) return false;
+                    if (semesterFilter && semester !== semesterFilter) return false;
+                }
+                return true;
+            });
+
+            // Repopulate dropdown
+            const currentValue = classFilter.value;
+            classFilter.innerHTML = '<option value="">All Classes</option>';
+
+            filteredClasses.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls._id;
+                option.textContent = `${cls.name} (${cls.code})`;
+                if (cls._id === currentValue) option.selected = true;
+                classFilter.appendChild(option);
+            });
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!token || !user.id) {
+                window.location.href = '../pages/login.html';
+                return;
+            }
+
+            // Debug user info
+            logger.debug('Current user', user);
+            logger.debug('User role', user.role);
+            logger.debug('Token exists', !!token);
+
+            // Check if user is instructor or admin or has generic 'user' role
+            const allowedRoles = ['instructor', 'admin', 'teacher', 'professor', 'faculty', 'teaching_assistant', 'user'];
+            if (!allowedRoles.includes(user.role?.toLowerCase())) {
+                logger.error('Invalid user role', null, { role: user.role, allowedRoles });
+                alert(`Access denied. Your role is '${user.role}' but instructor privileges are required. Allowed roles: ${allowedRoles.join(', ')}`);
+                // Don't redirect yet so user can see the message
+                setTimeout(() => {
+                    window.location.href = '../pages/dashboard.html';
+                }, 3000);
+                return;
+            }
+
+            currentUser = user;
+
+            // Display user's name in header
+            displayUserName(user);
+
+            // Also fetch fresh user data to ensure role is up to date
+            fetchUserProfile();
+        }
+
+        function displayUserName(user) {
+            const userNameElement = document.getElementById('userName');
+            if (userNameElement) {
+                // Try to get the full name, fall back to first name, then email
+                const name = user.name ||
+                           (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '') ||
+                           user.firstName ||
+                           user.email?.split('@')[0] ||
+                           'Instructor';
+                userNameElement.textContent = name;
+            }
+        }
+
+        function handleLogout() {
+            // Confirm logout
+            if (window.confirm('Are you sure you want to logout?')) {
+                // Clear all auth data
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('refreshToken');
+
+                // Redirect to login
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function fetchUserProfile() {
+            try {
+                const data = await auth.getMe();
+                if (data.user) {
+                    // Update local storage with fresh user data
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    currentUser = data.user;
+                    displayUserName(data.user);
+                    logger.debug('Updated user profile', data.user);
+                }
+            } catch (error) {
+                logger.error('Failed to fetch user profile', error);
+            }
+        }
+
+        function setupEventListeners() {
+            const form = document.getElementById('classForm');
+            logger.debug('🔵 setupEventListeners called');
+            console.log('🔵 Form element found:', !!form);
+
+            if (form) {
+                form.addEventListener('submit', handleCreateClass);
+                logger.debug('🔵 Submit event listener attached to form');
+                console.log('🔵 Submit handler attached');
+            } else {
+                logger.error('🔴 classForm element not found!');
+                console.error('🔴 classForm element not found!');
+            }
+
+            // Close modal on outside click
+            document.getElementById('classModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideModal('classModal');
+                }
+            });
+        }
+
+        async function loadStats() {
+            try {
+                // Get current filters
+                const yearFilter = document.getElementById('yearFilter').value;
+                const semesterFilter = document.getElementById('semesterFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const classFilter = document.getElementById('classFilter').value;
+
+                // Filter classes based on current filters
+                let filteredClasses = classes.filter(c => {
+                    // Status filter
+                    if (statusFilter && c.status !== statusFilter) return false;
+
+                    // Specific class filter
+                    if (classFilter && c._id !== classFilter) return false;
+
+                    // Year and semester filters
+                    if (yearFilter || semesterFilter) {
+                        const [semester, year] = c.term.split(' ');
+                        if (yearFilter && year !== yearFilter) return false;
+                        if (semesterFilter && semester !== semesterFilter) return false;
+                    }
+
+                    return true;
+                });
+
+                // Calculate stats from filtered classes
+                const totalClasses = filteredClasses.length;
+                const totalStudents = filteredClasses.reduce((sum, c) => {
+                    return sum + (c.enrollmentSummary?.totalEnrolled || 0);
+                }, 0);
+                const totalSessions = filteredClasses.reduce((sum, c) => {
+                    return sum + (c.stats?.sessionCount || 0);
+                }, 0);
+
+                // Calculate average engagement
+                let totalEngagement = 0;
+                let classesWithEngagement = 0;
+                filteredClasses.forEach(c => {
+                    // Try multiple data sources for attendance/engagement
+                    const attendance = c.enrollmentSummary?.avgAttendance
+                        || c.stats?.avgAttendance
+                        || c.stats?.avgParticipation;
+
+                    if (attendance) {
+                        totalEngagement += attendance;
+                        classesWithEngagement++;
+                    } else if (c.stats?.sessionCount > 0 && c.enrollmentSummary?.totalEnrolled > 0) {
+                        // Calculate engagement from session participation if available
+                        const participationRate = ((c.stats.totalParticipants || 0) /
+                            (c.stats.sessionCount * c.enrollmentSummary.totalEnrolled)) * 100;
+                        if (!isNaN(participationRate) && participationRate > 0) {
+                            totalEngagement += participationRate;
+                            classesWithEngagement++;
+                        }
+                    }
+                });
+                const avgEngagement = classesWithEngagement > 0
+                    ? Math.round(totalEngagement / classesWithEngagement)
+                    : 0;
+
+                // Update UI
+                document.getElementById('totalClasses').textContent = totalClasses;
+                document.getElementById('totalStudents').textContent = totalStudents;
+                document.getElementById('totalSessions').textContent = totalSessions;
+                document.getElementById('avgEngagement').textContent = `${avgEngagement}%`;
+            } catch (error) {
+                logger.error('Failed to load stats', error);
+            }
+        }
+
+        async function loadClasses() {
+            loading.show('Loading classes...');
+            try {
+                // Fetch all classes first
+                const data = await classesAPI.getAll({ includeArchived: 'true' });
+                classes = data.classes || [];
+
+                // Fix populated instructorId objects
+                classes = classes.map(cls => {
+                    if (typeof cls.instructorId === 'object' && cls.instructorId._id) {
+                        // Store the actual ID for deletion/comparison
+                        cls.instructorIdRaw = cls.instructorId._id;
+                        // Keep the object for display purposes (email, name)
+                    } else {
+                        cls.instructorIdRaw = cls.instructorId;
+                    }
+                    return cls;
+                });
+
+                logger.debug('Loaded classes', {
+                    count: classes.length,
+                    classes: classes.map(c => ({ name: c.name, instructorId: c.instructorIdRaw }))
+                });
+
+                // Update class dropdown if needed
+                updateClassDropdown();
+
+                // Render filtered classes
+                renderClasses();
+
+                // Update stats after classes are loaded
+                loadStats();
+            } catch (error) {
+                logger.error('Failed to load classes', error);
+                toast.error('Failed to load classes');
+            } finally {
+                loading.hide();
+            }
+        }
+
+        function renderClasses() {
+            const container = document.getElementById('classesContainer');
+
+            // Get current filters
+            const yearFilter = document.getElementById('yearFilter').value;
+            const semesterFilter = document.getElementById('semesterFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const classFilter = document.getElementById('classFilter').value;
+
+            // Filter classes
+            let filteredClasses = classes.filter(c => {
+                // Status filter
+                if (statusFilter && c.status !== statusFilter) return false;
+
+                // Specific class filter
+                if (classFilter && c._id !== classFilter) return false;
+
+                // Year and semester filters
+                if (yearFilter || semesterFilter) {
+                    const [semester, year] = c.term.split(' ');
+                    if (yearFilter && year !== yearFilter) return false;
+                    if (semesterFilter && semester !== semesterFilter) return false;
+                }
+
+                return true;
+            });
+
+            if (filteredClasses.length === 0) {
+                const hasClasses = classes.length > 0;
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>${hasClasses ? 'No classes match your filters' : 'No classes yet'}</h3>
+                        <p>${hasClasses ? 'Try adjusting your filters to see more classes' : 'Create your first class to start engaging with students'}</p>
+                        ${hasClasses ? '<button class="btn btn-secondary" onclick="clearFilters()">Clear Filters</button>' : '<button class="btn btn-primary" onclick="showCreateClassModal()">Create Your First Class</button>'}
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredClasses.map(classData => {
+                const stats = classData.stats || {};
+                const enrollmentSummary = classData.enrollmentSummary || {};
+                // Try both sources for enrollment count (backend sends different formats)
+                const totalEnrolled = enrollmentSummary.totalEnrolled || stats.enrolledCount || 0;
+                const pendingCount = enrollmentSummary.pending || stats.pendingCount || 0;
+
+                return `
+                    <div class="class-card">
+                        <div class="class-card-header">
+                            <h3>${classData.name}</h3>
+                            <p>${classData.code}${classData.section ? ` - Section ${classData.section}` : ''}</p>
+                        </div>
+                        
+                        <div class="class-card-body">
+                            <div class="class-info">
+                                <div class="class-info-item">
+                                    <i>📅</i>
+                                    <span>${classData.term}</span>
+                                </div>
+                                <div class="class-info-item">
+                                    <i>🕒</i>
+                                    <span>${formatSchedule(classData.schedule)}</span>
+                                </div>
+                                ${classData.schedule?.location ? `
+                                    <div class="class-info-item">
+                                        <i>📍</i>
+                                        <span>${classData.schedule.location}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            ${classData.joinCode ? `
+                                <div class="join-code-section">
+                                    <div class="join-code-label">Join Code</div>
+                                    <div class="join-code-display">
+                                        <span class="join-code-text">${classData.joinCode}</span>
+                                        <button class="copy-btn" onclick="copyJoinCode(event, '${classData.joinCode}')">
+                                            Copy
+                                        </button>
+                                        <button class="qr-btn" onclick="showQRCode(event, '${classData.joinCode}', '${classData.name}')">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="3" width="7" height="7"></rect>
+                                                <rect x="14" y="3" width="7" height="7"></rect>
+                                                <rect x="3" y="14" width="7" height="7"></rect>
+                                                <rect x="14" y="14" width="7" height="7"></rect>
+                                            </svg>
+                                            QR Code
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="enrollment-stats">
+                                <div class="enrollment-stat">
+                                    <div class="enrollment-stat-number">${totalEnrolled}</div>
+                                    <div class="enrollment-stat-label">Enrolled</div>
+                                </div>
+                                <div class="enrollment-stat">
+                                    <div class="enrollment-stat-number">${pendingCount}</div>
+                                    <div class="enrollment-stat-label">Pending</div>
+                                </div>
+                                <div class="enrollment-stat">
+                                    <div class="enrollment-stat-number">${stats.sessionCount || 0}</div>
+                                    <div class="enrollment-stat-label">Sessions</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f3f4f6; padding: 8px; border-radius: 4px; margin-bottom: 16px; font-size: 11px; color: #666; font-family: monospace;">
+                                <strong>Class ID:</strong> <span style="user-select: all;">${classData._id}</span>
+                                <button class="copy-btn" style="float: right; font-size: 10px; padding: 2px 8px;" onclick="copyText(event, '${classData._id}')">Copy ID</button>
+                            </div>
+
+                            <div class="class-actions">
+                                <button class="btn btn-secondary" onclick="manageRoster(event, '${classData._id}')">
+                                    Manage Roster
+                                </button>
+                                <button class="btn btn-primary" onclick="startSession(event, '${classData._id}')">
+                                    Start Session
+                                </button>
+                                <button class="btn btn-secondary" onclick="viewAnalytics(event, '${classData._id}')">
+                                    Analytics
+                                </button>
+                                <button class="btn btn-secondary" onclick="editClass(event, '${classData._id}')">
+                                    Settings
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteClass(event, '${classData._id}', '${classData.name.replace(/'/g, "\\'")}')">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatSchedule(schedule) {
+            if (!schedule || !schedule.days || schedule.days.length === 0) {
+                return 'Schedule not set';
+            }
+
+            const dayMap = {
+                'monday': 'Mon',
+                'tuesday': 'Tue',
+                'wednesday': 'Wed',
+                'thursday': 'Thu',
+                'friday': 'Fri',
+                'saturday': 'Sat',
+                'sunday': 'Sun'
+            };
+
+            const days = schedule.days.map(d => dayMap[d.toLowerCase()] || d).join(', ');
+            const time = schedule.startTime && schedule.endTime 
+                ? ` ${schedule.startTime} - ${schedule.endTime}`
+                : '';
+
+            return days + time;
+        }
+
+        function showCreateClassModal() {
+            document.getElementById('modalTitle').textContent = 'Create New Class';
+            document.getElementById('classForm').reset();
+            
+            // Set default dates
+            const today = new Date();
+            const endDate = new Date(today);
+            endDate.setMonth(endDate.getMonth() + 4); // 4 months later
+            
+            document.getElementById('startDate').valueAsDate = today;
+            document.getElementById('endDate').valueAsDate = endDate;
+            
+            showModal('classModal');
+        }
+
+        async function handleCreateClass(e) {
+            e.preventDefault();
+
+            logger.debug('🔵 handleCreateClass called');
+            console.log('🔵 Form submission triggered');
+
+            const season = document.getElementById('termSeason').value;
+            const year = document.getElementById('termYear').value;
+
+            const customCode = document.getElementById('customJoinCode').value.trim();
+            const enrollmentLimit = document.getElementById('enrollmentLimit').value.trim();
+
+            const formData = {
+                name: document.getElementById('className').value,
+                code: document.getElementById('classCode').value,
+                section: document.getElementById('classSection').value,
+                term: `${season} ${year}`,
+                description: document.getElementById('classDescription').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value
+            };
+
+            // Only include customJoinCode if provided
+            if (customCode) {
+                formData.customJoinCode = customCode;
+            }
+
+            // Only include enrollmentLimit if provided
+            if (enrollmentLimit) {
+                formData.enrollmentLimit = parseInt(enrollmentLimit, 10);
+            }
+
+            logger.debug('Creating class', formData);
+            console.log('Form data:', formData);
+
+            loading.show('Creating class...');
+            try {
+                const data = await classesAPI.create(formData);
+                logger.info('Class created successfully', { className: formData.name });
+
+                toast.success('Class created successfully!');
+                hideModal('classModal');
+                loadClasses();
+                loadStats();
+            } catch (error) {
+                logger.error('Failed to create class', error, { formData });
+                toast.error(error.message || 'Failed to create class');
+            } finally {
+                loading.hide();
+            }
+        }
+
+        function copyJoinCode(event, code) {
+            event.stopPropagation();
+            copyText(event, code, 'Join code');
+        }
+        
+        function copyText(event, text, label = 'Text') {
+            event.stopPropagation();
+            navigator.clipboard.writeText(text).then(() => {
+                toast.success(`${label} copied to clipboard!`);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                toast.success(`${label} copied!`);
+            });
+        }
+
+        function viewClassDetails(classId) {
+            window.location.href = `class-details.html?id=${classId}`;
+        }
+
+        function manageRoster(event, classId) {
+            event.stopPropagation();
+            window.location.href = `roster.html?id=${classId}`;
+        }
+
+        function startSession(event, classId) {
+            event.preventDefault();
+            event.stopPropagation();
+            // Redirect to session creation or integrate with desktop app
+            window.location.href = `create-session.html?classId=${classId}`;
+            return false;
+        }
+
+        function viewAnalytics(event, classId) {
+            event.preventDefault();
+            event.stopPropagation();
+            // Redirect to class analytics page with class ID
+            window.location.href = `analytics.html?classId=${classId}`;
+            return false;
+        }
+
+        function editClass(event, classId) {
+            event.preventDefault();
+            event.stopPropagation();
+            // Open edit class modal
+            openEditClassModal(classId);
+            return false;
+        }
+
+        function openEditClassModal(classId) {
+            const classData = classes.find(c => c._id === classId);
+            if (!classData) return;
+
+            // Populate year dropdown for edit modal
+            const editYearSelect = document.getElementById('editTermYear');
+            editYearSelect.innerHTML = '<option value="">Select Year</option>';
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear - 2; year <= currentYear + 5; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                editYearSelect.appendChild(option);
+            }
+
+            // Parse term (e.g., "Fall 2024" -> season="Fall", year="2024")
+            const [season, year] = classData.term ? classData.term.split(' ') : ['', ''];
+
+            // Pre-fill the form with current class data
+            document.getElementById('editClassName').value = classData.name;
+            document.getElementById('editClassCode').value = classData.code;
+            document.getElementById('editClassSection').value = classData.section || '';
+            document.getElementById('editTermSeason').value = season;
+            document.getElementById('editTermYear').value = year;
+            document.getElementById('editClassDescription').value = classData.description || '';
+            document.getElementById('editStartDate').value = classData.startDate ? classData.startDate.split('T')[0] : '';
+            document.getElementById('editEndDate').value = classData.endDate ? classData.endDate.split('T')[0] : '';
+            document.getElementById('editCustomJoinCode').value = ''; // Leave empty to keep current
+            document.getElementById('editEnrollmentLimit').value = classData.enrollmentLimit || ''; // Leave empty for no limit
+            document.getElementById('editClassId').value = classId;
+
+            // Show modal
+            document.getElementById('editClassModal').classList.add('show');
+        }
+
+        async function saveClassEdits(event) {
+            event.preventDefault();
+
+            const classId = document.getElementById('editClassId').value;
+            const name = document.getElementById('editClassName').value.trim();
+            const code = document.getElementById('editClassCode').value.trim();
+            const section = document.getElementById('editClassSection').value.trim();
+            const termSeason = document.getElementById('editTermSeason').value;
+            const termYear = document.getElementById('editTermYear').value;
+            const description = document.getElementById('editClassDescription').value.trim();
+            const startDate = document.getElementById('editStartDate').value;
+            const endDate = document.getElementById('editEndDate').value;
+            const customJoinCode = document.getElementById('editCustomJoinCode').value.trim();
+            const enrollmentLimit = document.getElementById('editEnrollmentLimit').value.trim();
+
+            if (!name || !code || !termSeason || !termYear || !startDate || !endDate) {
+                toast.error('Please fill in all required fields');
+                return;
+            }
+
+            const updateData = {
+                name,
+                code,
+                section,
+                term: `${termSeason} ${termYear}`,
+                description,
+                startDate,
+                endDate
+            };
+
+            // Only include joinCode if a new one is provided
+            if (customJoinCode) {
+                updateData.joinCode = customJoinCode;
+            }
+
+            // Always include enrollmentLimit (null/undefined for no limit)
+            updateData.enrollmentLimit = enrollmentLimit ? parseInt(enrollmentLimit, 10) : null;
+
+            loading.show('Updating class...');
+            try {
+                await classesAPI.update(classId, updateData);
+
+                logger.info('Class updated successfully', { classId, className: updateData.name });
+                toast.success('Class updated successfully!');
+                closeEditClassModal();
+                loadClasses(); // Reload classes to show updated data
+            } catch (error) {
+                logger.error('Failed to update class', error, { classId, updateData });
+                toast.error('Failed to update class');
+            } finally {
+                loading.hide();
+            }
+        }
+
+        function closeEditClassModal() {
+            document.getElementById('editClassModal').classList.remove('show');
+        }
+
+        async function deleteClass(event, classId, className) {
+            event.stopPropagation();
+
+            // Use professional confirmation dialog
+            const confirmed = await confirm.delete(`"${className}"`);
+            if (!confirmed) {
+                return;
+            }
+
+            loading.show('Deleting class...');
+            try {
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+                logger.debug('Deleting class', {
+                    classId,
+                    className,
+                    userId: user.id,
+                    userRole: user.role
+                });
+
+                try {
+                    await classesAPI.delete(classId);
+                } catch (error) {
+                    logger.warn('Initial delete attempt failed', { error: error.message });
+
+                    // Check if error message indicates active enrollments
+                    if (error.message && error.message.includes('active')) {
+                        // Extract number of active enrollments if present
+                        const match = error.message.match(/(\d+)\s+active/);
+                        const activeCount = match ? match[1] : 'some';
+
+                        const confirmForce = await confirm.confirm({
+                            title: 'Active Students Found',
+                            message: `This class has ${activeCount} active student(s). Deleting will remove all enrollments. Are you sure you want to proceed?`,
+                            confirmText: 'Delete Anyway',
+                            type: 'danger'
+                        });
+
+                        if (confirmForce) {
+                            // Retry with force flag
+                            try {
+                                await classesAPI.delete(classId, { force: 'true' });
+                                logger.info('Class deleted with force flag', { classId });
+                            } catch (forceError) {
+                                logger.error('Force delete failed', forceError);
+                                throw new Error(forceError.message || 'Failed to delete class');
+                            }
+                        } else {
+                            loading.hide();
+                            return; // User cancelled
+                        }
+                    } else {
+                        // Check if it's a role-related error
+                        if (error.message && error.message.includes('Instructor privileges required')) {
+                            logger.error('Access denied for class deletion', null, { classId, userRole: user.role });
+                            toast.error(`Access denied: ${error.message}`);
+                            loading.hide();
+                            return;
+                        }
+                        throw error;
+                    }
+                }
+
+                logger.info('Class deleted successfully', { classId, className });
+                toast.success('Class deleted successfully');
+                // Reload the class list
+                loadClasses();
+                loadStats();
+            } catch (error) {
+                logger.error('Failed to delete class', error, { classId, className });
+                toast.error(error.message || 'Failed to delete class');
+            } finally {
+                loading.hide();
+            }
+        }
+
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('show');
+        }
+
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('show');
+        }
+
+
+        function showQRCode(event, joinCode, className) {
+            event.stopPropagation();
+            event.preventDefault();
+            
+            const modal = document.getElementById('qrModal');
+            const qrContainer = document.getElementById('qrCodeContainer');
+            const codeDisplay = document.getElementById('qrJoinCode');
+            const urlDisplay = document.getElementById('qrJoinUrl');
+            const classNameDisplay = document.getElementById('qrClassName');
+            
+            // Clear previous QR code
+            qrContainer.innerHTML = '';
+            
+            // Set class info
+            classNameDisplay.textContent = className;
+            codeDisplay.textContent = joinCode;
+            
+            // Generate join URL
+            const joinUrl = `https://join.intellaclick.com/join-class?code=${joinCode}`;
+            urlDisplay.textContent = joinUrl;
+            
+            // Generate QR code
+            new QRCode(qrContainer, {
+                text: joinUrl,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Show modal
+            modal.classList.add('active');
+            
+            // Add click to copy functionality
+            urlDisplay.onclick = function() {
+                navigator.clipboard.writeText(joinUrl).then(() => {
+                    toast.info('URL copied to clipboard!');
+                });
+            };
+        }
+        
+        function closeQRModal() {
+            const modal = document.getElementById('qrModal');
+            modal.classList.remove('active');
+        }
+
+        // Expose functions to window for inline onclick handlers
+        window.handleLogout = handleLogout;
+        window.showCreateClassModal = showCreateClassModal;
+        window.applyFilters = applyFilters;
+        window.clearFilters = clearFilters;
+        window.copyJoinCode = copyJoinCode;
+        window.copyText = copyText;
+        window.showQRCode = showQRCode;
+        window.closeQRModal = closeQRModal;
+        window.manageRoster = manageRoster;
+        window.startSession = startSession;
+        window.viewAnalytics = viewAnalytics;
+        window.editClass = editClass;
+        window.deleteClass = deleteClass;
+        window.showModal = showModal;
+        window.hideModal = hideModal;
+        window.closeEditClassModal = closeEditClassModal;
+        window.saveClassEdits = saveClassEdits;
+    </script>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="qr-modal" onclick="if(event.target === this) closeQRModal()">
+        <div class="qr-modal-content">
+            <button class="modal-close" onclick="closeQRModal()">&times;</button>
+            
+            <div class="qr-modal-header">
+                <h2>Join Class with QR Code</h2>
+                <p>Students can scan this code to join <strong id="qrClassName"></strong></p>
+            </div>
+            
+            <div class="join-code-large" id="qrJoinCode"></div>
+            
+            <div class="qr-code-container" id="qrCodeContainer"></div>
+            
+            <div class="join-url-section" id="qrJoinUrl" title="Click to copy"></div>
+            
+            <div class="qr-instructions">
+                <h3>How students can join:</h3>
+                <ol>
+                    <li>Open camera app on their phone</li>
+                    <li>Point at the QR code above</li>
+                    <li>Tap the notification that appears</li>
+                    <li>Sign in or register on the join page</li>
+                </ol>
+                <p style="margin-top: 12px; font-size: 14px; color: #4b5563;">
+                    Alternatively, they can visit the URL above and enter the join code manually.
+                </p>
+            </div>
+            
+            <div style="margin-top: 24px;">
+                <button class="btn btn-primary" onclick="closeQRModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Class Modal -->
+    <div id="editClassModal" class="modal" onclick="if(event.target === this) closeEditClassModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Class Settings</h2>
+                <p style="color: var(--text-secondary); font-size: 14px;">Update class information</p>
+            </div>
+
+            <form id="editClassForm" onsubmit="saveClassEdits(event)">
+                <div class="form-group">
+                    <label for="editClassName">Class Name *</label>
+                    <input type="text" id="editClassName" required placeholder="e.g., Introduction to Psychology">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editClassCode">Course Code *</label>
+                        <input type="text" id="editClassCode" required placeholder="e.g., PSY101">
+                    </div>
+                    <div class="form-group">
+                        <label for="editClassSection">Section</label>
+                        <input type="text" id="editClassSection" placeholder="e.g., 001">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editTermSeason">Term Season *</label>
+                        <select id="editTermSeason" required>
+                            <option value="">Select Season</option>
+                            <option value="Spring">Spring</option>
+                            <option value="Summer">Summer</option>
+                            <option value="Fall">Fall</option>
+                            <option value="Winter">Winter</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTermYear">Term Year *</label>
+                        <select id="editTermYear" required>
+                            <option value="">Select Year</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editClassDescription">Description</label>
+                    <textarea id="editClassDescription" placeholder="Brief description of the class (optional)"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editStartDate">Start Date *</label>
+                        <input type="date" id="editStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEndDate">End Date *</label>
+                        <input type="date" id="editEndDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editCustomJoinCode">Custom Join Code</label>
+                    <input type="text"
+                           id="editCustomJoinCode"
+                           placeholder="Current code will be kept if empty"
+                           maxlength="12"
+                           pattern="[A-Za-z0-9]{4,12}"
+                           title="4-12 characters, letters and numbers only"
+                           style="text-transform: uppercase;"
+                           oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')">
+                    <small style="color: #6B7280; display: block; margin-top: 4px;">
+                        4-12 characters, letters and numbers only. Leave empty to keep current code.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="editEnrollmentLimit">Enrollment Limit (Optional)</label>
+                    <input type="number"
+                           id="editEnrollmentLimit"
+                           placeholder="Leave empty for no limit"
+                           min="1"
+                           step="1">
+                    <small style="color: #6B7280; display: block; margin-top: 4px;">
+                        Maximum number of students allowed to enroll. Leave empty for unlimited enrollment.
+                    </small>
+                </div>
+
+                <input type="hidden" id="editClassId">
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditClassModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

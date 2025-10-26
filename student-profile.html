@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile - IntellaClick</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: var(--primary);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #6366f1;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 600;
+        }
+
+        .profile-info h1 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .profile-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .status-enrolled {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .status-pending {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .status-invited {
+            background: var(--info-light);
+            color: var(--info);
+        }
+
+        .status-dropped, .status-withdrawn {
+            background: var(--error-light);
+            color: var(--error);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .info-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .info-card h2 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: var(--primary-light);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 48px;
+            color: var(--text-secondary);
+        }
+
+        .error-message {
+            background: var(--error-light);
+            color: var(--error);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>Student Profile</h1>
+                <a href="#" id="backBtn" class="back-btn">
+                    ← Back to Roster
+                </a>
+            </div>
+
+            <div id="profileHeader" class="profile-header" style="display: none;">
+                <div class="avatar" id="avatar">
+                    <span id="initials"></span>
+                </div>
+                <div class="profile-info">
+                    <h1 id="studentName">Loading...</h1>
+                    <div class="profile-meta">
+                        <span id="studentEmail"></span>
+                        <span id="enrollmentStatus"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorContainer"></div>
+
+        <div id="contentContainer" style="display: none;">
+            <div class="info-grid">
+                <!-- Student Information -->
+                <div class="info-card">
+                    <h2>Student Information</h2>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value" id="infoEmail">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Student ID</span>
+                        <span class="info-value" id="infoStudentId">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Institution</span>
+                        <span class="info-value" id="infoInstitution">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email Verified</span>
+                        <span class="info-value" id="infoEmailVerified">-</span>
+                    </div>
+                </div>
+
+                <!-- Enrollment Information -->
+                <div class="info-card">
+                    <h2>Enrollment Information</h2>
+                    <div class="info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-value" id="enrollStatus">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Enrolled Date</span>
+                        <span class="info-value" id="enrollDate">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Activity</span>
+                        <span class="info-value" id="lastActivity">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Grade</span>
+                        <span class="info-value" id="currentGrade">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Stats -->
+            <div class="info-card">
+                <h2>Performance Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statSessions">0</div>
+                        <div class="stat-label">Sessions Attended</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statQuestions">0</div>
+                        <div class="stat-label">Questions Answered</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statCorrect">0</div>
+                        <div class="stat-label">Correct Answers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statAccuracy">0%</div>
+                        <div class="stat-label">Accuracy Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statPoints">0</div>
+                        <div class="stat-label">Total Points</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statStreak">0</div>
+                        <div class="stat-label">Current Streak</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import logger from '../utils/logger.js';
+        import loading from '../utils/loading.js';
+
+        let studentId = null;
+        let classId = null;
+
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        studentId = urlParams.get('id');
+        classId = urlParams.get('classId');
+
+        // Check authentication
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Set up back button
+        document.getElementById('backBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (classId) {
+                window.location.href = `roster.html?id=${classId}`;
+            } else {
+                window.location.href = 'classes.html';
+            }
+        });
+
+        // Load student data
+        async function loadStudentData() {
+            if (!studentId || !classId) {
+                showError('Missing student ID or class ID');
+                return;
+            }
+
+            loading.show('Loading student profile...');
+
+            try {
+                // Fetch class enrollments to get student data
+                const response = await fetch(`https://api.intellaclick.com/api/enrollment/class/${classId}/students`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load student data');
+                }
+
+                const data = await response.json();
+                logger.info('Enrollment data received:', data);
+
+                // Find the specific student
+                const enrollment = data.enrollments?.find(e => e.student?._id === studentId);
+
+                if (!enrollment) {
+                    throw new Error('Student not found in this class');
+                }
+
+                displayStudentData(enrollment);
+            } catch (error) {
+                logger.error('Failed to load student data', error);
+                showError(error.message || 'Failed to load student profile');
+            } finally {
+                loading.hide();
+            }
+        }
+
+        // Display student data
+        function displayStudentData(enrollment) {
+            const student = enrollment.student;
+            const stats = enrollment.stats || {};
+
+            logger.info('Displaying student data:', { student, enrollment, stats });
+
+            // Update header
+            const firstName = student.firstName || '';
+            const lastName = student.lastName || '';
+            const fullName = `${firstName} ${lastName}`.trim() || 'Unknown Student';
+
+            document.getElementById('studentName').textContent = fullName;
+            document.getElementById('studentEmail').textContent = student.email || '-';
+
+            // Set initials
+            const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+            document.getElementById('initials').textContent = initials || '?';
+
+            // Enrollment status badge
+            const statusBadge = `<span class="status-badge status-${enrollment.status}">${enrollment.status}</span>`;
+            document.getElementById('enrollmentStatus').innerHTML = statusBadge;
+
+            // Student information
+            document.getElementById('infoEmail').textContent = student.email || '-';
+            document.getElementById('infoStudentId').textContent = 'Not available';
+            document.getElementById('infoInstitution').textContent = 'Not available';
+            document.getElementById('infoEmailVerified').textContent = 'Not available';
+
+            // Enrollment information
+            document.getElementById('enrollStatus').innerHTML = statusBadge;
+            document.getElementById('enrollDate').textContent = enrollment.enrolledAt ?
+                new Date(enrollment.enrolledAt).toLocaleDateString() : '-';
+            document.getElementById('lastActivity').textContent = enrollment.lastActivity ?
+                new Date(enrollment.lastActivity).toLocaleDateString() : 'No activity';
+
+            // Calculate grade
+            const accuracy = stats.questionsAnswered > 0 ?
+                Math.round((stats.correctAnswers / stats.questionsAnswered) * 100) : 0;
+            document.getElementById('currentGrade').textContent = accuracy > 0 ? `${accuracy}%` : 'No grade yet';
+
+            // Performance stats
+            document.getElementById('statSessions').textContent = stats.sessionsAttended || 0;
+            document.getElementById('statQuestions').textContent = stats.questionsAnswered || 0;
+            document.getElementById('statCorrect').textContent = stats.correctAnswers || 0;
+            document.getElementById('statAccuracy').textContent = accuracy + '%';
+            document.getElementById('statPoints').textContent = stats.totalPoints || 0;
+            document.getElementById('statStreak').textContent = stats.currentStreak || 0;
+
+            // Show content
+            document.getElementById('profileHeader').style.display = 'flex';
+            document.getElementById('contentContainer').style.display = 'block';
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <strong>Error:</strong> ${message}
+                </div>
+            `;
+        }
+
+        // Initialize
+        if (checkAuth()) {
+            loadStudentData();
+        }
+    </script>
+</body>
+</html>
