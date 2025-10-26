@@ -816,7 +816,7 @@
                 // Increased delay to give more time to see console logs
                 setTimeout(() => {
                     logger.debug('=== REDIRECTING NOW ===');
-                    window.location.href = `../pages/session.html?id=${session.id || session._id}&code=${session.sessionCode || sessionCode}&type=${selectedType}`;
+                    window.location.href = `session.html?id=${session.id || session._id}&code=${session.sessionCode || sessionCode}&type=${selectedType}`;
                 }, 5000); // Give 5 seconds to see auto-save logs
                 
             } catch (error) {
@@ -840,7 +840,7 @@
             logger.debug('Navigating to saved questions, returnUrl:', returnUrl);
 
             // Navigate with returnUrl parameter
-            window.location.href = `../pages/saved-questions.html?returnUrl=${encodeURIComponent(returnUrl)}`;
+            window.location.href = `saved-questions.html?returnUrl=${encodeURIComponent(returnUrl)}`;
         }
 
         // Legacy function name for compatibility
