@@ -254,11 +254,11 @@
     <div id="toast" class="toast"></div>
 
     <script type="module">
-        import { auth, sessions, classes as classesAPI } from '../utils/api.js';
-        import toast from '../utils/toast.js';
-        import logger from '../utils/logger.js';
-        import loading from '../utils/loading.js';
-        import confirm from '../utils/confirm.js';
+        import { auth, sessions, classes as classesAPI } from './utils/api.js';
+        import toast from './utils/toast.js';
+        import logger from './utils/logger.js';
+        import loading from './utils/loading.js';
+        import confirm from './utils/confirm.js';
 
         let classId;
         let classData;
@@ -271,7 +271,7 @@
             classId = urlParams.get('classId');
 
             if (!classId) {
-                window.location.href = '../pages/classes.html';
+                window.location.href = 'classes.html';
                 return;
             }
 
@@ -302,7 +302,7 @@
         function checkAuth() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '../pages/login.html';
+                window.location.href = 'login.html';
             }
         }
 
@@ -828,7 +828,7 @@
 
         function cancelSession() {
             if (confirm('Are you sure you want to cancel?')) {
-                window.location.href = '../pages/classes.html';
+                window.location.href = 'classes.html';
             }
         }
 

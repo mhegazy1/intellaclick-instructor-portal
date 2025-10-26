@@ -32,9 +32,9 @@
     </div>
 
     <script type="module">
-        import { quizzes } from '../utils/api.js';
-        import toast from '../utils/toast.js';
-        import logger from '../utils/logger.js';
+        import { quizzes } from './utils/api.js';
+        import toast from './utils/toast.js';
+        import logger from './utils/logger.js';
 
         let selectedQuizzes = new Set();
         let allQuizzes = [];
@@ -50,7 +50,7 @@
         function checkAuth() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '../pages/login.html';
+                window.location.href = 'login.html';
             }
         }
 

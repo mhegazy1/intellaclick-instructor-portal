@@ -11,7 +11,7 @@
     <div class="sync-container">
         <div class="header" style="margin-bottom: 2rem;">
             <h1>🔄 Sync Sessions to Gamification</h1>
-            <button class="btn btn-secondary" onclick="window.location.href='../pages/gamification-dashboard.html'">
+            <button class="btn btn-secondary" onclick="window.location.href='gamification-dashboard.html'">
                 ← Back to Dashboard
             </button>
         </div>
@@ -51,9 +51,9 @@
     </div>
 
     <script type="module">
-        import { classes as classesAPI, gamification } from '../utils/api.js';
-        import toast from '../utils/toast.js';
-        import logger from '../utils/logger.js';
+        import { classes as classesAPI, gamification } from './utils/api.js';
+        import toast from './utils/toast.js';
+        import logger from './utils/logger.js';
 
         let currentInstructorId = null;
 
@@ -67,7 +67,7 @@
         async function checkAuth() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '../pages/login.html';
+                window.location.href = 'login.html';
                 return;
             }
 

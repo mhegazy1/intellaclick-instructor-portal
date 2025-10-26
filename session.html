@@ -172,11 +172,11 @@
 
     <script type="module">
         // === Modular Imports ===
-        import { sessions, gamifiedSessions } from '../utils/api.js';
-        import toast from '../utils/toast.js';
-        import logger from '../utils/logger.js';
-        import loading from '../utils/loading.js';
-        import confirm from '../utils/confirm.js';
+        import { sessions, gamifiedSessions } from './utils/api.js';
+        import toast from './utils/toast.js';
+        import logger from './utils/logger.js';
+        import loading from './utils/loading.js';
+        import confirm from './utils/confirm.js';
 
         let sessionId;
         let sessionCode;
@@ -196,7 +196,7 @@
             
             if (!sessionId || !sessionCode) {
                 toast.error('Invalid session parameters');
-                setTimeout(() => window.location.href = '../pages/classes.html', 2000);
+                setTimeout(() => window.location.href = 'classes.html', 2000);
                 return;
             }
 
@@ -854,7 +854,7 @@
                 }
 
                 stopPolling();
-                setTimeout(() => window.location.href = '../pages/classes.html', 2000);
+                setTimeout(() => window.location.href = 'classes.html', 2000);
             } catch (error) {
                 logger.error('Error ending session:', error);
                 toast.error('Failed to end session');

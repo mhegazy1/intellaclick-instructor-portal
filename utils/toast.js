@@ -15,13 +15,14 @@ function initToastContainer() {
   toastContainer.id = 'toast-container';
   toastContainer.style.cssText = `
     position: fixed;
-    top: 20px;
+    bottom: 20px;
     right: 20px;
     z-index: 10000;
     display: flex;
     flex-direction: column;
     gap: 10px;
     pointer-events: none;
+    max-width: calc(100vw - 40px);
   `;
   document.body.appendChild(toastContainer);
 }
@@ -64,7 +65,7 @@ export function showToast(message, type = 'info', duration = 3000) {
       align-items: center;
       gap: 10px;
       min-width: 250px;
-      max-width: 400px;
+      max-width: min(400px, calc(100vw - 60px));
       pointer-events: auto;
       border-left: 4px solid ${colors[type]};
       animation: slideIn 0.3s ease-out;
@@ -81,7 +82,7 @@ export function showToast(message, type = 'info', duration = 3000) {
         font-weight: bold;
         flex-shrink: 0;
       ">${icons[type]}</span>
-      <span style="color: #374151; font-size: 14px;">${message}</span>
+      <span style="color: #374151; font-size: 14px; word-wrap: break-word; overflow-wrap: break-word;">${message}</span>
     </div>
   `;
 
@@ -133,22 +134,22 @@ if (!document.getElementById('toast-animations')) {
   style.textContent = `
     @keyframes slideIn {
       from {
-        transform: translateX(400px);
+        transform: translateX(400px) translateY(0);
         opacity: 0;
       }
       to {
-        transform: translateX(0);
+        transform: translateX(0) translateY(0);
         opacity: 1;
       }
     }
 
     @keyframes slideOut {
       from {
-        transform: translateX(0);
+        transform: translateX(0) translateY(0);
         opacity: 1;
       }
       to {
-        transform: translateX(400px);
+        transform: translateX(400px) translateY(0);
         opacity: 0;
       }
     }

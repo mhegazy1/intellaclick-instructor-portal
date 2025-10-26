@@ -227,11 +227,11 @@
 
 
     <script type="module">
-        import { auth, classes as classesAPI } from '../utils/api.js';
-        import toast from '../utils/toast.js';
-        import logger from '../utils/logger.js';
-        import loading from '../utils/loading.js';
-        import confirm from '../utils/confirm.js';
+        import { auth, classes as classesAPI } from './utils/api.js';
+        import toast from './utils/toast.js';
+        import logger from './utils/logger.js';
+        import loading from './utils/loading.js';
+        import confirm from './utils/confirm.js';
 
         let currentUser = null;
         let classes = [];
@@ -345,7 +345,7 @@
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             
             if (!token || !user.id) {
-                window.location.href = '../pages/login.html';
+                window.location.href = 'login.html';
                 return;
             }
 
@@ -361,7 +361,7 @@
                 alert(`Access denied. Your role is '${user.role}' but instructor privileges are required. Allowed roles: ${allowedRoles.join(', ')}`);
                 // Don't redirect yet so user can see the message
                 setTimeout(() => {
-                    window.location.href = '../pages/dashboard.html';
+                    window.location.href = 'dashboard.html';
                 }, 3000);
                 return;
             }

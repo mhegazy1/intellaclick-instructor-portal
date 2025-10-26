@@ -72,7 +72,7 @@
 
     <!-- Control Bar -->
     <div class="control-bar" id="controlBar">
-        <button class="btn btn-secondary" onclick="if (window.opener) { window.close(); } else { window.location.href='../pages/session.html?id=' + sessionId + '&code=' + sessionCode; }">
+        <button class="btn btn-secondary" onclick="if (window.opener) { window.close(); } else { window.location.href='session.html?id=' + sessionId + '&code=' + sessionCode; }">
             ← Back
         </button>
 
@@ -185,10 +185,10 @@
     </div>
 
     <script type="module">
-        import { sessions } from '../utils/api.js';
-        import logger from '../utils/logger.js';
-        import loading from '../utils/loading.js';
-        import toast from '../utils/toast.js';
+        import { sessions } from './utils/api.js';
+        import logger from './utils/logger.js';
+        import loading from './utils/loading.js';
+        import toast from './utils/toast.js';
 
         let sessionId;
         let sessionCode;
@@ -208,7 +208,7 @@
 
             if (!sessionId || !sessionCode) {
                 alert('Invalid session parameters');
-                window.location.href = '../pages/classes.html';
+                window.location.href = 'classes.html';
                 return;
             }
 
