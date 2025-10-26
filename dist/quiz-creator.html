@@ -85,7 +85,7 @@
       color: #4F46E5;
     }
   </style>
-  <script type="module" crossorigin src="/assets/quiz-creator-CAY_c_tG.js"></script>
+  <script type="module" crossorigin src="/assets/quiz-creator-Dc0uiNny.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/toast-DdlZoz3i.js">
   <link rel="modulepreload" crossorigin href="/assets/api-BBvzFwfC.js">
   <link rel="modulepreload" crossorigin href="/assets/logger-D123dQQV.js">
@@ -95,7 +95,7 @@
   <div class="container">
     <a href="quizzes.html" class="back-link">← Back to Quizzes</a>
 
-    <h1>Create Quiz</h1>
+    <h1 id="pageTitle">Create Quiz</h1>
 
     <div class="form-card">
       <div class="form-group">
@@ -113,11 +113,11 @@
       <div class="form-group">
         <label>Questions</label>
         <div style="display: flex; gap: 12px; margin-bottom: 1rem;">
-          <button class="btn btn-primary" onclick="addFromQuestionSets()">
-            Add from Question Sets
+          <button class="btn btn-primary" onclick="createNewQuestion()">
+            ➕ Create New Question
           </button>
-          <button class="btn btn-secondary" onclick="createNewQuestion()">
-            Create New Question
+          <button class="btn btn-secondary" onclick="addFromQuestionSets()">
+            Add from Question Sets
           </button>
         </div>
         <p style="color: #6b7280; font-size: 0.875rem; margin: 0;">
@@ -138,6 +138,63 @@
     <div class="actions">
       <button class="btn btn-primary" onclick="saveQuiz()">Save Quiz</button>
       <a href="quizzes.html" class="btn btn-secondary">Cancel</a>
+    </div>
+  </div>
+
+  <!-- Question Builder Modal -->
+  <div id="questionBuilderModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 10001; padding: 2rem; overflow-y: auto;">
+    <div style="background: white; max-width: 700px; margin: 0 auto; border-radius: 12px; padding: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700;">Create Question</h3>
+        <button onclick="closeQuestionBuilder()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <form id="questionBuilderForm" onsubmit="saveQuestion(event)">
+        <!-- Question Type -->
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Question Type *</label>
+          <select id="builderQuestionType" onchange="updateQuestionBuilderUI()" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <option value="mcq">Multiple Choice</option>
+            <option value="tf">True/False</option>
+            <option value="fillblank">Fill in the Blank</option>
+          </select>
+        </div>
+
+        <!-- Question Text -->
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Question Text *</label>
+          <textarea id="builderQuestionText" rows="3" placeholder="Enter your question here..." required style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"></textarea>
+        </div>
+
+        <!-- MCQ Options -->
+        <div id="mcqOptions" style="margin-bottom: 1rem;">
+          <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Answer Options *</label>
+          <div id="optionsList"></div>
+          <button type="button" class="btn btn-secondary" onclick="addOption()" style="margin-top: 0.5rem; font-size: 0.875rem;">+ Add Option</button>
+        </div>
+
+        <!-- TF Options -->
+        <div id="tfOptions" style="margin-bottom: 1rem; display: none;">
+          <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Correct Answer *</label>
+          <select id="builderTFAnswer" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </select>
+        </div>
+
+        <!-- Fill-in-Blank Options -->
+        <div id="fillBlankOptions" style="margin-bottom: 1rem; display: none;">
+          <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Correct Answer(s) *</label>
+          <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Use [blank] in the question text to indicate where the blank should go. Enter acceptable answers below (one per line, case-insensitive).</p>
+          <textarea id="builderFillBlankAnswers" rows="3" placeholder="Enter acceptable answers, one per line&#10;Example:&#10;photosynthesis&#10;Photosynthesis" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeQuestionBuilder()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Question</button>
+        </div>
+      </form>
     </div>
   </div>
 
