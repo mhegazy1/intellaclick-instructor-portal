@@ -105,6 +105,7 @@
                     <label style="margin-top: 16px;">Question Type</label>
                     <select id="questionType" onchange="updateQuestionOptions()">
                         <option value="mcq">Multiple Choice</option>
+                        <option value="poll">Poll (No Correct Answer)</option>
                         <option value="tf">True/False</option>
                         <option value="matching">Matching</option>
                         <option value="ordering">Put in Order</option>
@@ -134,7 +135,19 @@
                         </div>
                         <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Select the radio button next to the correct answer</small>
                     </div>
-                    
+
+                    <!-- Poll Options (No Correct Answer) -->
+                    <div id="pollOptions" style="margin-top: 16px; display: none;">
+                        <label>Poll Options</label>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <input type="text" id="pollOptionA" placeholder="Option A" style="width: 100%;">
+                            <input type="text" id="pollOptionB" placeholder="Option B" style="width: 100%;">
+                            <input type="text" id="pollOptionC" placeholder="Option C" style="width: 100%;">
+                            <input type="text" id="pollOptionD" placeholder="Option D" style="width: 100%;">
+                        </div>
+                        <small style="color: var(--text-secondary); margin-top: 8px; display: block;">No correct answer - results will show distribution</small>
+                    </div>
+
                     <!-- True/False Options -->
                     <div id="tfOptions" style="margin-top: 16px; display: none;">
                         <label>Correct Answer</label>
@@ -475,6 +488,7 @@
 
             // Hide all option divs
             document.getElementById('mcqOptions').style.display = 'none';
+            document.getElementById('pollOptions').style.display = 'none';
             document.getElementById('tfOptions').style.display = 'none';
             document.getElementById('matchingOptions').style.display = 'none';
             document.getElementById('orderingOptions').style.display = 'none';
@@ -484,6 +498,9 @@
             switch(questionType) {
                 case 'mcq':
                     document.getElementById('mcqOptions').style.display = 'block';
+                    break;
+                case 'poll':
+                    document.getElementById('pollOptions').style.display = 'block';
                     break;
                 case 'tf':
                     document.getElementById('tfOptions').style.display = 'block';
@@ -547,6 +564,28 @@
                         question.options = options;
                         question.optionTexts = optionTexts;
                         question.correctAnswer = correctAnswer;
+                        break;
+
+                    case 'poll':
+                        const pollOptions = [];
+                        const pollOptionTexts = [];
+
+                        ['A', 'B', 'C', 'D'].forEach(letter => {
+                            const pollOptionInput = document.getElementById(`pollOption${letter}`);
+                            if (pollOptionInput && pollOptionInput.value.trim()) {
+                                pollOptions.push(letter);
+                                pollOptionTexts.push(pollOptionInput.value.trim());
+                            }
+                        });
+
+                        if (pollOptions.length < 2) {
+                            toast.error('Please provide at least 2 poll options');
+                            return;
+                        }
+
+                        question.options = pollOptions;
+                        question.optionTexts = pollOptionTexts;
+                        // No correctAnswer for polls
                         break;
 
                     case 'tf':
@@ -626,6 +665,8 @@
             ['A', 'B', 'C', 'D'].forEach(letter => {
                 const input = document.getElementById(`option${letter}`);
                 if (input) input.value = '';
+                const pollInput = document.getElementById(`pollOption${letter}`);
+                if (pollInput) pollInput.value = '';
             });
             for (let i = 1; i <= 4; i++) {
                 const matchLeft = document.getElementById(`match${i}Left`);
