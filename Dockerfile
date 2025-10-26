@@ -13,10 +13,16 @@ RUN echo 'server { \
     root /usr/share/nginx/html; \
     index index.html; \
     \
-    # Serve static files directly \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
+    # Serve static files with reasonable caching \
+    location ~* \.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
         expires 1y; \
         add_header Cache-Control "public, immutable"; \
+    } \
+    \
+    # JS and CSS should revalidate to allow updates \
+    location ~* \.(js|css)$ { \
+        expires 1h; \
+        add_header Cache-Control "public, must-revalidate"; \
     } \
     \
     # Only redirect HTML requests to index.html \
