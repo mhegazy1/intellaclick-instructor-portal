@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management - IntellaClick</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- Modular CSS -->
+    <link rel="stylesheet" href="../styles/common.css">
+    <link rel="stylesheet" href="../styles/session.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Session Management</h1>
+            <div class="session-info">
+                <div class="info-item">
+                    <span class="info-label">Session Code</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="session-code" id="sessionCode">Loading...</span>
+                        <button class="btn btn-secondary" onclick="copySessionCode()" style="padding: 4px 8px; font-size: 12px;">Copy</button>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status</span>
+                    <span class="status-badge status-waiting" id="sessionStatus">Waiting</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Participants</span>
+                    <span class="info-value" id="participantCount">0</span>
+                </div>
+            </div>
+            <div class="join-url" id="joinUrl">
+                Students can join at: https://join.intellaclick.com/session/XXXXX
+            </div>
+            <div class="qr-container">
+                <div class="qr-code" id="qrcode"></div>
+                <div class="qr-info">
+                    <h3>Scan to Join</h3>
+                    <p>Students can scan this QR code with their phone to join the session instantly. The code contains the direct link to join this session.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" id="questionSection">
+            <h2>Question Management</h2>
+            
+            <!-- Question Queue -->
+            <div id="questionQueue" style="margin-bottom: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 12px;">Question Queue</h3>
+                <div id="queueList" style="background-color: var(--background); padding: 12px; border-radius: 8px; min-height: 60px;">
+                    <p style="color: var(--text-secondary); font-size: 14px;">No questions in queue. Create a new question or import from a quiz.</p>
+                </div>
+            </div>
+
+            <!-- Current Question Display -->
+            <div id="currentQuestionSection" style="display: none; margin-bottom: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 12px;">Current Question</h3>
+                <div style="background-color: #EFF6FF; padding: 16px; border-radius: 8px;">
+                    <h4 id="questionText" style="margin-bottom: 12px;"></h4>
+                    <div id="questionOptions"></div>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="btn btn-primary" onclick="openDisplayView()" style="font-size: 1rem; font-weight: 600;">
+                    <svg width="20" height="20" fill="currentColor" style="margin-right: 6px;">
+                        <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13zM1.5 1a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-13a.5.5 0 0 0-.5-.5h-13z"/>
+                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                    </svg>
+                    🖥️ Open Display View
+                </button>
+                <button class="btn btn-primary" onclick="showQuestionModal()">
+                    <svg width="16" height="16" fill="currentColor" style="margin-right: 4px;">
+                        <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+                    </svg>
+                    Create Question
+                </button>
+                <button class="btn btn-secondary" onclick="showImportModal()">
+                    <svg width="16" height="16" fill="currentColor" style="margin-right: 4px;">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                        <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                    </svg>
+                    Import Quiz
+                </button>
+                <button class="btn btn-success" onclick="sendNextQuestion()" disabled id="sendBtn">Next Question</button>
+                <button class="btn btn-secondary" onclick="stopQuestion()" disabled id="stopBtn">Stop Question</button>
+                <button class="btn btn-success" onclick="showResults()" disabled id="resultsBtn">Show Results</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 style="margin: 0;">Participants</h2>
+                <button class="btn btn-secondary" onclick="loadSession()" style="padding: 6px 12px; font-size: 12px;">
+                    Refresh
+                </button>
+            </div>
+            <div id="participantsList" class="participants-grid">
+                <p style="color: var(--text-secondary);">No participants yet. Share the session code for students to join.</p>
+            </div>
+        </div>
+
+        <div class="section" id="responsesSection" style="display: none;">
+            <h2>Responses</h2>
+            <div class="response-chart" id="responseChart">
+                Response data will appear here
+            </div>
+        </div>
+
+        <div class="control-buttons">
+            <button class="btn btn-danger" onclick="endSession()">End Session</button>
+            <a href="../pages/classes.html" class="btn btn-secondary">Back to Classes</a>
+        </div>
+    </div>
+
+
+    <!-- Create Question Modal -->
+    <div id="questionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="closeQuestionModal()">&times;</span>
+                <h2>Create Quick Question</h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="modalQuestionText">Question</label>
+                    <textarea id="modalQuestionText" rows="3" placeholder="Enter your question here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalQuestionType">Question Type</label>
+                    <select id="modalQuestionType" onchange="updateModalOptions()">
+                        <option value="mcq">Multiple Choice</option>
+                        <option value="tf">True/False</option>
+                        <option value="matching">Matching</option>
+                        <option value="ordering">Put in Order</option>
+                        <option value="fillblank">Fill in the Blank</option>
+                    </select>
+                </div>
+                
+                <div id="modalQuestionOptions">
+                    <!-- Options will be dynamically inserted based on question type -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeQuestionModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addQuestionToQueue()">Add to Queue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Quiz Modal -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="closeImportModal()">&times;</span>
+                <h2>Import Quiz Questions</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 16px;">Select a quiz to import its questions:</p>
+                <div class="quiz-list" id="quizList">
+                    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">Loading quizzes...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="importSelectedQuiz()" disabled id="importBtn">Import Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // === Modular Imports ===
+        import { sessions, gamifiedSessions } from '../utils/api.js';
+        import toast from '../utils/toast.js';
+        import logger from '../utils/logger.js';
+        import loading from '../utils/loading.js';
+        import confirm from '../utils/confirm.js';
+
+        let sessionId;
+        let sessionCode;
+        let sessionData;
+        let classId;
+        let questionQueue = [];
+        let currentQuestionIndex = -1;
+        let pollInterval;
+        let selectedQuizId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            sessionId = urlParams.get('id');
+            sessionCode = urlParams.get('code');
+            const sessionType = urlParams.get('type');
+            
+            if (!sessionId || !sessionCode) {
+                toast.error('Invalid session parameters');
+                setTimeout(() => window.location.href = '../pages/classes.html', 2000);
+                return;
+            }
+
+            // Check for pending question from create-session page
+            // Load multiple questions from sessionStorage (new format)
+            const questionsData = sessionStorage.getItem('pendingQuestions');
+            if (questionsData) {
+                const questions = JSON.parse(questionsData);
+                questionQueue.push(...questions); // Add all questions to queue
+                sessionStorage.removeItem('pendingQuestions');
+                sessionStorage.removeItem('currentQuestionIndex');
+                updateQueueDisplay();
+            } else {
+                // Fallback to single question format (legacy support)
+                const questionData = sessionStorage.getItem('pendingQuestion');
+                if (questionData) {
+                    const question = JSON.parse(questionData);
+                    questionQueue.push(question);
+                    sessionStorage.removeItem('pendingQuestion');
+                    updateQueueDisplay();
+                }
+            }
+
+            checkAuth();
+            loadSession();
+            startPolling();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function loadSession() {
+            try {
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/code/${sessionCode}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load session');
+
+                const data = await response.json();
+                sessionData = data.session;
+                classId = sessionData.classId; // Get classId from session data
+                
+                logger.debug('Session loaded:', {
+                    sessionId: sessionId,
+                    sessionCode: sessionCode,
+                    sessionData: sessionData,
+                    hasCurrentQuestion: !!sessionData.currentQuestion
+                });
+                
+                updateSessionDisplay();
+            } catch (error) {
+                logger.error('Error loading session:', error);
+                toast.error('Failed to load session');
+            }
+        }
+
+        function updateSessionDisplay() {
+            document.getElementById('sessionCode').textContent = sessionData.sessionCode;
+            document.getElementById('participantCount').textContent = sessionData.participantCount || 0;
+            
+            const joinUrl = `https://join.intellaclick.com/session/${sessionData.sessionCode}`;
+            document.getElementById('joinUrl').innerHTML = `
+                <strong>Students can join at:</strong><br>
+                <div style="display: flex; align-items: center; gap: 12px; margin: 8px 0;">
+                    <span style="font-size: 16px; user-select: all; flex: 1;">${joinUrl}</span>
+                    <button class="btn btn-secondary" onclick="copyJoinUrl('${joinUrl}')" style="padding: 6px 12px; font-size: 12px;">
+                        Copy Link
+                    </button>
+                </div>
+                <small style="color: var(--text-secondary); margin-top: 4px; display: block;">
+                    Session ID: ${sessionData.id || sessionData._id}<br>
+                    ${sessionData.restrictToEnrolled === false ? 'Open to all students' : 'Restricted to enrolled students only'}
+                </small>
+            `;
+            
+            // Generate QR code
+            generateQRCode(joinUrl);
+            
+            // Update status badge
+            const statusEl = document.getElementById('sessionStatus');
+            statusEl.textContent = sessionData.status.charAt(0).toUpperCase() + sessionData.status.slice(1);
+            statusEl.className = `status-badge status-${sessionData.status}`;
+            
+            // Update button states
+            if (sessionData.status === 'active' && sessionData.currentQuestion) {
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('resultsBtn').disabled = false;
+                displayCurrentQuestion(sessionData.currentQuestion);
+            }
+            
+            // Update participants list
+            updateParticipantsList();
+        }
+        
+        function updateParticipantsList() {
+            const participantsList = document.getElementById('participantsList');
+            
+            // Load detailed participant info if available
+            fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/participants`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.participants && data.participants.length > 0) {
+                    participantsList.innerHTML = '';
+                    data.participants.forEach(p => {
+                        const card = document.createElement('div');
+                        card.className = 'participant-card';
+                        card.innerHTML = `
+                            <strong>${p.name || 'Anonymous'}</strong><br>
+                            <small style="color: var(--text-secondary);">
+                                Joined: ${new Date(p.joinedAt).toLocaleTimeString()}<br>
+                                ${p.isEnrolled ? 'Enrolled Student' : 'Guest'}
+                            </small>
+                        `;
+                        participantsList.appendChild(card);
+                    });
+                } else {
+                    participantsList.innerHTML = '<p style="color: var(--text-secondary);">No participants yet. Share the session code for students to join.</p>';
+                }
+            })
+            .catch(error => {
+                logger.error('Error loading participants:', error);
+            });
+        }
+
+        function generateQRCode(url) {
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = ''; // Clear existing QR code
+            
+            // Create a canvas element
+            const canvas = document.createElement('canvas');
+            
+            QRCode.toCanvas(canvas, url, {
+                width: 400,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function(error) {
+                if (error) {
+                    logger.error('QR Code generation error:', error);
+                    qrContainer.innerHTML = '<p style="color: var(--text-secondary);">QR Code generation failed</p>';
+                    return;
+                }
+                
+                canvas.style.width = '200px';
+                canvas.style.height = '200px';
+                qrContainer.appendChild(canvas);
+            });
+        }
+
+        // Question Queue Management
+        function updateQueueDisplay() {
+            const queueList = document.getElementById('queueList');
+
+            // Save queue to sessionStorage for display view
+            sessionStorage.setItem('questionQueue_' + sessionCode, JSON.stringify(questionQueue));
+            sessionStorage.setItem('questionIndex_' + sessionCode, currentQuestionIndex.toString());
+
+            if (questionQueue.length === 0) {
+                queueList.innerHTML = '<p style="color: var(--text-secondary); font-size: 14px;">No questions in queue. Create a new question or import from a quiz.</p>';
+                document.getElementById('sendBtn').disabled = true;
+            } else {
+                queueList.innerHTML = '';
+                questionQueue.forEach((question, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'question-item';
+                    
+                    const text = document.createElement('div');
+                    text.className = 'question-item-text';
+                    text.innerHTML = `<strong>${index + 1}.</strong> ${question.text || question.questionText}`;
+                    
+                    const actions = document.createElement('div');
+                    actions.className = 'question-item-actions';
+                    
+                    if (index > currentQuestionIndex) {
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn btn-secondary';
+                        editBtn.style.padding = '4px 8px';
+                        editBtn.style.fontSize = '12px';
+                        editBtn.style.marginRight = '4px';
+                        editBtn.textContent = 'Edit';
+                        editBtn.onclick = () => editQueueQuestion(index);
+                        actions.appendChild(editBtn);
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'btn btn-secondary';
+                        removeBtn.style.padding = '4px 8px';
+                        removeBtn.style.fontSize = '12px';
+                        removeBtn.textContent = 'Remove';
+                        removeBtn.onclick = () => removeFromQueue(index);
+                        actions.appendChild(removeBtn);
+                    }
+                    
+                    item.appendChild(text);
+                    item.appendChild(actions);
+                    queueList.appendChild(item);
+                });
+                
+                document.getElementById('sendBtn').disabled = false;
+            }
+        }
+
+        function removeFromQueue(index) {
+            questionQueue.splice(index, 1);
+            updateQueueDisplay();
+        }
+
+        let editingQuestionIndex = null;
+
+        function editQueueQuestion(index) {
+            editingQuestionIndex = index;
+            const question = questionQueue[index];
+
+            // Open the question modal
+            document.getElementById('questionModal').style.display = 'block';
+
+            // Set question type and text
+            const questionType = question.type || question.questionType || 'mcq';
+            logger.debug('Editing question with type:', questionType);
+            document.getElementById('modalQuestionType').value = questionType;
+            document.getElementById('modalQuestionText').value = question.text || question.questionText || '';
+
+            // Update options display after type is set
+            setTimeout(() => updateModalOptions(), 10);
+
+            // Pre-fill data based on question type
+            setTimeout(() => {
+                switch(question.type) {
+                    case 'mcq':
+                        if (question.optionTexts) {
+                            ['A', 'B', 'C', 'D'].forEach((letter, idx) => {
+                                const input = document.getElementById(`modalOption${letter}`);
+                                if (input && question.optionTexts[idx]) {
+                                    input.value = question.optionTexts[idx];
+                                }
+                                if (question.correctAnswer === letter || question.correctAnswer === idx) {
+                                    const radio = document.querySelector(`input[name="modalCorrect"][value="${letter}"]`);
+                                    if (radio) radio.checked = true;
+                                }
+                            });
+                        }
+                        break;
+
+                    case 'tf':
+                        const tfValue = question.correctAnswer === 'true' || question.correctAnswer === true ? 'true' : 'false';
+                        const tfRadio = document.querySelector(`input[name="modalTF"][value="${tfValue}"]`);
+                        if (tfRadio) tfRadio.checked = true;
+                        break;
+
+                    case 'matching':
+                        if (question.pairs) {
+                            question.pairs.forEach((pair, idx) => {
+                                const leftInput = document.getElementById(`modalMatch${idx + 1}Left`);
+                                const rightInput = document.getElementById(`modalMatch${idx + 1}Right`);
+                                if (leftInput) leftInput.value = pair.left || '';
+                                if (rightInput) rightInput.value = pair.right || '';
+                            });
+                        }
+                        break;
+
+                    case 'ordering':
+                        if (question.correctOrder) {
+                            question.correctOrder.forEach((item, idx) => {
+                                const input = document.getElementById(`modalOrder${idx + 1}`);
+                                if (input) input.value = item || '';
+                            });
+                        }
+                        break;
+
+                    case 'fillblank':
+                        const answerInput = document.getElementById('modalBlankAnswer');
+                        if (answerInput) answerInput.value = question.correctAnswer || '';
+                        break;
+                }
+            }, 100);
+
+            // Change modal title
+            const modalTitle = document.querySelector('#questionModal h2');
+            if (modalTitle) modalTitle.textContent = 'Edit Question';
+        }
+
+        async function sendNextQuestion() {
+            if (currentQuestionIndex + 1 >= questionQueue.length) {
+                toast.error('No more questions in queue');
+                return;
+            }
+
+            currentQuestionIndex++;
+
+            // Save updated index to sessionStorage
+            sessionStorage.setItem('questionIndex_' + sessionCode, currentQuestionIndex.toString());
+
+            const question = questionQueue[currentQuestionIndex];
+
+            // Normalize question type for student interface compatibility
+            const normalizedQuestion = {...question};
+
+            // Remove the original 'type' field to avoid confusion
+            delete normalizedQuestion.type;
+
+            // Map our types to what the student interface expects
+            const typeMap = {
+                'mcq': 'multiple_choice',
+                'tf': 'boolean',  // Try 'boolean' instead of 'true_false'
+                'matching': 'matching',
+                'ordering': 'ordering',
+                'fillblank': 'fill_blank'
+            };
+
+            // Set both questionType and type to the mapped value
+            const mappedType = typeMap[question.type] || question.type;
+            normalizedQuestion.questionType = mappedType;
+            normalizedQuestion.type = mappedType;
+
+            // Ensure questionText is set
+            normalizedQuestion.questionText = question.text || question.questionText;
+
+            // Handle type-specific data
+            if (question.type === 'tf') {
+                // For true/false, ensure options are properly formatted
+                normalizedQuestion.options = ['True', 'False'];
+            } else if (question.type === 'mcq') {
+                // Ensure MCQ has options and optionTexts
+                if (question.optionTexts) {
+                    normalizedQuestion.options = question.options;
+                    normalizedQuestion.optionTexts = question.optionTexts;
+                }
+            } else if (question.type === 'matching') {
+                // Ensure matching has pairs
+                normalizedQuestion.pairs = question.pairs || [];
+            } else if (question.type === 'ordering') {
+                // Ensure ordering has correctOrder
+                normalizedQuestion.correctOrder = question.correctOrder || [];
+            } else if (question.type === 'fillblank') {
+                // Ensure fill-in-blank has correctAnswer
+                normalizedQuestion.correctAnswer = question.correctAnswer || '';
+            }
+            
+            // Debug logging
+            logger.debug('Sending question:', {
+                sessionId: sessionId,
+                endpoint: `https://api.intellaclick.com/api/sessions/${sessionId}/questions`,
+                questionData: normalizedQuestion,
+                hasQuestionText: !!normalizedQuestion.questionText,
+                questionType: normalizedQuestion.questionType
+            });
+
+            try {
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(normalizedQuestion)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    logger.error('API Error:', {
+                        status: response.status,
+                        error: errorData
+                    });
+                    throw new Error(errorData.error || 'Failed to send question');
+                }
+
+                const result = await response.json();
+                logger.debug('Question sent successfully:', result);
+
+                toast.success('Question sent successfully!');
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('resultsBtn').disabled = false;
+
+                // Display current question immediately
+                displayCurrentQuestion(question);
+
+                // Update queue display
+                updateQueueDisplay();
+
+                // Wait a bit for server to save, then reload session
+                setTimeout(async () => {
+                    await loadSession();
+                }, 500);
+            } catch (error) {
+                logger.error('Error sending question:', error);
+                
+                // Check if it's a CORS error
+                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                    toast.error('Network error: Unable to reach the API server. This may be a CORS issue.');
+                    logger.error('CORS Error Details:', {
+                        error: error,
+                        message: 'The API server may need to add instructor.intellaclick.com to its allowed origins',
+                        currentOrigin: window.location.origin,
+                        apiUrl: 'https://api.intellaclick.com'
+                    });
+                    
+                    // Show more detailed error in alert for debugging
+                    if (confirm('Network error detected. This is likely a CORS configuration issue.\n\nThe backend needs to add instructor.intellaclick.com to its allowed origins.\n\nClick OK to open the CORS test page for more details.')) {
+                        window.open('/cors-test.html', '_blank');
+                    }
+                } else {
+                    toast.error(error.message || 'Failed to send question');
+                }
+                
+                currentQuestionIndex--; // Revert on error
+            }
+        }
+
+        function displayCurrentQuestion(question) {
+            document.getElementById('currentQuestionSection').style.display = 'block';
+
+            // Normalize question format (handle both local queue format and server format)
+            const questionType = question.type || question.questionType;
+            const questionText = question.text || question.questionText || '';
+
+            // DEBUG: Log question data
+            logger.debug('📺 DISPLAYING QUESTION IN SESSION CONTROL:', {
+                questionType,
+                questionText,
+                hasPairs: !!question.pairs,
+                pairs: question.pairs,
+                hasCorrectOrder: !!question.correctOrder,
+                correctOrder: question.correctOrder,
+                fullQuestion: question
+            });
+
+            // Display question text with blanks rendered as visual blanks
+            let questionTextHtml = questionText;
+            if (questionType === 'fillblank' || questionType === 'fill_blank') {
+                // Replace [blank] with a styled visual blank
+                questionTextHtml = questionTextHtml.replace(/\[blank\]/gi, '<span style="display: inline-block; min-width: 100px; border-bottom: 2px solid #4F46E5; margin: 0 6px; height: 1.2em; vertical-align: bottom;"></span>');
+            }
+            document.getElementById('questionText').innerHTML = questionTextHtml;
+
+            // Display options based on question type
+            const optionsDiv = document.getElementById('questionOptions');
+            optionsDiv.innerHTML = '';
+
+            if ((questionType === 'mcq' || questionType === 'multiple_choice') && (question.optionTexts || question.options)) {
+                const optionTexts = question.optionTexts || question.options;
+                const optionLetters = question.options && question.optionTexts ? question.options : ['A', 'B', 'C', 'D'];
+                optionLetters.forEach((option, index) => {
+                    if (optionTexts[index]) {
+                        const optionEl = document.createElement('div');
+                        optionEl.style.marginTop = '8px';
+                        optionEl.textContent = `${option}: ${optionTexts[index]}`;
+                        optionsDiv.appendChild(optionEl);
+                    }
+                });
+            } else if (questionType === 'tf' || questionType === 'boolean') {
+                optionsDiv.innerHTML = '<div style="margin-top: 8px;">A: True</div><div style="margin-top: 8px;">B: False</div>';
+            } else if (questionType === 'matching' && question.pairs) {
+                optionsDiv.innerHTML = '<strong>Match the following:</strong>';
+                question.pairs.forEach((pair, index) => {
+                    const pairEl = document.createElement('div');
+                    pairEl.style.marginTop = '8px';
+                    pairEl.textContent = `${index + 1}. ${pair.left} → ?`;
+                    optionsDiv.appendChild(pairEl);
+                });
+            } else if ((questionType === 'ordering' || questionType === 'ordering') && question.correctOrder) {
+                optionsDiv.innerHTML = '<strong>Put in correct order:</strong>';
+                // Shuffle the items for display
+                const shuffled = [...question.correctOrder].sort(() => Math.random() - 0.5);
+                shuffled.forEach((item, index) => {
+                    const itemEl = document.createElement('div');
+                    itemEl.style.marginTop = '8px';
+                    itemEl.textContent = `${String.fromCharCode(65 + index)}. ${item}`;
+                    optionsDiv.appendChild(itemEl);
+                });
+            }
+        }
+
+        // Modal Functions
+        function showQuestionModal() {
+            document.getElementById('questionModal').style.display = 'block';
+            updateModalOptions(); // Initialize with default options
+        }
+
+        function closeQuestionModal() {
+            document.getElementById('questionModal').style.display = 'none';
+            // Clear form
+            document.getElementById('modalQuestionText').value = '';
+            document.getElementById('modalQuestionType').value = 'mcq';
+            // Reset editing mode
+            editingQuestionIndex = null;
+            // Reset modal title
+            const modalTitle = document.querySelector('#questionModal h2');
+            if (modalTitle) modalTitle.textContent = 'Create Question';
+        }
+
+        function showImportModal() {
+            document.getElementById('importModal').style.display = 'block';
+            loadQuizzes();
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+            selectedQuizId = null;
+        }
+
+        function updateModalOptions() {
+            const type = document.getElementById('modalQuestionType').value;
+            const optionsDiv = document.getElementById('modalQuestionOptions');
+            
+            switch(type) {
+                case 'mcq':
+                    optionsDiv.innerHTML = `
+                        <label>Answer Options (select correct answer)</label>
+                        <div style="margin-top: 8px;">
+                            <input type="radio" name="modalCorrect" value="A" checked> 
+                            <input type="text" id="modalOptionA" placeholder="Option A" style="width: calc(100% - 30px); margin-left: 8px;">
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <input type="radio" name="modalCorrect" value="B"> 
+                            <input type="text" id="modalOptionB" placeholder="Option B" style="width: calc(100% - 30px); margin-left: 8px;">
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <input type="radio" name="modalCorrect" value="C"> 
+                            <input type="text" id="modalOptionC" placeholder="Option C" style="width: calc(100% - 30px); margin-left: 8px;">
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <input type="radio" name="modalCorrect" value="D"> 
+                            <input type="text" id="modalOptionD" placeholder="Option D" style="width: calc(100% - 30px); margin-left: 8px;">
+                        </div>
+                    `;
+                    break;
+                    
+                case 'tf':
+                    optionsDiv.innerHTML = `
+                        <label>Correct Answer</label>
+                        <div style="margin-top: 8px;">
+                            <input type="radio" name="modalTF" value="true" checked> True
+                            <input type="radio" name="modalTF" value="false" style="margin-left: 20px;"> False
+                        </div>
+                    `;
+                    break;
+                    
+                case 'matching':
+                    optionsDiv.innerHTML = `
+                        <label>Matching Pairs</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                            <input type="text" placeholder="Item 1" id="modalMatch1Left">
+                            <input type="text" placeholder="Match 1" id="modalMatch1Right">
+                            <input type="text" placeholder="Item 2" id="modalMatch2Left">
+                            <input type="text" placeholder="Match 2" id="modalMatch2Right">
+                            <input type="text" placeholder="Item 3" id="modalMatch3Left">
+                            <input type="text" placeholder="Match 3" id="modalMatch3Right">
+                        </div>
+                    `;
+                    break;
+                    
+                case 'ordering':
+                    optionsDiv.innerHTML = `
+                        <label>Items in Correct Order</label>
+                        <div style="margin-top: 8px;">
+                            <input type="text" placeholder="1st item" id="modalOrder1" style="margin-bottom: 8px;">
+                            <input type="text" placeholder="2nd item" id="modalOrder2" style="margin-bottom: 8px;">
+                            <input type="text" placeholder="3rd item" id="modalOrder3" style="margin-bottom: 8px;">
+                            <input type="text" placeholder="4th item" id="modalOrder4">
+                        </div>
+                    `;
+                    break;
+                    
+                case 'fillblank':
+                    optionsDiv.innerHTML = `
+                        <label>Correct Answer</label>
+                        <input type="text" id="modalBlankAnswer" placeholder="Enter the correct answer" style="margin-top: 8px;">
+                        <small style="display: block; margin-top: 8px; color: var(--text-secondary);">Use [blank] in your question where the answer should go</small>
+                    `;
+                    break;
+            }
+        }
+
+        async function stopQuestion() {
+            try {
+                // Get current question ID from session data
+                const questionId = sessionData.currentQuestion?.questionId || 'current';
+                
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions/${questionId}/end`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to stop question');
+
+                toast.success('Question stopped');
+                document.getElementById('currentQuestionSection').style.display = 'none';
+                await loadSession();
+            } catch (error) {
+                logger.error('Error stopping question:', error);
+                toast.error('Failed to stop question');
+            }
+        }
+
+        async function showResults() {
+            document.getElementById('responsesSection').style.display = 'block';
+            // TODO: Implement results display
+            toast.info('Results feature coming soon');
+        }
+
+        async function endSession() {
+            if (!confirm('Are you sure you want to end this session?')) return;
+
+            try {
+                // Check if gamification is enabled for this session
+                const hasGamification = sessionData?.gamificationEnabled && sessionData?.classId;
+
+                let response;
+                if (hasGamification) {
+                    logger.debug('Ending session with gamification processing...');
+                    // Use gamification endpoint which processes points, levels, achievements
+                    response = await fetch(`https://api.intellaclick.com/api/sessions-gamified/${sessionId}/end-with-gamification`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                } else {
+                    logger.debug('Ending session (no gamification)...');
+                    // Use regular endpoint
+                    response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/status`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({ status: 'ended' })
+                    });
+                }
+
+                if (!response.ok) throw new Error('Failed to end session');
+
+                const result = await response.json();
+                logger.debug('Session ended:', result);
+
+                if (hasGamification && result.gamificationResults) {
+                    toast.success(`Session ended - ${result.gamificationResults.length} students earned points!`);
+                } else {
+                    toast.success('Session ended');
+                }
+
+                stopPolling();
+                setTimeout(() => window.location.href = '../pages/classes.html', 2000);
+            } catch (error) {
+                logger.error('Error ending session:', error);
+                toast.error('Failed to end session');
+            }
+        }
+
+        function startPolling() {
+            // Poll for updates every 3 seconds
+            pollInterval = setInterval(loadSession, 3000);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+        }
+
+        function openDisplayView() {
+            const displayUrl = `../pages/display.html?id=${sessionId}&code=${sessionCode}`;
+            window.open(displayUrl, 'IntellaClickDisplay', 'width=1920,height=1080,menubar=no,toolbar=no,location=no,status=no');
+        }
+
+
+        function copyJoinUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                toast.success('Link copied to clipboard!');
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    toast.success('Link copied to clipboard!');
+                } catch (err) {
+                    toast.error('Failed to copy link');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        function copySessionCode() {
+            const code = document.getElementById('sessionCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                toast.success('Session code copied!');
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = code;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    toast.success('Session code copied!');
+                } catch (err) {
+                    toast.error('Failed to copy code');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        // Add Question to Queue
+        function addQuestionToQueue() {
+            const questionText = document.getElementById('modalQuestionText').value.trim();
+            const questionType = document.getElementById('modalQuestionType').value;
+            
+            if (!questionText) {
+                toast.error('Please enter a question');
+                return;
+            }
+            
+            let question = {
+                text: questionText,
+                type: questionType,
+                timeLimit: 60,  // Default to 60 seconds
+                points: 10      // Default to 10 points
+            };
+            
+            // Build question based on type
+            switch(questionType) {
+                case 'mcq':
+                    const options = [];
+                    const optionTexts = [];
+                    let correctAnswer = null;
+                    
+                    ['A', 'B', 'C', 'D'].forEach(letter => {
+                        const optionInput = document.getElementById(`modalOption${letter}`);
+                        if (optionInput && optionInput.value.trim()) {
+                            options.push(letter);
+                            optionTexts.push(optionInput.value.trim());
+                            
+                            const radio = document.querySelector(`input[name="modalCorrect"][value="${letter}"]`);
+                            if (radio && radio.checked) {
+                                correctAnswer = letter;
+                            }
+                        }
+                    });
+                    
+                    if (options.length < 2) {
+                        toast.error('Please provide at least 2 options');
+                        return;
+                    }
+                    
+                    question.options = options;
+                    question.optionTexts = optionTexts;
+                    question.correctAnswer = correctAnswer;
+                    break;
+                    
+                case 'tf':
+                    question.options = ['True', 'False'];
+                    question.correctAnswer = document.querySelector('input[name="modalTF"]:checked').value;
+                    break;
+                    
+                case 'matching':
+                    const pairs = [];
+                    for (let i = 1; i <= 3; i++) {
+                        const left = document.getElementById(`modalMatch${i}Left`).value.trim();
+                        const right = document.getElementById(`modalMatch${i}Right`).value.trim();
+                        if (left && right) {
+                            pairs.push({ left, right });
+                        }
+                    }
+                    
+                    if (pairs.length < 2) {
+                        toast.error('Please provide at least 2 matching pairs');
+                        return;
+                    }
+                    
+                    question.pairs = pairs;
+                    break;
+                    
+                case 'ordering':
+                    const items = [];
+                    for (let i = 1; i <= 4; i++) {
+                        const item = document.getElementById(`modalOrder${i}`).value.trim();
+                        if (item) {
+                            items.push(item);
+                        }
+                    }
+                    
+                    if (items.length < 2) {
+                        toast.error('Please provide at least 2 items');
+                        return;
+                    }
+                    
+                    question.correctOrder = items;
+                    break;
+                    
+                case 'fillblank':
+                    const answer = document.getElementById('modalBlankAnswer').value.trim();
+                    if (!answer) {
+                        toast.error('Please provide the correct answer');
+                        return;
+                    }
+                    
+                    if (!questionText.includes('[blank]')) {
+                        toast.error('Please include [blank] in your question');
+                        return;
+                    }
+                    
+                    question.correctAnswer = answer;
+                    break;
+            }
+            
+            // Add to queue or update existing
+            if (editingQuestionIndex !== null) {
+                // Update existing question
+                questionQueue[editingQuestionIndex] = question;
+                editingQuestionIndex = null;
+                toast.success('Question updated');
+            } else {
+                // Add new question
+                questionQueue.push(question);
+                toast.success('Question added to queue');
+            }
+
+            updateQueueDisplay();
+            closeQuestionModal();
+        }
+
+        // Load and Import Quizzes
+        async function loadQuizzes() {
+            try {
+                const response = await fetch(`https://api.intellaclick.com/api/quizzes`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load quizzes');
+
+                const data = await response.json();
+                const quizzes = data.quizzes || [];
+
+                const quizList = document.getElementById('quizList');
+                if (quizzes.length === 0) {
+                    quizList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No quizzes found. <a href="../pages/saved-questions.html" style="color: var(--primary-color);">Create your first quiz</a></p>';
+                    document.getElementById('importBtn').disabled = true;
+                } else {
+                    quizList.innerHTML = '';
+                    quizzes.forEach(quiz => {
+                        const item = document.createElement('div');
+                        item.className = 'quiz-item';
+                        item.innerHTML = `
+                            <strong>${quiz.title}</strong><br>
+                            <small style="color: var(--text-secondary);">${quiz.questionCount || 0} questions • ${quiz.totalPoints || 0} points</small>
+                        `;
+                        item.onclick = () => selectQuiz(quiz._id, item);
+                        quizList.appendChild(item);
+                    });
+                }
+            } catch (error) {
+                logger.error('Error loading quizzes:', error);
+                const quizList = document.getElementById('quizList');
+                quizList.innerHTML = '<p style="color: var(--danger-color); text-align: center; padding: 20px;">Failed to load quizzes. Please try again.</p>';
+            }
+        }
+
+        function selectQuiz(quizId, element) {
+            selectedQuizId = quizId;
+            
+            // Update UI
+            document.querySelectorAll('.quiz-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            
+            document.getElementById('importBtn').disabled = false;
+        }
+
+        async function importSelectedQuiz() {
+            if (!selectedQuizId) {
+                toast.error('Please select a quiz');
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://api.intellaclick.com/api/quizzes/${selectedQuizId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load quiz');
+
+                const data = await response.json();
+                const quiz = data.quiz || data;
+
+                if (quiz.questions && quiz.questions.length > 0) {
+                    // Add all quiz questions to the queue
+                    quiz.questions.forEach(q => {
+                        // Get question data from snapshot if available
+                        const snapshot = q.questionSnapshot || q;
+
+                        // Check both questionType (new schema) and type (old data) for backwards compatibility
+                        const questionType = snapshot.questionType || snapshot.type || 'mcq';
+
+                        const question = {
+                            text: snapshot.questionText || q.text || '',
+                            type: questionType,
+                            options: snapshot.options || [],
+                            correctAnswer: snapshot.correctAnswer || 0,
+                            timeLimit: snapshot.timeLimit || q.timeLimit || 60,
+                            points: snapshot.points || q.points || 10
+                        };
+
+                        // Add matching question data
+                        if (question.type === 'matching' && snapshot.pairs) {
+                            question.pairs = snapshot.pairs;
+                            logger.debug('📦 Imported matching question with pairs:', snapshot.pairs);
+                        }
+
+                        // Add ordering question data
+                        if (question.type === 'ordering' && snapshot.correctOrder) {
+                            question.correctOrder = snapshot.correctOrder;
+                            logger.debug('📦 Imported ordering question with correctOrder:', snapshot.correctOrder);
+                        }
+
+                        questionQueue.push(question);
+                    });
+
+                    updateQueueDisplay();
+                    closeImportModal();
+                    toast.success(`Imported ${quiz.questions.length} questions from ${quiz.title}`);
+                } else {
+                    toast.error('Quiz has no questions');
+                }
+            } catch (error) {
+                logger.error('Error importing quiz:', error);
+                toast.error('Failed to import quiz');
+            }
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', stopPolling);
+
+        // Expose functions to window for onclick handlers
+        window.copySessionCode = copySessionCode;
+        window.openDisplayView = openDisplayView;
+        window.showQuestionModal = showQuestionModal;
+        window.showImportModal = showImportModal;
+        window.sendNextQuestion = sendNextQuestion;
+        window.stopQuestion = stopQuestion;
+        window.showResults = showResults;
+        window.loadSession = loadSession;
+        window.endSession = endSession;
+        window.closeQuestionModal = closeQuestionModal;
+        window.addQuestionToQueue = addQuestionToQueue;
+        window.closeImportModal = closeImportModal;
+        window.importSelectedQuiz = importSelectedQuiz;
+        window.copyJoinUrl = copyJoinUrl;
+        window.updateModalOptions = updateModalOptions;
+    </script>
+</body>
+</html>

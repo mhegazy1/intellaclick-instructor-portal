@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamification Settings - IntellaClick</title>
+    <link rel="stylesheet" href="../styles/common.css">
+    <link rel="stylesheet" href="../styles/gamification-settings.css">
+</head>
+<body>
+    <div class="settings-container">
+        <div class="header" style="margin-bottom: 2rem;">
+            <h1>⚙️ Gamification Settings</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="window.location.href='../pages/gamification-dashboard.html'">
+                    ← Back to Dashboard
+                </button>
+                <button class="btn btn-primary" onclick="saveToServer()">
+                    💾 Save All Changes
+                </button>
+            </div>
+        </div>
+
+        <!-- Scope Selector -->
+        <div class="scope-selector">
+            <label for="scopeSelector">Apply Settings To:</label>
+            <select id="scopeSelector" onchange="handleScopeChange()">
+                <option value="">Select a class or instructor-wide...</option>
+            </select>
+            <p style="margin-top: 0.75rem; font-size: 0.875rem; color: var(--text-secondary);">
+                Choose a specific class to customize its gamification settings, or leave empty for instructor-wide defaults.
+            </p>
+        </div>
+
+        <div class="settings-grid">
+            <!-- Navigation -->
+            <div class="settings-nav">
+                <div class="nav-item active" onclick="showPanel('general')">
+                    <span>🎮</span> General
+                </div>
+                <div class="nav-item" onclick="showPanel('points')">
+                    <span>⭐</span> Points
+                </div>
+                <div class="nav-item" onclick="showPanel('levels')">
+                    <span>📊</span> Levels
+                </div>
+                <div class="nav-item" onclick="showPanel('achievements')">
+                    <span>🏅</span> Achievements
+                </div>
+            </div>
+
+            <!-- Panels -->
+            <div>
+                <!-- General Panel -->
+                <div id="general" class="settings-panel active">
+                    <div class="settings-section">
+                        <h3><span>🎮</span> General Settings</h3>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Enable Gamification</div>
+                                <div class="setting-description">Turn on gamification features for this scope</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="enabled" onchange="saveSetting('enabled', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Show Leaderboard</div>
+                                <div class="setting-description">Display leaderboard to students</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showLeaderboard" onchange="saveSetting('showLeaderboard', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Show Achievements</div>
+                                <div class="setting-description">Display achievement badges to students</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showAchievements" onchange="saveSetting('showAchievements', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Points Panel -->
+                <div id="points" class="settings-panel">
+                    <div class="settings-section">
+                        <h3><span>⭐</span> Point Settings</h3>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Base Points for Correct Answer</div>
+                                <div class="setting-description">Points awarded for each correct answer</div>
+                            </div>
+                            <input type="number" id="basePoints" class="number-input" min="1" max="1000" value="10" onchange="saveSetting('points.base', parseInt(this.value))">
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Speed Bonus Multiplier</div>
+                                <div class="setting-description">Bonus for answering quickly (0-2x)</div>
+                            </div>
+                            <input type="number" id="speedBonus" class="number-input" min="0" max="2" step="0.1" value="0.5" onchange="saveSetting('points.speedBonus', parseFloat(this.value))">
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Streak Bonus</div>
+                                <div class="setting-description">Extra points per consecutive correct answer</div>
+                            </div>
+                            <input type="number" id="streakBonus" class="number-input" min="0" max="100" value="5" onchange="saveSetting('points.streakBonus', parseInt(this.value))">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Levels Panel -->
+                <div id="levels" class="settings-panel">
+                    <div class="settings-section">
+                        <h3><span>📊</span> Level Settings</h3>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Enable Levels</div>
+                                <div class="setting-description">Allow students to level up based on points</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="levelsEnabled" onchange="saveSetting('levels.enabled', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Points per Level</div>
+                                <div class="setting-description">Points required to reach each level</div>
+                            </div>
+                            <input type="number" id="pointsPerLevel" class="number-input" min="10" max="10000" value="100" onchange="saveSetting('levels.pointsPerLevel', parseInt(this.value))">
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Max Level</div>
+                                <div class="setting-description">Maximum level students can reach</div>
+                            </div>
+                            <input type="number" id="maxLevel" class="number-input" min="1" max="100" value="50" onchange="saveSetting('levels.maxLevel', parseInt(this.value))">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements Panel -->
+                <div id="achievements" class="settings-panel">
+                    <div class="settings-section">
+                        <h3><span>🏅</span> Achievement Settings</h3>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label">Enable Achievements</div>
+                                <div class="setting-description">Award badges for accomplishments</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="achievementsEnabled" onchange="saveSetting('achievements.enabled', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div style="margin-top: 2rem;">
+                            <h4 style="margin-bottom: 1rem;">Available Achievements</h4>
+                            <div style="color: var(--text-secondary);">
+                                <p>🎯 First Answer - Answer first in a session</p>
+                                <p>💯 Perfect Score - Get 100% on a quiz</p>
+                                <p>⚡ Speed Demon - Answer 5 questions in under 3 seconds</p>
+                                <p>🔥 Consistent - Maintain a 5+ answer streak</p>
+                                <p>🤝 Team Player - Participate in 10+ sessions</p>
+                                <p>🧠 Knowledge Master - Reach Level 25</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Indicator -->
+    <div id="saveIndicator" class="save-indicator">
+        <span>✅</span>
+        <span>Settings saved successfully!</span>
+    </div>
+
+    <script type="module">
+        import { classes as classesAPI, gamification } from '../utils/api.js';
+        import toast from '../utils/toast.js';
+        import logger from '../utils/logger.js';
+
+        let currentScope = null;
+        let currentSettings = {};
+        let saveTimeout = null;
+
+        logger.debug('🔵 Gamification Settings Page Loaded - Version 1.0.0-modular');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            await loadClasses();
+        });
+
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '../pages/login.html';
+            }
+        }
+
+        async function loadClasses() {
+            try {
+                const data = await classesAPI.getAll();
+                const classes = data.classes || [];
+
+                const selector = document.getElementById('scopeSelector');
+                classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls._id || cls.id;
+                    option.textContent = cls.name;
+                    selector.appendChild(option);
+                });
+            } catch (error) {
+                logger.error('Error loading classes:', error);
+                toast.error('Failed to load classes');
+            }
+        }
+
+        async function handleScopeChange() {
+            const scopeId = document.getElementById('scopeSelector').value;
+            if (!scopeId) {
+                toast.info('Please select a class to configure its settings');
+                return;
+            }
+
+            currentScope = scopeId;
+            await loadSettings();
+        }
+
+        async function loadSettings() {
+            if (!currentScope) return;
+
+            try {
+                const data = await gamification.getSettings(currentScope);
+                currentSettings = data.settings || getDefaultSettings();
+                populateForm(currentSettings);
+                toast.success('Settings loaded');
+            } catch (error) {
+                logger.error('Error loading settings:', error);
+                currentSettings = getDefaultSettings();
+                populateForm(currentSettings);
+                toast.warning('Using default settings');
+            }
+        }
+
+        function getDefaultSettings() {
+            return {
+                enabled: true,
+                showLeaderboard: true,
+                showAchievements: true,
+                points: {
+                    base: 10,
+                    speedBonus: 0.5,
+                    streakBonus: 5
+                },
+                levels: {
+                    enabled: true,
+                    pointsPerLevel: 100,
+                    maxLevel: 50
+                },
+                achievements: {
+                    enabled: true
+                }
+            };
+        }
+
+        function populateForm(settings) {
+            document.getElementById('enabled').checked = settings.enabled;
+            document.getElementById('showLeaderboard').checked = settings.showLeaderboard;
+            document.getElementById('showAchievements').checked = settings.showAchievements;
+
+            document.getElementById('basePoints').value = settings.points?.base || 10;
+            document.getElementById('speedBonus').value = settings.points?.speedBonus || 0.5;
+            document.getElementById('streakBonus').value = settings.points?.streakBonus || 5;
+
+            document.getElementById('levelsEnabled').checked = settings.levels?.enabled || true;
+            document.getElementById('pointsPerLevel').value = settings.levels?.pointsPerLevel || 100;
+            document.getElementById('maxLevel').value = settings.levels?.maxLevel || 50;
+
+            document.getElementById('achievementsEnabled').checked = settings.achievements?.enabled || true;
+        }
+
+        function saveSetting(path, value) {
+            const keys = path.split('.');
+            let obj = currentSettings;
+
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!obj[keys[i]]) obj[keys[i]] = {};
+                obj = obj[keys[i]];
+            }
+
+            obj[keys[keys.length - 1]] = value;
+
+            // Auto-save after 1 second of no changes
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveToServer();
+            }, 1000);
+        }
+
+        async function saveToServer() {
+            if (!currentScope) {
+                toast.warning('Please select a class first');
+                return;
+            }
+
+            try {
+                await gamification.updateSettings(currentScope, currentSettings);
+                showSaveIndicator();
+                toast.success('Settings saved successfully!');
+            } catch (error) {
+                logger.error('Error saving settings:', error);
+                toast.error(`Failed to save settings: ${error.message}`);
+            }
+        }
+
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('show');
+
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 3000);
+        }
+
+        function showPanel(panelId) {
+            // Hide all panels
+            document.querySelectorAll('.settings-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Show selected panel
+            document.getElementById(panelId).classList.add('active');
+
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item').classList.add('active');
+        }
+
+        // Expose functions to window for onclick handlers
+        window.handleScopeChange = handleScopeChange;
+        window.saveSetting = saveSetting;
+        window.saveToServer = saveToServer;
+        window.showPanel = showPanel;
+    </script>
+</body>
+</html>

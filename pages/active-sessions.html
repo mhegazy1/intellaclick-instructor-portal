@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Sessions - IntellaClick</title>
+    <link rel="stylesheet" href="../styles/common.css">
+    <link rel="stylesheet" href="../styles/active-sessions.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">IntellaClick Instructor</div>
+        <div class="navbar-links">
+            <a href="../pages/dashboard.html">Dashboard</a>
+            <a href="../pages/classes.html">Classes</a>
+            <a href="../pages/active-sessions.html" class="active">Active Sessions</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="sessions-container">
+        <div class="page-header">
+            <h1>Active Sessions</h1>
+            <p>Resume or end your active sessions</p>
+        </div>
+
+        <div id="sessionsContainer">
+            <div class="loading">Loading active sessions...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { sessions } from '../utils/api.js';
+        import logger from '../utils/logger.js';
+
+        async function loadActiveSessions() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '../pages/login.html';
+                    return;
+                }
+
+                const data = await sessions.getActive();
+                displaySessions(data.sessions);
+            } catch (error) {
+                logger.error('Error loading active sessions:', error);
+                document.getElementById('sessionsContainer').innerHTML = `
+                    <div class="error">Failed to load active sessions. Please try again.</div>
+                `;
+            }
+        }
+
+        function displaySessions(sessions) {
+            const container = document.getElementById('sessionsContainer');
+
+            if (!sessions || sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Active Sessions</h3>
+                        <p>Create a new session to get started</p>
+                        <button class="btn btn-primary" onclick="window.location.href='/classes.html'">
+                            Go to Classes
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = sessions.map(session => `
+                <div class="session-card ${session.status}">
+                    <div class="session-info">
+                        <div class="session-code">
+                            ${session.sessionCode}
+                            <span class="status-badge ${session.status}">${session.status}</span>
+                        </div>
+                        <div class="session-title">${session.title}</div>
+                        <div class="session-meta">
+                            ${session.participants} participants •
+                            Started ${formatDate(session.createdAt)}
+                        </div>
+                    </div>
+                    <div class="session-actions">
+                        <button class="btn btn-primary" onclick="resumeSession('${session._id}', '${session.sessionCode}')">
+                            Resume Session
+                        </button>
+                        <button class="btn btn-danger" onclick="endSession('${session._id}')">
+                            End Session
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000); // seconds
+
+            if (diff < 60) return `${diff} seconds ago`;
+            if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function resumeSession(sessionId, sessionCode) {
+            // Redirect to the session display page
+            window.location.href = `/session.html?id=${sessionId}&code=${sessionCode}`;
+        }
+
+        async function endSession(sessionId) {
+            if (!confirm('Are you sure you want to end this session?')) {
+                return;
+            }
+
+            try {
+                await sessions.updateStatus(sessionId, 'ended');
+
+                alert('Session ended successfully');
+                loadActiveSessions(); // Reload the list
+            } catch (error) {
+                logger.error('Error ending session:', error);
+                alert('Failed to end session. Please try again.');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        // Expose functions to window object for onclick handlers
+        window.logout = logout;
+        window.resumeSession = resumeSession;
+        window.endSession = endSession;
+
+        // Auto-refresh every 10 seconds
+        setInterval(loadActiveSessions, 10000);
+
+        // Load on page load
+        loadActiveSessions();
+    </script>
+</body>
+</html>

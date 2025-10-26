@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.0.10-filters-fixed">
+    <title>Session History - IntellaClick</title>
+    <link rel="stylesheet" href="../styles/common.css">
+    <link rel="stylesheet" href="../styles/session-history.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Version Check: 1.0.10-filters-fixed - If you see this in page source, file is loading -->
+        <a href="../pages/classes.html" class="back-link">← Back to Classes</a>
+        <div class="header">
+            <h1>Session History</h1>
+            <div class="bulk-actions">
+                <button class="btn btn-secondary btn-small" onclick="toggleSelectAll()">
+                    <span id="selectAllText">Select All</span>
+                </button>
+                <button class="btn btn-danger btn-small" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                    Delete Selected (<span id="selectedCount">0</span>)
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <input type="text" id="searchInput" placeholder="Search by title or code..." oninput="filterSessions()">
+            <select id="classFilter" onchange="filterSessions()">
+                <option value="all">All Classes</option>
+                <!-- Classes will be loaded dynamically -->
+            </select>
+            <select id="statusFilter" onchange="filterSessions()">
+                <option value="all">All Sessions</option>
+                <option value="ended">Ended</option>
+                <option value="active">Active</option>
+            </select>
+        </div>
+
+        <div id="historyContainer" class="history-grid">
+            <!-- Sessions will be loaded here -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <h3>No Sessions Found</h3>
+            <p>You haven't created any sessions yet.</p>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="paginationControls" class="pagination-controls" style="display: none;">
+            <div class="page-size-selector">
+                <label>Show:</label>
+                <select id="pageSizeSelect" onchange="changePageSize()">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="all">All</option>
+                </select>
+                <span style="font-size: 0.9rem; color: var(--text-secondary);">per page</span>
+            </div>
+
+            <div class="pagination-info">
+                Showing <strong id="showingStart">1</strong> to <strong id="showingEnd">20</strong> of <strong id="totalSessions">0</strong> sessions
+            </div>
+
+            <div class="pagination-buttons">
+                <button class="btn btn-secondary" onclick="goToFirstPage()" id="firstPageBtn" disabled>
+                    ⏮ First
+                </button>
+                <button class="btn btn-secondary" onclick="previousPage()" id="prevPageBtn" disabled>
+                    ← Previous
+                </button>
+                <span style="padding: 0 1rem; font-weight: 600;">
+                    Page <span id="currentPageNum">1</span> of <span id="totalPagesNum">1</span>
+                </span>
+                <button class="btn btn-secondary" onclick="nextPage()" id="nextPageBtn" disabled>
+                    Next →
+                </button>
+                <button class="btn btn-secondary" onclick="goToLastPage()" id="lastPageBtn" disabled>
+                    Last ⏭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Session Modal -->
+    <div id="sessionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Session Details</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody">
+                <!-- Session details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { sessions, classes as classesAPI } from '../utils/api.js';
+        import toast from '../utils/toast.js';
+        import logger from '../utils/logger.js';
+        import loading from '../utils/loading.js';
+        import confirm from '../utils/confirm.js';
+
+        let allSessions = [];
+        let filteredSessions = [];
+        let currentSession = null;
+        let selectedSessions = new Set();
+        let currentPage = 1;
+        let pageSize = 20;
+        let allClasses = [];
+
+        // Helper function to compare answers (handles different question types properly)
+        function compareAnswers(studentAnswer, correctAnswer, questionType) {
+            // Handle null/undefined
+            if (studentAnswer === null || studentAnswer === undefined || correctAnswer === null || correctAnswer === undefined) {
+                return false;
+            }
+
+            // Helper to convert letter to number (A=0, B=1, C=2, D=3, etc.)
+            const letterToNumber = (val) => {
+                if (typeof val === 'string' && val.length === 1 && /^[A-Z]$/i.test(val)) {
+                    return val.toUpperCase().charCodeAt(0) - 65;
+                }
+                return null;
+            };
+
+            // For MCQ/True-False with numeric answers (including 0!)
+            if (typeof studentAnswer === 'number' || typeof correctAnswer === 'number') {
+                let studentNum = typeof studentAnswer === 'number' ? studentAnswer : parseInt(studentAnswer);
+                let correctNum = typeof correctAnswer === 'number' ? correctAnswer : parseInt(correctAnswer);
+
+                if (isNaN(studentNum)) {
+                    const converted = letterToNumber(studentAnswer);
+                    if (converted !== null) studentNum = converted;
+                }
+                if (isNaN(correctNum)) {
+                    const converted = letterToNumber(correctAnswer);
+                    if (converted !== null) correctNum = converted;
+                }
+
+                if (!isNaN(studentNum) && !isNaN(correctNum)) {
+                    return studentNum === correctNum;
+                }
+            }
+
+            // For matching/ordering (objects/arrays)
+            if (questionType === 'matching' || questionType === 'ordering') {
+                try {
+                    const studentStr = typeof studentAnswer === 'object' ? JSON.stringify(studentAnswer) : studentAnswer;
+                    const correctStr = typeof correctAnswer === 'object' ? JSON.stringify(correctAnswer) : correctAnswer;
+                    return studentStr === correctStr;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            // For string answers (case-insensitive)
+            if (typeof studentAnswer === 'string' && typeof correctAnswer === 'string') {
+                return studentAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+            }
+
+            // Fallback: string comparison
+            return String(studentAnswer).toLowerCase().trim() === String(correctAnswer).toLowerCase().trim();
+        }
+        let classesMap = {}; // Map of classId -> className
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadClasses();
+            loadSessions();
+        });
+
+        async function loadClasses() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    return;
+                }
+
+                const data = await classesAPI.getAll();
+                allClasses = data.classes || [];
+
+                // Create a map for quick lookup
+                classesMap = {};
+                allClasses.forEach(cls => {
+                    classesMap[cls._id] = cls.name;
+                });
+
+                // Populate class filter dropdown
+                const classFilter = document.getElementById('classFilter');
+                allClasses.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls._id;
+                    option.textContent = cls.name;
+                    classFilter.appendChild(option);
+                });
+
+                logger.debug(`Loaded ${allClasses.length} classes`);
+            } catch (error) {
+                logger.error('Error loading classes:', error);
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '../pages/login.html';
+                    return;
+                }
+
+                // Fetch all sessions (no limit)
+                const data = await sessions.getAll({ limit: 1000 });
+                allSessions = data.sessions || [];
+
+                logger.debug(`Loaded ${allSessions.length} sessions`);
+
+                // Apply any active filters
+                filterSessions();
+            } catch (error) {
+                logger.error('Error loading sessions:', error);
+                alert('Failed to load session history');
+            }
+        }
+
+        function renderSessions(sessions) {
+            const container = document.getElementById('historyContainer');
+            const emptyState = document.getElementById('emptyState');
+            const paginationControls = document.getElementById('paginationControls');
+
+            if (sessions.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+                paginationControls.style.display = 'none';
+                return;
+            }
+
+            // Calculate pagination
+            const totalSessions = sessions.length;
+            const totalPages = pageSize === 'all' ? 1 : Math.ceil(totalSessions / pageSize);
+
+            // Adjust current page if needed
+            if (currentPage > totalPages) {
+                currentPage = Math.max(1, totalPages);
+            }
+
+            // Get sessions for current page
+            let displaySessions;
+            let startIndex, endIndex;
+
+            if (pageSize === 'all') {
+                displaySessions = sessions;
+                startIndex = 1;
+                endIndex = totalSessions;
+            } else {
+                startIndex = (currentPage - 1) * pageSize + 1;
+                endIndex = Math.min(currentPage * pageSize, totalSessions);
+                displaySessions = sessions.slice(startIndex - 1, endIndex);
+            }
+
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+            paginationControls.style.display = totalSessions > 10 ? 'flex' : 'none';
+
+            container.innerHTML = displaySessions.map(session => {
+                const date = new Date(session.createdAt).toLocaleDateString();
+                const time = new Date(session.createdAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                const participantCount = session.participantCount || 0;
+                const questionCount = session.totalQuestions || 0;
+                const responseCount = session.responseCount || 0;
+                const isSelected = selectedSessions.has(session.id);
+                const className = classesMap[session.classId] || 'No Class';
+
+                return `
+                    <div class="session-card ${session.status}">
+                        <div class="session-card-header">
+                            <input type="checkbox" class="session-checkbox"
+                                   data-session-id="${session.id}"
+                                   ${isSelected ? 'checked' : ''}
+                                   onclick="event.stopPropagation(); toggleSessionSelection('${session.id}')"
+                                   style="margin-top: 4px;">
+                            <div class="session-card-content" onclick="viewSession('${session.id}')">
+                                <div class="session-header">
+                                    <div>
+                                        <div class="session-title">${session.title || 'Untitled Session'}</div>
+                                        <div class="session-code">Code: ${session.sessionCode}</div>
+                                        ${session.classId ? `<div class="class-badge">📚 ${className}</div>` : ''}
+                                    </div>
+                                    <span class="status-badge status-${session.status}">${session.status}</span>
+                                </div>
+
+                                <div class="session-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-value">${participantCount}</div>
+                                        <div class="stat-label">Students</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${questionCount}</div>
+                                        <div class="stat-label">Questions</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${responseCount}</div>
+                                        <div class="stat-label">Responses</div>
+                                    </div>
+                                </div>
+
+                                <div class="session-date">📅 ${date} at ${time}</div>
+
+                                <div class="session-actions" onclick="event.stopPropagation()">
+                                    <button class="btn btn-view" onclick="viewSession('${session.id}')">
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-export" onclick="exportSession('${session.id}')">
+                                        Export CSV
+                                    </button>
+                                    <button class="btn btn-delete" onclick="deleteSession('${session.id}')">
+                                        Delete
+                                    </button>
+                                    ${session.status === 'active' ? `
+                                        <button class="btn" style="background: #F59E0B; color: white;" onclick="endSession('${session.id}')">
+                                            End Session
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update pagination UI
+            document.getElementById('showingStart').textContent = startIndex;
+            document.getElementById('showingEnd').textContent = endIndex;
+            document.getElementById('totalSessions').textContent = totalSessions;
+            document.getElementById('currentPageNum').textContent = currentPage;
+            document.getElementById('totalPagesNum').textContent = totalPages;
+
+            // Enable/disable pagination buttons
+            document.getElementById('firstPageBtn').disabled = currentPage === 1;
+            document.getElementById('prevPageBtn').disabled = currentPage === 1;
+            document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
+            document.getElementById('lastPageBtn').disabled = currentPage === totalPages;
+        }
+
+        function filterSessions() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const classId = document.getElementById('classFilter').value;
+
+            filteredSessions = allSessions.filter(session => {
+                const matchesSearch = session.title.toLowerCase().includes(searchTerm) ||
+                                    session.sessionCode.toLowerCase().includes(searchTerm);
+                const matchesStatus = status === 'all' || session.status === status;
+
+                // Check multiple possible field names for class ID (backwards compatibility)
+                const sessionClassId = session.classId || session.class || session.class_id || session.classID;
+                const matchesClass = classId === 'all' || sessionClassId === classId;
+
+                return matchesSearch && matchesStatus && matchesClass;
+            });
+
+            logger.debug(`Filter: classId="${classId}", found ${filteredSessions.length} sessions`);
+
+            // Reset to first page when filtering
+            currentPage = 1;
+            renderSessions(filteredSessions);
+        }
+
+        // ========== PAGINATION FUNCTIONS ==========
+
+        function changePageSize() {
+            const select = document.getElementById('pageSizeSelect');
+            pageSize = select.value === 'all' ? 'all' : parseInt(select.value);
+            currentPage = 1; // Reset to first page
+            renderSessions(filteredSessions);
+        }
+
+        function nextPage() {
+            const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredSessions.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderSessions(filteredSessions);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderSessions(filteredSessions);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function goToFirstPage() {
+            if (currentPage !== 1) {
+                currentPage = 1;
+                renderSessions(filteredSessions);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function goToLastPage() {
+            const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredSessions.length / pageSize);
+            if (currentPage !== totalPages) {
+                currentPage = totalPages;
+                renderSessions(filteredSessions);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        async function viewSession(sessionId) {
+            try {
+                logger.debug('Loading session:', sessionId);
+                const token = localStorage.getItem('token');
+                const data = await sessions.getById(sessionId);
+                logger.debug('Session data:', data);
+                currentSession = data.session;
+
+                // Debug: Log the structure of questions and responses
+                logger.debug('Questions:', currentSession.questions);
+                logger.debug('Responses:', currentSession.responses);
+                if (currentSession.responses && currentSession.responses.length > 0) {
+                    logger.debug('First response structure:', currentSession.responses[0]);
+                }
+
+                displaySessionDetails(currentSession);
+                document.getElementById('sessionModal').classList.add('active');
+            } catch (error) {
+                logger.error('Error loading session:', error);
+                alert(`Failed to load session details: ${error.message}`);
+            }
+        }
+
+        function displaySessionDetails(session) {
+            document.getElementById('modalTitle').textContent = session.title;
+
+            const questions = session.questions || [];
+            const responses = session.responses || [];
+            const participants = session.participants || [];
+
+            // Helper function to format question type
+            function formatQuestionType(type) {
+                const typeMap = {
+                    'multiple_choice': 'Multiple Choice',
+                    'mcq': 'Multiple Choice',
+                    'true_false': 'True/False',
+                    'boolean': 'True/False',
+                    'tf': 'True/False',
+                    'short_answer': 'Short Answer',
+                    'matching': 'Matching',
+                    'ordering': 'Put in Order',
+                    'fill_blank': 'Fill in the Blank'
+                };
+                return typeMap[type] || type;
+            }
+
+
+            // Calculate student performance summary
+            const studentStats = {};
+            participants.forEach(p => {
+                studentStats[p.participantId] = {
+                    name: p.name,
+                    totalPoints: 0,
+                    questionsAnswered: 0,
+                    responses: []
+                };
+            });
+
+            responses.forEach(r => {
+                if (studentStats[r.participantId]) {
+                    // Calculate points with fallback logic
+                    let earnedPoints = 0;
+                    if (r.points !== undefined) {
+                        earnedPoints = r.points;
+                        logger.debug('✓ Using backend-provided points:', r.points);
+                    } else if (r.score !== undefined) {
+                        earnedPoints = r.score;
+                        logger.debug('✓ Using backend-provided score:', r.score);
+                    } else {
+                        const question = questions.find(q => q.questionId === r.questionId);
+                        logger.debug('📊 Calculating points for response:', {
+                            participantId: r.participantId,
+                            questionId: r.questionId,
+                            studentAnswer: r.answer,
+                            responseCorrectAnswer: r.correctAnswer,
+                            questionCorrectAnswer: question?.correctAnswer,
+                            questionType: question?.questionType || question?.type,
+                            questionPoints: question?.points
+                        });
+                        const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question?.correctAnswer, question?.questionType || question?.type);
+                        earnedPoints = isCorrectAnswer ? (question?.points || 10) : 0;
+                        logger.debug(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer})`);
+                    }
+
+                    studentStats[r.participantId].totalPoints += earnedPoints;
+                    studentStats[r.participantId].questionsAnswered++;
+                    studentStats[r.participantId].responses.push(r);
+                }
+            });
+
+            // Sort students by total points (descending)
+            const sortedStudents = Object.values(studentStats).sort((a, b) => b.totalPoints - a.totalPoints);
+
+            let html = `
+                <div style="margin-bottom: 2rem;">
+                    <h3>Session Information</h3>
+                    <p><strong>Code:</strong> ${session.sessionCode}</p>
+                    <p><strong>Status:</strong> ${session.status}</p>
+                    <p><strong>Participants:</strong> ${participants.length}</p>
+                    <p><strong>Questions Asked:</strong> ${questions.length}</p>
+                    <p><strong>Total Responses:</strong> ${responses.length}</p>
+                </div>
+
+                <div class="summary-section">
+                    <h3>Student Performance Summary</h3>
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Student</th>
+                                <th>Total Points</th>
+                                <th>Questions Answered</th>
+                                <th>Participation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedStudents.map((student, index) => {
+                                const participationPercent = questions.length > 0
+                                    ? Math.round((student.questionsAnswered / questions.length) * 100)
+                                    : 0;
+
+                                return `
+                                    <tr>
+                                        <td><strong>#${index + 1}</strong></td>
+                                        <td>${student.name}</td>
+                                        <td><strong>${student.totalPoints}</strong></td>
+                                        <td>${student.questionsAnswered} / ${questions.length}</td>
+                                        <td>
+                                            <div class="participation-bar">
+                                                <div style="flex: 1; background: #e5e7eb; border-radius: 4px; height: 8px;">
+                                                    <div class="participation-bar-fill" style="width: ${participationPercent}%;"></div>
+                                                </div>
+                                                <span style="font-size: 0.875rem; min-width: 40px;">${participationPercent}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                            ${sortedStudents.length === 0 ? '<tr><td colspan="5">No student data available</td></tr>' : ''}
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Questions & Responses</h3>
+            `;
+
+            questions.forEach((question, index) => {
+                const questionResponses = responses.filter(r => r.questionId === question.questionId);
+
+                html += `
+                    <div style="margin: 1.5rem 0; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                        <h4>Question ${index + 1}: ${question.questionText}</h4>
+                        <p><strong>Type:</strong> ${formatQuestionType(question.questionType)} | <strong>Points:</strong> ${question.points}</p>
+
+                        <table class="responses-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Answer</th>
+                                    <th>Points</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${questionResponses.map(r => {
+                                    const participant = participants.find(p => p.participantId === r.participantId);
+
+                                    // Calculate points - check if answer matches correctAnswer
+                                    let earnedPoints = 0;
+                                    if (r.points !== undefined) {
+                                        earnedPoints = r.points;
+                                        logger.debug('✓ Using backend-provided points:', r.points);
+                                    } else if (r.score !== undefined) {
+                                        earnedPoints = r.score;
+                                        logger.debug('✓ Using backend-provided score:', r.score);
+                                    } else {
+                                        logger.debug('📊 Calculating points (question details):', {
+                                            participantId: r.participantId,
+                                            studentAnswer: r.answer,
+                                            responseCorrectAnswer: r.correctAnswer,
+                                            questionCorrectAnswer: question.correctAnswer,
+                                            questionType: question.questionType,
+                                            questionPoints: question.points
+                                        });
+                                        // Calculate based on correct answer match using proper comparison
+                                        const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question.correctAnswer, question.questionType);
+                                        earnedPoints = isCorrectAnswer ? (question.points || 10) : 0;
+                                        logger.debug(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer})`);
+                                    }
+
+                                    const isCorrect = earnedPoints > 0;
+
+                                    // Get timestamp - check multiple possible field names
+                                    const timestamp = r.submittedAt || r.timestamp || r.answeredAt || r.createdAt;
+                                    const timeString = timestamp ? new Date(timestamp).toLocaleTimeString() : 'N/A';
+
+                                    return `
+                                        <tr>
+                                            <td>${participant?.name || r.participantId}</td>
+                                            <td>${r.answer}</td>
+                                            <td class="${isCorrect ? 'correct' : 'incorrect'}">
+                                                ${earnedPoints} / ${question.points}
+                                            </td>
+                                            <td>${timeString}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                ${questionResponses.length === 0 ? '<tr><td colspan="4">No responses</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modalBody').innerHTML = html;
+        }
+
+        function closeModal() {
+            document.getElementById('sessionModal').classList.remove('active');
+        }
+
+        async function exportSession(sessionId) {
+            try {
+                const token = localStorage.getItem('token');
+                const data = await sessions.getById(sessionId);
+                const session = data.session;
+
+                // Calculate student performance summary
+                const studentStats = {};
+                (session.participants || []).forEach(p => {
+                    studentStats[p.participantId] = {
+                        name: p.name,
+                        totalPoints: 0,
+                        questionsAnswered: 0
+                    };
+                });
+
+                (session.responses || []).forEach(r => {
+                    if (studentStats[r.participantId]) {
+                        const question = (session.questions || []).find(q => q.questionId === r.questionId);
+                        let earnedPoints = 0;
+                        if (r.points !== undefined) {
+                            earnedPoints = r.points;
+                        } else if (r.score !== undefined) {
+                            earnedPoints = r.score;
+                        } else {
+                            const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question?.correctAnswer, question?.questionType || question?.type);
+                            earnedPoints = isCorrectAnswer ? (question?.points || 10) : 0;
+                        }
+                        studentStats[r.participantId].totalPoints += earnedPoints;
+                        studentStats[r.participantId].questionsAnswered++;
+                    }
+                });
+
+                const sortedStudents = Object.values(studentStats).sort((a, b) => b.totalPoints - a.totalPoints);
+
+                // Create CSV content with summary first
+                let csv = 'STUDENT PERFORMANCE SUMMARY\n';
+                csv += 'Rank,Student Name,Total Points,Questions Answered,Participation %\n';
+
+                sortedStudents.forEach((student, index) => {
+                    const participationPercent = (session.questions || []).length > 0
+                        ? Math.round((student.questionsAnswered / (session.questions || []).length) * 100)
+                        : 0;
+                    csv += `${index + 1},"${student.name}",${student.totalPoints},${student.questionsAnswered},${participationPercent}%\n`;
+                });
+
+                csv += '\n\nDETAILED RESPONSES\n';
+                csv += 'Student,Question,Answer,Points,Correct Answer,Timestamp\n';
+
+                (session.responses || []).forEach(r => {
+                    const question = (session.questions || []).find(q => q.questionId === r.questionId);
+                    const participant = (session.participants || []).find(p => p.participantId === r.participantId);
+
+                    // Calculate points - check multiple possible field names
+                    let earnedPoints = 0;
+                    if (r.points !== undefined) {
+                        earnedPoints = r.points;
+                    } else if (r.score !== undefined) {
+                        earnedPoints = r.score;
+                    } else {
+                        // Calculate based on correct answer match using proper comparison
+                        const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question?.correctAnswer, question?.questionType || question?.type);
+                        earnedPoints = isCorrectAnswer ? (question?.points || 10) : 0;
+                    }
+
+                    // Get timestamp - check multiple possible field names
+                    const timestamp = r.submittedAt || r.timestamp || r.answeredAt || r.createdAt;
+                    const timeString = timestamp ? new Date(timestamp).toLocaleString() : 'N/A';
+
+                    csv += `"${participant?.name || r.participantId}",`;
+                    csv += `"${question?.questionText || 'Unknown'}",`;
+                    csv += `"${r.answer}",`;
+                    csv += `${earnedPoints},`;
+                    csv += `"${question?.correctAnswer || 'N/A'}",`;
+                    csv += `"${timeString}"\n`;
+                });
+
+                // Download CSV
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${session.sessionCode}_${session.title}_responses.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                toast.success('Session exported successfully!');
+            } catch (error) {
+                logger.error('Error exporting session:', error);
+                logger.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    sessionId: sessionId
+                });
+                toast.error(`Failed to export session: ${error.message}`);
+            }
+        }
+
+        async function deleteSession(sessionId) {
+            if (!confirm('Are you sure you want to delete this session? This cannot be undone.')) {
+                return;
+            }
+
+            // Find the session card and add a deleting indicator
+            const sessionCard = document.querySelector(`[data-session-id="${sessionId}"]`)?.closest('.session-card');
+            if (sessionCard) {
+                sessionCard.style.opacity = '0.5';
+                sessionCard.style.pointerEvents = 'none';
+            }
+
+            try {
+                logger.debug('=== DELETE SESSION DEBUG ===' );
+                logger.debug('Session ID:', sessionId);
+
+                await sessions.delete(sessionId);
+
+                logger.debug('DELETE SUCCESS');
+                logger.debug('=== END DEBUG ===');
+
+                // Reload the list first, then show alert
+                await loadSessions();
+                alert('Session deleted successfully');
+            } catch (error) {
+                logger.error('Error deleting session:', error);
+                logger.error('Error type:', error.constructor.name);
+                logger.error('Error stack:', error.stack);
+
+                // Restore card if delete failed
+                if (sessionCard) {
+                    sessionCard.style.opacity = '1';
+                    sessionCard.style.pointerEvents = 'auto';
+                }
+
+                const errorMsg = error.message || String(error);
+
+                // Show detailed error in alert
+                alert(`Failed to delete session\n\nError: ${errorMsg}\n\nCheck browser console (F12) for full details.`);
+            }
+        }
+
+        // ========== BULK DELETE FUNCTIONS ==========
+
+        function toggleSessionSelection(sessionId) {
+            if (selectedSessions.has(sessionId)) {
+                selectedSessions.delete(sessionId);
+            } else {
+                selectedSessions.add(sessionId);
+            }
+            updateSelectionUI();
+        }
+
+        function toggleSelectAll() {
+            const visibleSessions = Array.from(document.querySelectorAll('.session-checkbox'));
+
+            if (selectedSessions.size === visibleSessions.length && visibleSessions.length > 0) {
+                // All are selected, deselect all
+                selectedSessions.clear();
+            } else {
+                // Select all visible
+                visibleSessions.forEach(checkbox => {
+                    selectedSessions.add(checkbox.dataset.sessionId);
+                });
+            }
+
+            // Re-render to update checkboxes
+            renderSessions(filteredSessions);
+            updateSelectionUI();
+        }
+
+        function updateSelectionUI() {
+            const count = selectedSessions.size;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('deleteSelectedBtn').disabled = count === 0;
+
+            const visibleCheckboxes = document.querySelectorAll('.session-checkbox');
+            const allSelected = count > 0 && count === visibleCheckboxes.length;
+            document.getElementById('selectAllText').textContent = allSelected ? 'Deselect All' : 'Select All';
+        }
+
+        async function deleteSelected() {
+            const count = selectedSessions.size;
+            if (count === 0) return;
+
+            if (!confirm(`Are you sure you want to delete ${count} session(s)? This cannot be undone.`)) {
+                return;
+            }
+
+            const sessionIds = Array.from(selectedSessions);
+            const token = localStorage.getItem('token');
+
+            let successCount = 0;
+            let failCount = 0;
+            const errors = [];
+
+            // Show progress
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const originalText = deleteBtn.innerHTML;
+            deleteBtn.disabled = true;
+
+            for (let i = 0; i < sessionIds.length; i++) {
+                const sessionId = sessionIds[i];
+                deleteBtn.innerHTML = `Deleting ${i + 1}/${sessionIds.length}...`;
+
+                logger.debug(`\n=== BULK DELETE ${i + 1}/${sessionIds.length} ===`);
+                logger.debug('Session ID:', sessionId);
+
+                try {
+                    await sessions.delete(sessionId);
+                    logger.debug('✅ Delete successful');
+                    successCount++;
+                    selectedSessions.delete(sessionId);
+                } catch (error) {
+                    logger.error('❌ Delete failed:', error.message);
+                    failCount++;
+                    errors.push(`${sessionId.substring(0, 8)}: ${error.message}`);
+                }
+            }
+
+            deleteBtn.innerHTML = originalText;
+
+            // Show results
+            let message = `Successfully deleted ${successCount} session(s).`;
+            if (failCount > 0) {
+                message += `\n\nFailed to delete ${failCount} session(s):\n${errors.join('\n')}`;
+            }
+
+            // Reload the list first
+            await loadSessions();
+
+            // Clear selection state for successfully deleted sessions
+            selectedSessions.clear();
+            updateSelectionUI();
+
+            // Then show the alert
+            alert(message);
+        }
+
+        // ========== END SESSION FUNCTION ==========
+
+        async function endSession(sessionId) {
+            if (!confirm('Are you sure you want to end this session?')) {
+                return;
+            }
+
+            try {
+                await sessions.end(sessionId);
+
+                // Reload sessions to show updated status
+                await loadSessions();
+                alert('Session ended successfully');
+
+            } catch (error) {
+                logger.error('Error ending session:', error);
+                alert(`Failed to end session: ${error.message}`);
+            }
+        }
+
+        // Expose functions to window object for onclick handlers
+        window.toggleSelectAll = toggleSelectAll;
+        window.deleteSelected = deleteSelected;
+        window.filterSessions = filterSessions;
+        window.changePageSize = changePageSize;
+        window.goToFirstPage = goToFirstPage;
+        window.previousPage = previousPage;
+        window.nextPage = nextPage;
+        window.goToLastPage = goToLastPage;
+        window.closeModal = closeModal;
+        window.toggleSessionSelection = toggleSessionSelection;
+        window.viewSession = viewSession;
+        window.endSession = endSession;
+        window.exportSession = exportSession;
+        window.deleteSession = deleteSession;
+    </script>
+</body>
+</html>

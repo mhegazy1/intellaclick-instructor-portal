@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.0.1-timer-fix">
+    <title>Session Display - IntellaClick</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="../styles/common.css">
+    <link rel="stylesheet" href="../styles/display.css">
+</head>
+<body>
+    <!-- Settings Button -->
+    <button class="settings-btn" onclick="toggleSettings()">
+        ⚙️
+    </button>
+
+    <!-- Session Info Card -->
+    <div class="session-info-card" id="sessionInfo">
+        <div class="session-code-display">
+            <div class="session-code-label">Session Code</div>
+            <div class="session-code" id="sessionCode">Loading...</div>
+            <div class="join-url" id="joinUrl">join.intellaclick.com</div>
+        </div>
+        <div class="qr-code-container" id="qrCodeContainer">
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <!-- Question Display -->
+    <div class="question-area" id="questionArea">
+        <div id="waitingMessage" class="waiting-message">
+            <div class="spinner"></div>
+            <div>Waiting for question...</div>
+        </div>
+
+        <div class="question-card" id="questionCard" style="display: none;">
+            <div class="question-header">
+                <div class="question-number" id="questionNumber">Question 1</div>
+                <div class="timer" id="timer">
+                    <span>⏱️</span>
+                    <span id="timeLeft">30</span>
+                </div>
+            </div>
+
+            <div class="question-text" id="questionText"></div>
+
+            <div class="options-grid" id="optionsGrid"></div>
+        </div>
+    </div>
+
+    <!-- Analytics Panel -->
+    <div class="analytics-panel" id="analyticsPanel">
+        <div class="analytics-header">
+            <div class="analytics-title">Live Results</div>
+        </div>
+
+        <div class="response-stats">
+            <div class="stat">
+                <div class="stat-value" id="responseCount">0</div>
+                <div class="stat-label">Responses</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="participantCount">0</div>
+                <div class="stat-label">Participants</div>
+            </div>
+        </div>
+
+        <div class="response-chart" id="responseChart"></div>
+    </div>
+
+    <!-- Control Bar -->
+    <div class="control-bar" id="controlBar">
+        <button class="btn btn-secondary" onclick="if (window.opener) { window.close(); } else { window.location.href='../pages/session.html?id=' + sessionId + '&code=' + sessionCode; }">
+            ← Back
+        </button>
+
+        <button class="btn btn-primary" onclick="sendNextQuestion()" id="nextQuestionBtn" style="font-size: 1.125rem; padding: 1rem 2rem;">
+            ▶ Next Question
+        </button>
+
+        <button class="btn btn-success" onclick="addTime(10)" id="addTimeBtn" disabled>
+            + 10s
+        </button>
+
+        <button class="btn btn-success" onclick="addTime(30)" id="addTime30Btn" disabled>
+            + 30s
+        </button>
+
+        <button class="btn btn-danger" onclick="endQuestion()" id="endBtn" disabled>
+            End Question
+        </button>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <div class="settings-title">Display Settings</div>
+            <button class="close-settings" onclick="toggleSettings()">×</button>
+        </div>
+
+        <div class="settings-body">
+            <div class="setting-group">
+                <div class="setting-group-title">Session Information</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Session Code & QR</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showSessionInfo" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Question Display</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Question Text</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showQuestion" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Timer</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showTimer" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Live Analytics</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Analytics Panel</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showAnalytics" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Controls</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Control Bar</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showControls" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Question End Behavior</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Correct Answer</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showCorrectAnswer">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">Keep Results on Screen</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="keepResults" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Session Questions</div>
+                <div style="padding: 0.5rem 0;">
+                    <button class="btn btn-primary" onclick="saveSessionQuestions()" style="width: 100%; margin-bottom: 0.5rem;">
+                        💾 Save Questions for Reuse
+                    </button>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">
+                        Save current question queue to use in future sessions
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { sessions } from '../utils/api.js';
+        import logger from '../utils/logger.js';
+        import loading from '../utils/loading.js';
+        import toast from '../utils/toast.js';
+
+        let sessionId;
+        let sessionCode;
+        let socket;
+        let currentQuestion = null;
+        let currentSession = null; // Store session data including settings
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let timerEndTime = null; // End time for the timer
+        let questionEnded = false; // Track if we manually ended the question
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            sessionId = urlParams.get('id');
+            sessionCode = urlParams.get('code');
+
+            if (!sessionId || !sessionCode) {
+                alert('Invalid session parameters');
+                window.location.href = '../pages/classes.html';
+                return;
+            }
+
+            document.getElementById('sessionCode').textContent = sessionCode;
+            document.getElementById('joinUrl').textContent = `join.intellaclick.com/session/${sessionCode}`;
+
+            // Generate QR code
+            new QRCode(document.getElementById('qrcode'), {
+                text: `https://join.intellaclick.com/session/${sessionCode}`,
+                width: 180,
+                height: 180
+            });
+
+            // Connect to Socket.IO
+            connectSocket();
+
+            // Poll for updates - every 1 second for real-time feel
+            setInterval(pollSession, 1000);
+            pollSession();
+
+            // Track when instructor manually changes the showCorrectAnswer checkbox
+            const showCorrectAnswerCheckbox = document.getElementById('showCorrectAnswer');
+            if (showCorrectAnswerCheckbox) {
+                showCorrectAnswerCheckbox.addEventListener('change', () => {
+                    showCorrectAnswerCheckbox.dataset.userModified = 'true';
+                });
+            }
+        });
+
+        function connectSocket() {
+            try {
+                socket = io('https://api.intellaclick.com', {
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: 5
+                });
+
+                socket.on('connect', () => {
+                    logger.debug('Connected to Socket.IO');
+                    socket.emit('join-session', { sessionCode });
+                });
+
+                socket.on('connect_error', (error) => {
+                    logger.debug('Socket connection error (will retry):', error.message);
+                });
+
+                socket.on('question-sent', (data) => {
+                    logger.debug('New question received:', data);
+                    displayQuestion(data.question);
+                });
+
+                socket.on('response-update', (data) => {
+                    logger.debug('Response update received:', data);
+                    updateAnalytics(data);
+                    // Force immediate poll to get latest data
+                    pollSession();
+                });
+
+                socket.on('new-response', (data) => {
+                    logger.debug('New response received:', data);
+                    // Force immediate poll to get latest data
+                    pollSession();
+                });
+
+                socket.on('question-ended', () => {
+                    logger.debug('Question ended');
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                    }
+                });
+            } catch (error) {
+                logger.error('Failed to initialize socket:', error);
+                // Continue without socket - polling will still work
+            }
+        }
+
+        async function pollSession() {
+            try {
+                // Fetch current question (no auth needed - public endpoint)
+                const questionData = await sessions.getCurrentQuestionByCode(sessionCode);
+
+                if (questionData.question) {
+                    // New question available
+                    questionEnded = false; // Reset the flag
+                    if (!currentQuestion || currentQuestion.id !== questionData.question.id) {
+                        displayQuestion(questionData.question);
+                    }
+                } else {
+                    // No current question - only show waiting if we're not keeping results
+                    const keepResults = document.getElementById('keepResults').checked;
+                    if (!questionEnded || !keepResults) {
+                        showWaiting();
+                    }
+                }
+
+                // Fetch session info (no auth needed - public endpoint)
+                const sessionData = await sessions.getByCodeFull(sessionCode);
+                if (sessionData.session) {
+                    currentSession = sessionData.session; // Store session data globally
+
+                    logger.debug('=== SESSION DATA LOADED ===');
+                    logger.debug('Session showCorrectAnswer field:', sessionData.session.showCorrectAnswer);
+                    logger.debug('Session allowAnswerChange field:', sessionData.session.allowAnswerChange);
+
+                    // Sync the showCorrectAnswer checkbox with session setting (only on first load)
+                    const checkbox = document.getElementById('showCorrectAnswer');
+                    if (checkbox && !checkbox.dataset.userModified) {
+                        // Use session value, default to FALSE if not set
+                        const shouldShow = sessionData.session.showCorrectAnswer !== undefined
+                            ? sessionData.session.showCorrectAnswer
+                            : false; // Changed from true to false
+
+                        logger.debug('Setting checkbox to:', shouldShow);
+                        checkbox.checked = shouldShow;
+                    }
+
+                    document.getElementById('participantCount').textContent = sessionData.session.participantCount || 0;
+
+                    // Update response count and chart if there's a current question
+                    if (currentQuestion && sessionData.session.responses) {
+                        logger.debug('Current question ID:', currentQuestion.id);
+                        logger.debug('All responses:', sessionData.session.responses);
+
+                        const questionResponses = sessionData.session.responses.filter(r => {
+                            logger.debug('Checking response:', r, 'questionId:', r.questionId);
+                            return r.questionId === currentQuestion.id || r.questionId === currentQuestion.questionId;
+                        });
+
+                        logger.debug('Filtered responses for current question:', questionResponses);
+                        document.getElementById('responseCount').textContent = questionResponses.length;
+                        updateResponseChart(questionResponses);
+                    }
+                }
+            } catch (error) {
+                logger.error('Error polling session:', error);
+                // Don't show error to user, just log it and retry on next poll
+            }
+        }
+
+        // Fisher-Yates shuffle algorithm for proper randomization
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function displayQuestion(question) {
+            currentQuestion = question;
+            questionEnded = false; // Reset the ended flag for new question
+
+            logger.debug('=== DISPLAYING QUESTION ===');
+            logger.debug('Full question object:', JSON.stringify(question, null, 2));
+            logger.debug('Question type:', question.type, question.questionType);
+            logger.debug('Has pairs?', !!question.pairs, question.pairs);
+            logger.debug('Has leftColumn?', !!question.leftColumn, question.leftColumn);
+            logger.debug('Has rightColumn?', !!question.rightColumn, question.rightColumn);
+            logger.debug('Has items?', !!question.items, question.items);
+            logger.debug('Has correctOrder?', !!question.correctOrder, question.correctOrder);
+            logger.debug('========================');
+
+            // Hide waiting, show question
+            document.getElementById('waitingMessage').style.display = 'none';
+            document.getElementById('questionCard').style.display = 'block';
+
+            // Get question type first (needed for multiple places)
+            const questionType = question.type || question.questionType;
+
+            // Set question text - replace [blank] with visual blank for fill-in-the-blank questions
+            let questionTextHtml = question.questionText || '';
+            if (questionType === 'fill_blank' || questionType === 'fillblank') {
+                // Replace [blank] with a styled blank (underline or input-like box)
+                questionTextHtml = questionTextHtml.replace(/\[blank\]/gi, '<span style="display: inline-block; min-width: 120px; border-bottom: 3px solid #4F46E5; margin: 0 8px; height: 1.5em; vertical-align: bottom;"></span>');
+            }
+            document.getElementById('questionText').innerHTML = questionTextHtml;
+
+            // Set question number (if available)
+            document.getElementById('questionNumber').textContent = `Question ${question.questionNumber || 1}`;
+
+            // Display options based on question type
+            const optionsGrid = document.getElementById('optionsGrid');
+            optionsGrid.innerHTML = '';
+
+            if (questionType === 'ordering') {
+                // For ordering questions, show items shuffled
+                // Check for items, correctOrder, or options
+                const itemsToDisplay = question.items || question.correctOrder || question.options || [];
+
+                if (itemsToDisplay.length > 0) {
+                    // Shuffle the items using Fisher-Yates
+                    const shuffledItems = shuffleArray(itemsToDisplay);
+
+                    shuffledItems.forEach((item, index) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'option';
+                        const optionText = typeof item === 'string' ? item : (item.text || item);
+                        const optionLetter = String.fromCharCode(65 + index);
+                        optionDiv.innerHTML = `
+                            <div class="option-label">${optionLetter}</div>
+                            <div class="option-text">${optionText}</div>
+                        `;
+                        optionsGrid.appendChild(optionDiv);
+                    });
+                }
+            } else if (questionType === 'matching') {
+                // For matching questions - handle both formats
+                if (question.pairs && Array.isArray(question.pairs)) {
+                    // Format: pairs: [{ left, right }]
+                    const matchDiv = document.createElement('div');
+                    matchDiv.style.display = 'grid';
+                    matchDiv.style.gridTemplateColumns = '1fr 1fr';
+                    matchDiv.style.gap = '2rem';
+
+                    const leftCol = document.createElement('div');
+                    const rightCol = document.createElement('div');
+
+                    const leftItems = question.pairs.map(p => p.left);
+                    const rightItems = question.pairs.map(p => p.right);
+
+                    leftCol.innerHTML = '<h3 style="margin-bottom: 1rem;">Match:</h3>' +
+                        leftItems.map((item, i) =>
+                            `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
+                                ${String.fromCharCode(65 + i)}. ${item}
+                            </div>`
+                        ).join('');
+
+                    // Shuffle right items for display using Fisher-Yates
+                    const shuffledRight = shuffleArray(rightItems);
+
+                    rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
+                        shuffledRight.map((item, i) =>
+                            `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
+                                ${i + 1}. ${item}
+                            </div>`
+                        ).join('');
+
+                    matchDiv.appendChild(leftCol);
+                    matchDiv.appendChild(rightCol);
+                    optionsGrid.appendChild(matchDiv);
+                } else if (question.leftColumn && question.rightColumn) {
+                    // Alternative format: leftColumn[], rightColumn[]
+                    const matchDiv = document.createElement('div');
+                    matchDiv.style.display = 'grid';
+                    matchDiv.style.gridTemplateColumns = '1fr 1fr';
+                    matchDiv.style.gap = '2rem';
+
+                    const leftCol = document.createElement('div');
+                    const rightCol = document.createElement('div');
+
+                    leftCol.innerHTML = '<h3 style="margin-bottom: 1rem;">Match:</h3>' +
+                        question.leftColumn.map((item, i) =>
+                            `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
+                                ${String.fromCharCode(65 + i)}. ${item}
+                            </div>`
+                        ).join('');
+
+                    // Shuffle right column for display using Fisher-Yates
+                    const shuffledRightCol = shuffleArray(question.rightColumn);
+
+                    rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
+                        shuffledRightCol.map((item, i) =>
+                            `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(248,249,250,0.8); border-radius: 8px;">
+                                ${i + 1}. ${item}
+                            </div>`
+                        ).join('');
+
+                    matchDiv.appendChild(leftCol);
+                    matchDiv.appendChild(rightCol);
+                    optionsGrid.appendChild(matchDiv);
+                }
+            } else if (questionType === 'fill_blank' || questionType === 'fillblank') {
+                // For fill blank, show instruction
+                const infoDiv = document.createElement('div');
+                infoDiv.style.textAlign = 'center';
+                infoDiv.style.color = 'var(--text-secondary)';
+                infoDiv.style.fontStyle = 'italic';
+                infoDiv.style.padding = '2rem';
+                infoDiv.textContent = 'Fill in the blank';
+                optionsGrid.appendChild(infoDiv);
+            } else {
+                // Standard multiple choice or true/false
+                if (question.options && question.options.length > 0) {
+                    question.options.forEach((option, index) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'option';
+                        if (question.type === 'boolean' || question.type === 'true_false') {
+                            optionDiv.classList.add('true-false');
+                        }
+
+                        const optionText = typeof option === 'string' ? option : option.text;
+                        const optionLetter = String.fromCharCode(65 + index);
+
+                        optionDiv.innerHTML = `
+                            <div class="option-label">${optionLetter}</div>
+                            <div class="option-text">${optionText}</div>
+                        `;
+
+                        optionsGrid.appendChild(optionDiv);
+                    });
+                }
+            }
+
+            // Start timer
+            if (question.timeLimit) {
+                startTimer(question.timeLimit, question.startedAt);
+            }
+
+            // Enable controls
+            document.getElementById('addTimeBtn').disabled = false;
+            document.getElementById('addTime30Btn').disabled = false;
+            document.getElementById('endBtn').disabled = false;
+
+            // Reset analytics
+            document.getElementById('responseCount').textContent = '0';
+            updateResponseChart([]);
+        }
+
+        function showWaiting() {
+            currentQuestion = null;
+            document.getElementById('waitingMessage').style.display = 'block';
+            document.getElementById('questionCard').style.display = 'none';
+
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            // Disable controls
+            document.getElementById('addTimeBtn').disabled = true;
+            document.getElementById('addTime30Btn').disabled = true;
+            document.getElementById('endBtn').disabled = true;
+        }
+
+        function startTimer(duration, startedAt) {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            const start = new Date(startedAt);
+            timerEndTime = new Date(start.getTime() + duration * 1000);
+
+            timerInterval = setInterval(() => {
+                const now = new Date();
+                timeRemaining = Math.max(0, Math.floor((timerEndTime - now) / 1000));
+
+                document.getElementById('timeLeft').textContent = timeRemaining;
+
+                const timerEl = document.getElementById('timer');
+                if (timeRemaining <= 10) {
+                    timerEl.classList.add('warning');
+                } else {
+                    timerEl.classList.remove('warning');
+                }
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimerExpiration(); // Handle timer expiration
+                }
+            }, 100);
+        }
+
+        function handleTimerExpiration() {
+            // When timer expires, check if we should show correct answers
+            const showCorrect = document.getElementById('showCorrectAnswer').checked;
+
+            logger.debug('=== TIMER EXPIRED - ANSWER DISPLAY CHECK ===');
+            logger.debug('showCorrectAnswer checked?', showCorrect);
+            logger.debug('currentQuestion exists?', !!currentQuestion);
+            logger.debug('currentQuestion has correctAnswer?', currentQuestion ? !!currentQuestion.correctAnswer : false);
+            logger.debug('Will highlight answer?', showCorrect && currentQuestion && currentQuestion.correctAnswer);
+
+            // Show correct answer if setting is enabled (independent of keepResults)
+            if (showCorrect && currentQuestion && (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null)) {
+                logger.debug('CALLING highlightCorrectAnswer() from timer expiration');
+                highlightCorrectAnswer();
+                // Disable timer controls
+                document.getElementById('addTimeBtn').disabled = true;
+                document.getElementById('addTime30Btn').disabled = true;
+                document.getElementById('endBtn').disabled = true;
+            } else {
+                logger.debug('NOT highlighting answer on timer expiration');
+                logger.debug('  Reason: showCorrect=', showCorrect, 'hasQuestion=', !!currentQuestion, 'hasAnswer=', currentQuestion ? (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null) : false);
+            }
+        }
+
+        function updateAnalytics(data) {
+            if (!data) return;
+
+            document.getElementById('responseCount').textContent = data.responseCount || 0;
+
+            if (data.responses) {
+                updateResponseChart(data.responses);
+            }
+        }
+
+        function updateResponseChart(responses) {
+            const chartContainer = document.getElementById('responseChart');
+            chartContainer.innerHTML = '';
+
+            if (!currentQuestion) return;
+
+            logger.debug('Updating chart with responses:', responses);
+            logger.debug('Current question type:', currentQuestion.type);
+            logger.debug('Current question options:', currentQuestion.options);
+
+            const questionType = currentQuestion.type || currentQuestion.questionType;
+
+            // Handle different question types
+            if (questionType === 'fill_blank' || questionType === 'fillblank') {
+                renderFillBlankResponses(responses, chartContainer);
+            } else if (questionType === 'matching') {
+                renderMatchingResponses(responses, chartContainer);
+            } else if (questionType === 'ordering') {
+                renderOrderingResponses(responses, chartContainer);
+            } else {
+                // Multiple choice, true/false - use bar chart
+                renderBarChart(responses, chartContainer);
+            }
+        }
+
+        function renderBarChart(responses, container) {
+            if (!currentQuestion.options) return;
+
+            // Count responses per option - handle both letter-based (A, B) and text-based (True, False)
+            const counts = {};
+            currentQuestion.options.forEach((option, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const optionText = typeof option === 'string' ? option : (option.text || option.id);
+
+                counts[index] = {
+                    letter: letter,
+                    text: optionText,
+                    count: 0
+                };
+            });
+
+            logger.debug('Initialized counts:', counts);
+
+            responses.forEach(response => {
+                logger.debug('Processing response:', response.answer);
+
+                // Try to match by letter (A, B, C), by text (True, False), or by index
+                for (let i = 0; i < currentQuestion.options.length; i++) {
+                    const letter = String.fromCharCode(65 + i);
+                    const optionText = typeof currentQuestion.options[i] === 'string'
+                        ? currentQuestion.options[i]
+                        : (currentQuestion.options[i].text || currentQuestion.options[i].id);
+
+                    if (response.answer === letter ||
+                        response.answer === optionText ||
+                        response.answer === optionText.toLowerCase() ||
+                        response.answer === optionText.toUpperCase()) {
+                        counts[i].count++;
+                        logger.debug(`Matched answer "${response.answer}" to option ${i} (${optionText})`);
+                        break;
+                    }
+                }
+            });
+
+            logger.debug('Final counts:', counts);
+
+            const total = responses.length || 1;
+
+            // Render bars
+            Object.values(counts).forEach(item => {
+                const percent = Math.round((item.count / total) * 100);
+
+                const bar = document.createElement('div');
+                bar.className = 'response-bar';
+                bar.innerHTML = `
+                    <div class="response-option">${item.letter}</div>
+                    <div class="response-bar-container">
+                        <div class="response-bar-fill" style="width: ${percent}%">
+                            ${item.count > 0 ? `<span class="response-count">${item.count}</span>` : ''}
+                        </div>
+                    </div>
+                    <span class="response-percent">${percent}%</span>
+                `;
+                container.appendChild(bar);
+            });
+        }
+
+        function renderFillBlankResponses(responses, container) {
+            const title = document.createElement('div');
+            title.style.fontWeight = '600';
+            title.style.marginBottom = '1rem';
+            title.style.color = 'var(--text-primary)';
+            title.textContent = `${responses.length} student${responses.length === 1 ? '' : 's'} answered`;
+            container.appendChild(title);
+
+            // Show correct answer if question ended and setting is enabled
+            if (questionEnded && document.getElementById('showCorrectAnswer').checked) {
+                if (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null) {
+                    const correctDiv = document.createElement('div');
+                    correctDiv.style.padding = '1rem';
+                    correctDiv.style.marginTop = '1rem';
+                    correctDiv.style.background = 'rgba(76, 175, 80, 0.1)';
+                    correctDiv.style.border = '2px solid #4caf50';
+                    correctDiv.style.borderRadius = '8px';
+                    correctDiv.style.fontSize = '1.1rem';
+                    correctDiv.style.fontWeight = '600';
+                    correctDiv.style.color = '#2e7d32';
+                    correctDiv.innerHTML = `<div style="margin-bottom: 0.5rem;">Correct Answer:</div><div style="font-size: 1.2rem;">${currentQuestion.correctAnswer}</div>`;
+                    container.appendChild(correctDiv);
+                }
+            }
+        }
+
+        function renderMatchingResponses(responses, container) {
+            const title = document.createElement('div');
+            title.style.fontWeight = '600';
+            title.style.marginBottom = '1rem';
+            title.style.color = 'var(--text-primary)';
+            title.textContent = `${responses.length} student${responses.length === 1 ? '' : 's'} answered`;
+            container.appendChild(title);
+
+            // Correct answer is shown via highlightMatchingCorrectAnswer() if setting is enabled
+            // Don't show individual student answers
+        }
+
+        function renderOrderingResponses(responses, container) {
+            const title = document.createElement('div');
+            title.style.fontWeight = '600';
+            title.style.marginBottom = '1rem';
+            title.style.color = 'var(--text-primary)';
+            title.textContent = `${responses.length} student${responses.length === 1 ? '' : 's'} answered`;
+            container.appendChild(title);
+
+            // Correct answer is shown via highlightOrderingCorrectAnswer() if setting is enabled
+            // Don't show individual student answers
+        }
+
+        async function addTime(seconds) {
+            if (!currentQuestion || !timerEndTime) return;
+
+            try {
+                await sessions.addQuestionTime(sessionId, currentQuestion.id, seconds);
+
+                // Update the timer end time by adding the seconds
+                timerEndTime = new Date(timerEndTime.getTime() + seconds * 1000);
+                logger.debug(`✅ Added ${seconds} seconds to timer. New end time:`, timerEndTime);
+            } catch (error) {
+                logger.error('Error adding time:', error);
+            }
+        }
+
+        async function endQuestion() {
+            if (!currentQuestion) return;
+
+            try {
+                await sessions.endQuestionSession(sessionId, currentQuestion.id);
+
+                questionEnded = true; // Mark that we ended the question
+                const keepResults = document.getElementById('keepResults').checked;
+
+                if (!keepResults) {
+                    showWaiting();
+                } else {
+                    // Keep results visible, just stop the timer
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                    }
+                    // Disable timer controls
+                    document.getElementById('addTimeBtn').disabled = true;
+                    document.getElementById('addTime30Btn').disabled = true;
+                    document.getElementById('endBtn').disabled = true;
+
+                    // Show correct answer if setting is enabled
+                    const showCorrect = document.getElementById('showCorrectAnswer').checked;
+                    const questionType = currentQuestion.type || currentQuestion.questionType;
+
+                    logger.debug('=== END QUESTION - ANSWER DISPLAY CHECK ===');
+                    logger.debug('showCorrectAnswer checkbox checked?', showCorrect);
+                    logger.debug('Question type:', questionType);
+                    logger.debug('currentQuestion has correctAnswer?', currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null);
+                    logger.debug('currentQuestion has pairs?', !!(currentQuestion.pairs));
+                    logger.debug('currentQuestion has correctOrder?', !!(currentQuestion.correctOrder));
+
+                    // Check if question has answer data (different fields for different question types)
+                    const hasAnswerData = (currentQuestion.correctAnswer !== undefined && currentQuestion.correctAnswer !== null) ||
+                                        (questionType === 'matching' && currentQuestion.pairs) ||
+                                        (questionType === 'ordering' && currentQuestion.correctOrder);
+
+                    logger.debug('Has answer data?', hasAnswerData);
+                    logger.debug('Will highlight answer?', showCorrect && hasAnswerData);
+
+                    if (showCorrect && hasAnswerData) {
+                        logger.debug('CALLING highlightCorrectAnswer()');
+                        highlightCorrectAnswer();
+                    } else {
+                        logger.debug('NOT highlighting answer');
+                    }
+                }
+            } catch (error) {
+                logger.error('Error ending question:', error);
+            }
+        }
+
+        function highlightCorrectAnswer() {
+            if (!currentQuestion) {
+                logger.debug('Cannot highlight - no question');
+                return;
+            }
+
+            const questionType = currentQuestion.type || currentQuestion.questionType;
+
+            // Handle matching questions with colored pairs
+            if (questionType === 'matching') {
+                highlightMatchingCorrectAnswer();
+                return;
+            }
+
+            // Handle ordering questions with numbered correct order
+            if (questionType === 'ordering') {
+                highlightOrderingCorrectAnswer();
+                return;
+            }
+
+            // Skip for fill_blank
+            if (questionType === 'fill_blank' || questionType === 'fillblank') {
+                logger.debug('Skipping highlight for question type:', questionType);
+                return;
+            }
+
+            // For MCQ and True/False
+            if (currentQuestion.correctAnswer === undefined || currentQuestion.correctAnswer === null) {
+                logger.debug('No correct answer to highlight');
+                return;
+            }
+
+            logger.debug('Highlighting correct answer:', currentQuestion.correctAnswer);
+            logger.debug('Question options:', currentQuestion.options);
+
+            const optionsGrid = document.getElementById('optionsGrid');
+            const options = optionsGrid.querySelectorAll('.option');
+
+            // Find and highlight the correct answer
+            options.forEach((optionEl, index) => {
+                const optionLetter = String.fromCharCode(65 + index);
+                const optionText = typeof currentQuestion.options[index] === 'string'
+                    ? currentQuestion.options[index]
+                    : (currentQuestion.options[index].text || currentQuestion.options[index].id);
+
+                const correctAnswerUpper = String(currentQuestion.correctAnswer).toUpperCase();
+                const optionTextUpper = String(optionText).toUpperCase();
+
+                logger.debug(`Checking option ${index}: letter=${optionLetter}, text=${optionText}, correct=${currentQuestion.correctAnswer}`);
+
+                // Check if this is the correct answer - match by:
+                // 1. Index (for quiz questions that store correctAnswer as 0, 1, 2, 3)
+                // 2. Letter (for questions that store correctAnswer as 'A', 'B', 'C', 'D')
+                // 3. Text (for questions that store the full answer text)
+                const isCorrectByIndex = typeof currentQuestion.correctAnswer === 'number' && currentQuestion.correctAnswer === index;
+                const isCorrectByLetter = optionLetter === correctAnswerUpper;
+                const isCorrectByText = optionTextUpper === correctAnswerUpper || optionText === currentQuestion.correctAnswer;
+
+                if (isCorrectByIndex || isCorrectByLetter || isCorrectByText) {
+                    logger.debug(`Match found! Highlighting option ${index}`);
+                    optionEl.classList.add('correct');
+                }
+            });
+        }
+
+        function highlightMatchingCorrectAnswer() {
+            const colors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#00bcd4', '#ff5722', '#3f51b5'];
+
+            const pairs = currentQuestion.pairs || [];
+            if (pairs.length === 0) return;
+
+            const optionsGrid = document.getElementById('optionsGrid');
+            const matchDiv = optionsGrid.querySelector('div[style*="grid-template-columns"]');
+            if (!matchDiv) return;
+
+            const leftCol = matchDiv.children[0];
+            const rightCol = matchDiv.children[1];
+
+            // Color code each pair
+            pairs.forEach((pair, index) => {
+                const color = colors[index % colors.length];
+
+                // Find and highlight left item
+                const leftItems = leftCol.querySelectorAll('div[style*="padding"]');
+                leftItems[index].style.background = color;
+                leftItems[index].style.color = 'white';
+                leftItems[index].style.fontWeight = '600';
+
+                // Find and highlight matching right item
+                const rightItems = rightCol.querySelectorAll('div[style*="padding"]');
+                rightItems.forEach(rightItem => {
+                    const text = rightItem.textContent.trim();
+                    // Remove number prefix (e.g., "1. ")
+                    const rightText = text.replace(/^\d+\.\s*/, '');
+                    if (rightText === pair.right) {
+                        rightItem.style.background = color;
+                        rightItem.style.color = 'white';
+                        rightItem.style.fontWeight = '600';
+                    }
+                });
+            });
+        }
+
+        function highlightOrderingCorrectAnswer() {
+            const correctOrder = currentQuestion.correctOrder || currentQuestion.items || [];
+            logger.debug('Ordering correct answer data:', {
+                correctOrder,
+                items: currentQuestion.items,
+                fullQuestion: currentQuestion
+            });
+
+            if (correctOrder.length === 0) {
+                logger.warn('No correct order found for ordering question');
+                return;
+            }
+
+            const optionsGrid = document.getElementById('optionsGrid');
+            const options = optionsGrid.querySelectorAll('.option');
+
+            logger.debug(`Found ${options.length} option elements to highlight`);
+
+            // Add numbered badges to show correct order
+            options.forEach((optionEl, index) => {
+                const optionText = optionEl.querySelector('.option-text')?.textContent?.trim();
+                logger.debug(`Option ${index}: "${optionText}"`);
+                if (!optionText) return;
+
+                // Find this item's position in correct order
+                const correctPosition = correctOrder.findIndex(item => item === optionText);
+                logger.debug(`  Correct position: ${correctPosition}`);
+
+                if (correctPosition >= 0) {
+                    // Add a numbered badge
+                    const badge = document.createElement('div');
+                    badge.style.cssText = `
+                        position: absolute;
+                        top: 8px;
+                        right: 8px;
+                        background: #4caf50;
+                        color: white;
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: 600;
+                        font-size: 16px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    `;
+                    badge.textContent = (correctPosition + 1).toString();
+
+                    optionEl.style.position = 'relative';
+                    optionEl.style.background = 'rgba(76, 175, 80, 0.1)';
+                    optionEl.style.border = '2px solid #4caf50';
+                    optionEl.appendChild(badge);
+                    logger.debug(`  Added badge: ${correctPosition + 1}`);
+                }
+            });
+        }
+
+        function toggleSettings() {
+            document.getElementById('settingsPanel').classList.toggle('open');
+        }
+
+        let questionQueue = [];
+        let currentQuestionIndex = -1;
+
+        async function sendNextQuestion() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Please log in first');
+                    return;
+                }
+
+                // Load question queue from sessionStorage (shared with session.html)
+                const queueData = sessionStorage.getItem('questionQueue_' + sessionCode);
+                const indexData = sessionStorage.getItem('questionIndex_' + sessionCode);
+
+                if (queueData) {
+                    questionQueue = JSON.parse(queueData);
+                    currentQuestionIndex = indexData ? parseInt(indexData) : -1;
+                }
+
+                // Check if there are questions in the queue
+                if (!questionQueue || questionQueue.length === 0) {
+                    alert('No questions in queue. Add questions from the session page first.');
+                    return;
+                }
+
+                if (currentQuestionIndex + 1 >= questionQueue.length) {
+                    alert('No more questions in queue.');
+                    return;
+                }
+
+                currentQuestionIndex++;
+                const question = questionQueue[currentQuestionIndex];
+
+                logger.debug('🔍 Question from queue:', JSON.stringify(question, null, 2));
+
+                // Normalize question type for student interface compatibility
+                const normalizedQuestion = {...question};
+
+                // Ensure questionText is set (backend requires this field)
+                // Same order as session.html: prioritize .text, then .questionText
+                normalizedQuestion.questionText = question.text || question.questionText;
+
+                if (!normalizedQuestion.questionText) {
+                    logger.error('❌ Question missing text field. Available fields:', Object.keys(question));
+                    alert('Question is missing text. Please check the question format.');
+                    return;
+                }
+
+                // Remove the original 'text' field to avoid confusion
+                delete normalizedQuestion.text;
+
+                // Map our types to what the student interface expects
+                const typeMap = {
+                    'mcq': 'multiple_choice',
+                    'tf': 'boolean',
+                    'matching': 'matching',
+                    'ordering': 'ordering',
+                    'fillblank': 'fill_blank'
+                };
+
+                // Set both questionType and type to the mapped value
+                const mappedType = typeMap[question.type] || question.type;
+                normalizedQuestion.questionType = mappedType;
+                normalizedQuestion.type = mappedType;
+
+                // Ensure timeLimit and points are set (default to 60s and 10 points if not present)
+                normalizedQuestion.timeLimit = question.timeLimit || 60;
+                normalizedQuestion.points = question.points || 10;
+
+                // For true/false, ensure options are properly formatted
+                if (question.type === 'tf') {
+                    normalizedQuestion.options = ['True', 'False'];
+                }
+
+                // For matching questions, convert pairs format to left/right columns
+                if (question.type === 'matching') {
+                    logger.debug('🔵 MATCHING QUESTION - Original data:', {
+                        hasPairs: !!question.pairs,
+                        pairsLength: question.pairs?.length,
+                        pairs: question.pairs,
+                        hasLeftColumn: !!question.leftColumn,
+                        hasRightColumn: !!question.rightColumn
+                    });
+
+                    if (question.pairs && Array.isArray(question.pairs)) {
+                        // Convert pairs to separate columns
+                        normalizedQuestion.leftColumn = question.pairs.map(p => p.left);
+                        normalizedQuestion.rightColumn = question.pairs.map(p => p.right);
+                        normalizedQuestion.pairs = question.pairs; // Keep pairs too
+                        logger.debug('🔵 MATCHING - Normalized to:', {
+                            leftColumn: normalizedQuestion.leftColumn,
+                            rightColumn: normalizedQuestion.rightColumn,
+                            pairs: normalizedQuestion.pairs
+                        });
+                    } else if (question.leftColumn && question.rightColumn) {
+                        normalizedQuestion.leftColumn = question.leftColumn;
+                        normalizedQuestion.rightColumn = question.rightColumn;
+                    } else {
+                        logger.warn('⚠️ MATCHING QUESTION HAS NO DATA - pairs, leftColumn, and rightColumn all missing!');
+                    }
+                    if (question.correctPairs) normalizedQuestion.correctPairs = question.correctPairs;
+                }
+
+                // For ordering questions, ensure items field is present
+                if (question.type === 'ordering') {
+                    logger.debug('🟢 ORDERING QUESTION - Original data:', {
+                        hasCorrectOrder: !!question.correctOrder,
+                        correctOrderLength: question.correctOrder?.length,
+                        correctOrder: question.correctOrder,
+                        hasItems: !!question.items,
+                        itemsLength: question.items?.length,
+                        items: question.items
+                    });
+
+                    // Send as items (what display expects) and also correctOrder (what was saved)
+                    if (question.correctOrder) {
+                        normalizedQuestion.items = question.correctOrder;
+                        normalizedQuestion.correctOrder = question.correctOrder;
+                        logger.debug('🟢 ORDERING - Normalized to:', {
+                            items: normalizedQuestion.items,
+                            correctOrder: normalizedQuestion.correctOrder
+                        });
+                    } else if (question.items) {
+                        normalizedQuestion.items = question.items;
+                        normalizedQuestion.correctOrder = question.items;
+                    } else {
+                        logger.warn('⚠️ ORDERING QUESTION HAS NO DATA - both correctOrder and items are missing!');
+                    }
+                }
+
+                logger.debug('=== SENDING QUESTION DEBUG ===');
+                logger.debug('Original question from queue:', question);
+                logger.debug('Normalized question to send:', normalizedQuestion);
+                logger.debug('questionText field:', normalizedQuestion.questionText);
+                logger.debug('timeLimit field:', normalizedQuestion.timeLimit);
+                logger.debug('points field:', normalizedQuestion.points);
+
+                // Send the question using direct fetch (same as session.html)
+                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(normalizedQuestion)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    logger.error('API Error:', errorData);
+                    throw new Error(errorData.error || 'Failed to send question');
+                }
+
+                const result = await response.json();
+                logger.debug('✅ Question sent successfully:', result);
+
+                // Save updated index
+                sessionStorage.setItem('questionIndex_' + sessionCode, currentQuestionIndex.toString());
+
+                // Update button state
+                document.getElementById('nextQuestionBtn').disabled = (currentQuestionIndex + 1 >= questionQueue.length);
+
+                // Question will be displayed via polling/socket
+            } catch (error) {
+                logger.error('Error sending question:', error);
+                alert('Failed to send question: ' + error.message);
+            }
+        }
+
+        function saveSessionQuestions() {
+            // Load current question queue
+            const queueData = sessionStorage.getItem('questionQueue_' + sessionCode);
+
+            if (!queueData) {
+                alert('No questions to save. Add questions to the session first.');
+                return;
+            }
+
+            const questions = JSON.parse(queueData);
+
+            if (questions.length === 0) {
+                alert('No questions to save.');
+                return;
+            }
+
+            // Prompt for template name
+            const templateName = prompt('Enter a name for this question set:', `Session ${sessionCode} Questions`);
+
+            if (!templateName) return; // User cancelled
+
+            // Load existing saved question sets
+            const savedSets = JSON.parse(localStorage.getItem('savedQuestionSets') || '[]');
+
+            // Add new set
+            const newSet = {
+                id: 'qset_' + Date.now(),
+                name: templateName,
+                questions: questions,
+                createdAt: new Date().toISOString(),
+                questionCount: questions.length
+            };
+
+            savedSets.push(newSet);
+
+            // Save to localStorage
+            localStorage.setItem('savedQuestionSets', JSON.stringify(savedSets));
+
+            alert(`✅ Saved "${templateName}" with ${questions.length} questions!\n\nYou can load this question set from the session creation page.`);
+
+            // Close settings panel
+            document.getElementById('settingsPanel').classList.remove('open');
+        }
+
+        function applySettings() {
+            const showSessionInfo = document.getElementById('showSessionInfo').checked;
+            const showQuestion = document.getElementById('showQuestion').checked;
+            const showTimer = document.getElementById('showTimer').checked;
+            const showAnalytics = document.getElementById('showAnalytics').checked;
+            const showControls = document.getElementById('showControls').checked;
+
+            document.getElementById('sessionInfo').classList.toggle('hidden', !showSessionInfo);
+            document.getElementById('questionArea').classList.toggle('hidden', !showQuestion);
+            document.getElementById('timer').style.visibility = showTimer ? 'visible' : 'hidden';
+            document.getElementById('analyticsPanel').classList.toggle('hidden', !showAnalytics);
+            document.getElementById('controlBar').classList.toggle('hidden', !showControls);
+
+            // Adjust question area positioning based on what's visible
+            const questionArea = document.getElementById('questionArea');
+            if (!showSessionInfo && !showAnalytics) {
+                // Both panels hidden - full width
+                questionArea.style.left = '1.5rem';
+                questionArea.style.right = '1.5rem';
+            } else if (!showSessionInfo) {
+                // Only session info hidden - expand to left
+                questionArea.style.left = '1.5rem';
+                questionArea.style.right = 'calc(1.5rem + 380px + 1.5rem)';
+            } else if (!showAnalytics) {
+                // Only analytics hidden - expand to right
+                questionArea.style.left = 'calc(1.5rem + 240px + 1.5rem)';
+                questionArea.style.right = '1.5rem';
+            } else {
+                // Both visible - normal spacing
+                questionArea.style.left = 'calc(1.5rem + 240px + 1.5rem)';
+                questionArea.style.right = 'calc(1.5rem + 380px + 1.5rem)';
+            }
+        }
+
+        // Expose functions to window object for onclick handlers
+        window.toggleSettings = toggleSettings;
+        window.sendNextQuestion = sendNextQuestion;
+        window.addTime = addTime;
+        window.endQuestion = endQuestion;
+        window.applySettings = applySettings;
+        window.saveSessionQuestions = saveSessionQuestions;
+    </script>
+</body>
+</html>

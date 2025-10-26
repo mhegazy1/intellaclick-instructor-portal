@@ -1,0 +1,133 @@
+.sync-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+}
+
+.sync-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.sync-card h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.sync-card p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.sync-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.sync-option label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.sync-option select,
+.sync-option input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.sync-button {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.sync-button:hover:not(:disabled) {
+    background: #5a67d8;
+}
+
+.sync-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.results-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: none;
+}
+
+.results-section.visible {
+    display: block;
+}
+
+.results-section h3 {
+    margin-top: 0;
+}
+
+.result-item {
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.result-item h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--primary-color);
+}
+
+.result-item p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+.success-message {
+    padding: 1rem;
+    background: #10B981;
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.error-message {
+    padding: 1rem;
+    background: #EF4444;
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
