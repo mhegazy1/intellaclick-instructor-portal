@@ -3,7 +3,7 @@
  * Single source of truth for all API calls
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.intellaclick.com/api';
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'https://api.intellaclick.com/api';
 
 /**
  * Get authorization headers
