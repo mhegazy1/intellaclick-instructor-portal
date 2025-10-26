@@ -281,6 +281,12 @@ export const classes = {
     });
   },
 
+  async archive(id) {
+    return request(`/classes/${id}/archive`, {
+      method: 'POST'
+    });
+  },
+
   async getStudents(id) {
     return request(`/classes/${id}/students`);
   }

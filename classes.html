@@ -673,8 +673,8 @@
                                 <button class="btn btn-secondary" onclick="editClass(event, '${classData._id}')">
                                     Settings
                                 </button>
-                                <button class="btn btn-danger" onclick="deleteClass(event, '${classData._id}', '${classData.name.replace(/'/g, "\\'")}')">
-                                    Delete
+                                <button class="btn btn-secondary" onclick="archiveClass(event, '${classData._id}', '${classData.name.replace(/'/g, "\\'")}')">
+                                    Archive
                                 </button>
                             </div>
                         </div>
@@ -920,78 +920,36 @@
             document.getElementById('editClassModal').classList.remove('show');
         }
 
-        async function deleteClass(event, classId, className) {
+        async function archiveClass(event, classId, className) {
             event.stopPropagation();
 
             // Use professional confirmation dialog
-            const confirmed = await confirm.delete(`"${className}"`);
+            const confirmed = window.confirm(`Are you sure you want to archive "${className}"?\n\nArchived classes can still be viewed in the "Archived" filter.`);
             if (!confirmed) {
                 return;
             }
 
-            loading.show('Deleting class...');
+            loading.show('Archiving class...');
             try {
-                const token = localStorage.getItem('token');
                 const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-                logger.debug('Deleting class', {
+                logger.debug('Archiving class', {
                     classId,
                     className,
                     userId: user.id,
                     userRole: user.role
                 });
 
-                try {
-                    await classesAPI.delete(classId);
-                } catch (error) {
-                    logger.warn('Initial delete attempt failed', { error: error.message });
+                await classesAPI.archive(classId);
 
-                    // Check if error message indicates active enrollments
-                    if (error.message && error.message.includes('active')) {
-                        // Extract number of active enrollments if present
-                        const match = error.message.match(/(\d+)\s+active/);
-                        const activeCount = match ? match[1] : 'some';
-
-                        const confirmForce = await confirm.confirm({
-                            title: 'Active Students Found',
-                            message: `This class has ${activeCount} active student(s). Deleting will remove all enrollments. Are you sure you want to proceed?`,
-                            confirmText: 'Delete Anyway',
-                            type: 'danger'
-                        });
-
-                        if (confirmForce) {
-                            // Retry with force flag
-                            try {
-                                await classesAPI.delete(classId, { force: 'true' });
-                                logger.info('Class deleted with force flag', { classId });
-                            } catch (forceError) {
-                                logger.error('Force delete failed', forceError);
-                                throw new Error(forceError.message || 'Failed to delete class');
-                            }
-                        } else {
-                            loading.hide();
-                            return; // User cancelled
-                        }
-                    } else {
-                        // Check if it's a role-related error
-                        if (error.message && error.message.includes('Instructor privileges required')) {
-                            logger.error('Access denied for class deletion', null, { classId, userRole: user.role });
-                            toast.error(`Access denied: ${error.message}`);
-                            loading.hide();
-                            return;
-                        }
-                        throw error;
-                    }
-                }
-
-                logger.info('Class deleted successfully', { classId, className });
-                toast.success('Class deleted successfully');
+                logger.info('Class archived successfully', { classId, className });
+                toast.success('Class archived successfully');
                 // Reload the class list
                 loadClasses();
                 loadStats();
             } catch (error) {
-                logger.error('Failed to delete class', error, { classId, className });
-                toast.error(error.message || 'Failed to delete class');
+                logger.error('Failed to archive class', error, { classId, className });
+                toast.error(error.message || 'Failed to archive class');
             } finally {
                 loading.hide();
             }
@@ -1068,7 +1026,7 @@
         window.startSession = startSession;
         window.viewAnalytics = viewAnalytics;
         window.editClass = editClass;
-        window.deleteClass = deleteClass;
+        window.archiveClass = archiveClass;
         window.showModal = showModal;
         window.hideModal = hideModal;
         window.closeEditClassModal = closeEditClassModal;
