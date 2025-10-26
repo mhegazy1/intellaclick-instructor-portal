@@ -19,7 +19,7 @@
                 <button class="btn btn-danger" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
                     Delete Selected (<span id="selectedCount">0</span>)
                 </button>
-                <a href="quiz-creator.html" class="btn btn-primary">+ Create Quiz</a>
+                <a href="quiz-creator-full.html" class="btn btn-primary">+ Create Quiz</a>
             </div>
         </div>
 
@@ -118,7 +118,7 @@
                                 </div>
                             </div>
                             <div class="quiz-actions">
-                                <a href="quiz-creator.html?id=${quiz._id}" class="btn btn-secondary btn-small">Edit</a>
+                                <a href="quiz-creator-full.html?id=${quiz._id}" class="btn btn-secondary btn-small">Edit</a>
                                 <button class="btn btn-secondary btn-small" onclick="duplicateQuiz('${quiz._id}')">Duplicate</button>
                                 <button class="btn btn-danger btn-small" onclick="deleteQuiz('${quiz._id}', '${escapeHtml(quiz.title)}')">Delete</button>
                             </div>
