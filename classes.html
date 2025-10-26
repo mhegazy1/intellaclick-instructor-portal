@@ -594,13 +594,16 @@
                 const totalEnrolled = enrollmentSummary.totalEnrolled || stats.enrolledCount || 0;
                 const pendingCount = enrollmentSummary.pending || stats.pendingCount || 0;
 
+                // Determine if we're viewing archived classes
+                const isArchivedView = statusFilter === 'archived';
+
                 return `
                     <div class="class-card">
                         <div class="class-card-header">
                             <h3>${classData.name}</h3>
                             <p>${classData.code}${classData.section ? ` - Section ${classData.section}` : ''}</p>
                         </div>
-                        
+
                         <div class="class-card-body">
                             <div class="class-info">
                                 <div class="class-info-item">
@@ -654,7 +657,7 @@
                                     <div class="enrollment-stat-label">Sessions</div>
                                 </div>
                             </div>
-                            
+
                             <div style="background: #f3f4f6; padding: 8px; border-radius: 4px; margin-bottom: 16px; font-size: 11px; color: #666; font-family: monospace;">
                                 <strong>Class ID:</strong> <span style="user-select: all;">${classData._id}</span>
                                 <button class="copy-btn" style="float: right; font-size: 10px; padding: 2px 8px;" onclick="copyText(event, '${classData._id}')">Copy ID</button>
@@ -673,9 +676,15 @@
                                 <button class="btn btn-secondary" onclick="editClass(event, '${classData._id}')">
                                     Settings
                                 </button>
-                                <button class="btn btn-secondary" onclick="archiveClass(event, '${classData._id}', '${classData.name.replace(/'/g, "\\'")}')">
-                                    Archive
-                                </button>
+                                ${isArchivedView ? `
+                                    <button class="btn btn-danger" onclick="deleteClassPermanently(event, '${classData._id}', '${classData.name.replace(/'/g, "\\'")}')">
+                                        Permanently Delete
+                                    </button>
+                                ` : `
+                                    <button class="btn btn-secondary" onclick="archiveClass(event, '${classData._id}', '${classData.name.replace(/'/g, "\\'")}')">
+                                        Archive
+                                    </button>
+                                `}
                             </div>
                         </div>
                     </div>
@@ -955,6 +964,48 @@
             }
         }
 
+        async function deleteClassPermanently(event, classId, className) {
+            event.stopPropagation();
+
+            // Strong confirmation for permanent deletion
+            const confirmed = window.confirm(`⚠️ PERMANENT DELETE WARNING ⚠️\n\nAre you sure you want to PERMANENTLY delete "${className}"?\n\nThis action CANNOT be undone. All student data, sessions, and records will be permanently removed.\n\nClick OK only if you are absolutely certain.`);
+            if (!confirmed) {
+                return;
+            }
+
+            // Second confirmation
+            const doubleConfirm = window.confirm(`Final confirmation:\n\nDelete "${className}" permanently?`);
+            if (!doubleConfirm) {
+                return;
+            }
+
+            loading.show('Permanently deleting class...');
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+                logger.debug('Permanently deleting class', {
+                    classId,
+                    className,
+                    userId: user.id,
+                    userRole: user.role
+                });
+
+                // Use force=true to bypass enrollment checks
+                await classesAPI.delete(classId, { force: 'true' });
+
+                logger.info('Class permanently deleted', { classId, className });
+                toast.success('Class permanently deleted');
+                // Reload the class list
+                loadClasses();
+                loadStats();
+            } catch (error) {
+                logger.error('Failed to permanently delete class', error, { classId, className });
+                toast.error(error.message || 'Failed to permanently delete class');
+            } finally {
+                loading.hide();
+            }
+        }
+
         function showModal(modalId) {
             const modal = document.getElementById(modalId);
             modal.classList.add('show');
@@ -1027,6 +1078,7 @@
         window.viewAnalytics = viewAnalytics;
         window.editClass = editClass;
         window.archiveClass = archiveClass;
+        window.deleteClassPermanently = deleteClassPermanently;
         window.showModal = showModal;
         window.hideModal = hideModal;
         window.closeEditClassModal = closeEditClassModal;
