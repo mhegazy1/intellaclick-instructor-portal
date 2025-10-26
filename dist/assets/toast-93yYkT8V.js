@@ -59,4 +59,4 @@
         opacity: 0;
       }
     }
-  `,document.head.appendChild(t)}const m={show:i,success:d,error:f,warning:u,info:p};export{f as s,m as t};
+  `,document.head.appendChild(t)}const m={show:i,success:d,error:f,warning:u,info:p};export{i as a,f as s,m as t};

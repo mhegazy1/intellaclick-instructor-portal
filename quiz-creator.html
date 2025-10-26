@@ -277,10 +277,10 @@
     <div class="header">
         <h1>Create Quiz</h1>
         <div class="header-actions">
-            <button class="btn btn-secondary" onclick="cancelQuiz()">
+            <button class="btn btn-secondary" onclick="window.quizCreator.cancelQuiz()">
                 <i class="fas fa-times"></i> Cancel
             </button>
-            <button class="btn btn-success" onclick="saveQuiz()">
+            <button class="btn btn-success" onclick="window.quizCreator.saveQuiz()">
                 <i class="fas fa-save"></i> Save Quiz
             </button>
         </div>
@@ -311,10 +311,10 @@
             <div class="questions-header">
                 <h2>Questions (<span id="question-count">0</span>)</h2>
                 <div class="questions-actions">
-                    <button class="btn btn-primary" onclick="addFromQuestionBank()">
+                    <button class="btn btn-primary" onclick="window.quizCreator.addFromQuestionBank()">
                         <i class="fas fa-database"></i> Add from Question Bank
                     </button>
-                    <button class="btn btn-primary" onclick="createNewQuestion()">
+                    <button class="btn btn-primary" onclick="window.quizCreator.createNewQuestion()">
                         <i class="fas fa-plus"></i> Create New Question
                     </button>
                 </div>
@@ -330,308 +330,14 @@
         </div>
     </div>
 
-    <script>
-        let quizQuestions = [];
-        let categories = [];
-        let draggedItem = null;
-
-        // Initialize
-        window.addEventListener('DOMContentLoaded', async () => {
-            await loadCategories();
-            setupEventListeners();
-        });
-
-        async function loadCategories() {
-            try {
-                categories = await window.electronAPI.categories.getAll() || [];
-                const select = document.getElementById('quiz-category');
-                
-                categories.forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat.id;
-                    option.textContent = cat.name;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Failed to load categories:', error);
-            }
-        }
-
-        function setupEventListeners() {
-            console.log('Setting up event listeners in quiz creator');
-            
-            // Listen for questions from question bank
-            if (window.electronAPI && window.electronAPI.onQuizQuestionsSelected) {
-                console.log('Setting up onQuizQuestionsSelected listener');
-                window.electronAPI.onQuizQuestionsSelected((questions) => {
-                    console.log('Received questions from bank:', questions);
-                    addQuestionsToQuiz(questions);
-                });
-            } else {
-                console.error('onQuizQuestionsSelected not available');
-            }
-
-            // Listen for newly created question
-            if (window.electronAPI && window.electronAPI.onQuestionCreated) {
-                console.log('Setting up onQuestionCreated listener');
-                window.electronAPI.onQuestionCreated((question) => {
-                    console.log('Received new question:', question);
-                    if (question) {
-                        addQuestionsToQuiz([question]);
-                    }
-                });
-            } else {
-                console.error('onQuestionCreated not available');
-            }
-        }
-
-        function addQuestionsToQuiz(questions) {
-            questions.forEach(q => {
-                // Check if question already exists
-                if (!quizQuestions.find(existing => existing.id === q.id)) {
-                    quizQuestions.push(q);
-                }
-            });
-            renderQuestions();
-            
-            // Ensure form fields remain editable after adding questions
-            setTimeout(() => {
-                document.getElementById('quiz-title').removeAttribute('disabled');
-                document.getElementById('quiz-description').removeAttribute('disabled');
-                document.getElementById('quiz-category').removeAttribute('disabled');
-            }, 100);
-        }
-
-        function renderQuestions() {
-            // Preserve form values before re-rendering
-            const titleValue = document.getElementById('quiz-title').value;
-            const descriptionValue = document.getElementById('quiz-description').value;
-            const categoryValue = document.getElementById('quiz-category').value;
-            
-            const listDiv = document.getElementById('question-list');
-            document.getElementById('question-count').textContent = quizQuestions.length;
-
-            if (quizQuestions.length === 0) {
-                listDiv.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-clipboard-list"></i>
-                        <p>No questions added yet</p>
-                        <p>Add questions from the question bank or create new ones</p>
-                    </div>
-                `;
-                return;
-            }
-
-            listDiv.innerHTML = quizQuestions.map((q, index) => `
-                <div class="question-item" draggable="true" data-index="${index}">
-                    <div class="question-content">
-                        <div class="question-text">${index + 1}. ${q.text}</div>
-                        <div class="question-meta">
-                            Type: ${q.type} | Category: ${getCategoryName(q.categoryId) || 'Uncategorized'}
-                        </div>
-                    </div>
-                    <div class="question-actions">
-                        <button class="btn btn-small btn-secondary" onclick="moveQuestion(${index}, -1)" 
-                                ${index === 0 ? 'disabled' : ''}>
-                            <i class="fas fa-arrow-up"></i>
-                        </button>
-                        <button class="btn btn-small btn-secondary" onclick="moveQuestion(${index}, 1)"
-                                ${index === quizQuestions.length - 1 ? 'disabled' : ''}>
-                            <i class="fas fa-arrow-down"></i>
-                        </button>
-                        <button class="btn btn-small btn-danger" onclick="removeQuestion(${index})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-
-            // Setup drag and drop
-            setupDragAndDrop();
-            
-            // Restore form values after rendering
-            document.getElementById('quiz-title').value = titleValue;
-            document.getElementById('quiz-description').value = descriptionValue;
-            document.getElementById('quiz-category').value = categoryValue;
-        }
-
-        function setupDragAndDrop() {
-            const items = document.querySelectorAll('.question-item');
-            
-            items.forEach(item => {
-                item.addEventListener('dragstart', handleDragStart);
-                item.addEventListener('dragover', handleDragOver);
-                item.addEventListener('drop', handleDrop);
-                item.addEventListener('dragend', handleDragEnd);
-            });
-        }
-
-        function handleDragStart(e) {
-            draggedItem = this;
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', this.innerHTML);
-        }
-
-        function handleDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-            e.dataTransfer.dropEffect = 'move';
-            
-            const afterElement = getDragAfterElement(e.currentTarget.parentNode, e.clientY);
-            if (afterElement == null) {
-                e.currentTarget.classList.add('drag-over');
-            }
-            
-            return false;
-        }
-
-        function handleDrop(e) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
-            
-            if (draggedItem !== this) {
-                const draggedIndex = parseInt(draggedItem.dataset.index);
-                const targetIndex = parseInt(this.dataset.index);
-                
-                const draggedQuestion = quizQuestions[draggedIndex];
-                quizQuestions.splice(draggedIndex, 1);
-                quizQuestions.splice(targetIndex, 0, draggedQuestion);
-                
-                renderQuestions();
-            }
-            
-            return false;
-        }
-
-        function handleDragEnd(e) {
-            const items = document.querySelectorAll('.question-item');
-            items.forEach(item => {
-                item.classList.remove('dragging');
-                item.classList.remove('drag-over');
-            });
-        }
-
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.question-item:not(.dragging)')];
-            
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-        function getCategoryName(categoryId) {
-            const category = categories.find(c => c.id === categoryId);
-            return category ? category.name : null;
-        }
-
-        function moveQuestion(index, direction) {
-            const newIndex = index + direction;
-            if (newIndex >= 0 && newIndex < quizQuestions.length) {
-                const temp = quizQuestions[index];
-                quizQuestions[index] = quizQuestions[newIndex];
-                quizQuestions[newIndex] = temp;
-                renderQuestions();
-            }
-        }
-
-        function removeQuestion(index) {
-            if (confirm('Remove this question from the quiz?')) {
-                quizQuestions.splice(index, 1);
-                renderQuestions();
-            }
-        }
-
-        async function addFromQuestionBank() {
-            try {
-                // Open question bank in selection mode
-                await window.electronAPI.openQuestionBankForQuiz();
-            } catch (error) {
-                console.error('Failed to open question bank:', error);
-                alert('Failed to open question bank');
-            }
-        }
-
-        async function createNewQuestion() {
-            try {
-                // Open question creator in quiz mode
-                await window.electronAPI.createQuestionForQuiz();
-            } catch (error) {
-                console.error('Failed to open question creator:', error);
-                alert('Failed to open question creator');
-            }
-        }
-
-        async function saveQuiz() {
-            const title = document.getElementById('quiz-title').value.trim();
-            const description = document.getElementById('quiz-description').value.trim();
-            const categoryId = document.getElementById('quiz-category').value;
-
-            if (!title) {
-                alert('Please enter a quiz title');
-                return;
-            }
-
-            if (quizQuestions.length === 0) {
-                alert('Please add at least one question to the quiz');
-                return;
-            }
-
-            const quizData = {
-                title,
-                description,
-                categoryId,
-                questions: quizQuestions.map(q => q.id),
-                questionCount: quizQuestions.length,
-                createdAt: new Date().toISOString()
-            };
-
-            try {
-                const result = await window.electronAPI.createQuiz(quizData);
-                if (result.success) {
-                    alert('Quiz saved successfully!');
-                    window.close();
-                } else {
-                    alert('Failed to save quiz: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Failed to save quiz:', error);
-                alert('Failed to save quiz');
-            }
-        }
-
-        function cancelQuiz() {
-            if (quizQuestions.length > 0) {
-                if (confirm('Are you sure you want to cancel? All unsaved changes will be lost.')) {
-                    window.close();
-                }
-            } else {
-                window.close();
-            }
-        }
-    </script>
-
-    <script>
-        // Home navigation function
-        function goHome() {
-            window.location.href = 'index.html';
-        }
-    </script>
+    <!-- Quiz Creator Cloud API Module -->
+    <script type="module" src="./quiz-creator-app.js"></script>
 
 
 
     <!-- Home Button -->
     <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
-        <button class="btn btn-secondary" onclick="goHome()" style="
+        <button class="btn btn-secondary" onclick="window.quizCreator.goHome()" style="
             background: #6c757d;
             color: white;
             border: none;
