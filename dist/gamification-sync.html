@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Sessions to Gamification - IntellaClick</title>
+  <script type="module" crossorigin src="/assets/gamification-sync-C_81y2Nr.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/toast-DdlZoz3i.js">
+  <link rel="modulepreload" crossorigin href="/assets/api-BBvzFwfC.js">
+  <link rel="modulepreload" crossorigin href="/assets/logger-D123dQQV.js">
+  <link rel="stylesheet" crossorigin href="/assets/gamification-sync-D0y31_Tt.css">
+  <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
+</head>
+<body>
+    <div class="sync-container">
+        <div class="header" style="margin-bottom: 2rem;">
+            <h1>🔄 Sync Sessions to Gamification</h1>
+            <button class="btn btn-secondary" onclick="window.location.href='gamification-dashboard.html'">
+                ← Back to Dashboard
+            </button>
+        </div>
+
+        <div class="sync-card">
+            <h2>Sync All Recent Sessions</h2>
+            <p>This will sync all sessions from the selected time period to the gamification system. Student points, levels, and stats will be updated automatically.</p>
+
+            <div class="sync-options">
+                <div class="sync-option">
+                    <label for="classFilter">Filter by Class (Optional)</label>
+                    <select id="classFilter">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+
+                <div class="sync-option">
+                    <label for="daysBack">Sync Sessions From:</label>
+                    <select id="daysBack">
+                        <option value="1">Today (last 24 hours)</option>
+                        <option value="7" selected>Last 7 days</option>
+                        <option value="30">Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                        <option value="365">Last year</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="sync-button" onclick="syncSessions()" id="syncButton">
+                Sync Sessions
+            </button>
+        </div>
+
+        <div id="results" class="results-section">
+            <!-- Results will appear here -->
+        </div>
+    </div>
+
+</body>
+</html>

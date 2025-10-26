@@ -107,6 +107,7 @@
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Question Type *</label>
                     <select id="builderQuestionType" onchange="updateQuestionBuilderUI()" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
                         <option value="mcq">Multiple Choice</option>
+                        <option value="poll">Poll (No Correct Answer)</option>
                         <option value="tf">True/False</option>
                         <option value="fillblank">Fill in the Blank</option>
                     </select>
@@ -123,6 +124,14 @@
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Answer Options *</label>
                     <div id="optionsList"></div>
                     <button type="button" class="btn btn-secondary" onclick="addOption()" style="margin-top: 0.5rem; font-size: 0.875rem;">+ Add Option</button>
+                </div>
+
+                <!-- Poll Options (No Correct Answer) -->
+                <div id="pollOptions" style="margin-bottom: 1rem; display: none;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Poll Options *</label>
+                    <div id="pollOptionsList"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addPollOption()" style="margin-top: 0.5rem; font-size: 0.875rem;">+ Add Option</button>
+                    <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">No correct answer - results will show distribution</p>
                 </div>
 
                 <!-- TF Options -->

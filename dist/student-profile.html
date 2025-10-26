@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile - IntellaClick</title>
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: var(--primary);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #6366f1;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 600;
+        }
+
+        .profile-info h1 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .profile-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .status-enrolled {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .status-pending {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .status-invited {
+            background: var(--info-light);
+            color: var(--info);
+        }
+
+        .status-dropped, .status-withdrawn {
+            background: var(--error-light);
+            color: var(--error);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .info-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .info-card h2 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: var(--primary-light);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 48px;
+            color: var(--text-secondary);
+        }
+
+        .error-message {
+            background: var(--error-light);
+            color: var(--error);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+    </style>
+  <script type="module" crossorigin src="/assets/student-profile-Cw-Wc1UC.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/toast-DdlZoz3i.js">
+  <link rel="modulepreload" crossorigin href="/assets/logger-D123dQQV.js">
+  <link rel="modulepreload" crossorigin href="/assets/loading-CWfhFw7n.js">
+  <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>Student Profile</h1>
+                <a href="#" id="backBtn" class="back-btn">
+                    ← Back to Roster
+                </a>
+            </div>
+
+            <div id="profileHeader" class="profile-header" style="display: none;">
+                <div class="avatar" id="avatar">
+                    <span id="initials"></span>
+                </div>
+                <div class="profile-info">
+                    <h1 id="studentName">Loading...</h1>
+                    <div class="profile-meta">
+                        <span id="studentEmail"></span>
+                        <span id="enrollmentStatus"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorContainer"></div>
+
+        <div id="contentContainer" style="display: none;">
+            <div class="info-grid">
+                <!-- Student Information -->
+                <div class="info-card">
+                    <h2>Student Information</h2>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value" id="infoEmail">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Student ID</span>
+                        <span class="info-value" id="infoStudentId">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Institution</span>
+                        <span class="info-value" id="infoInstitution">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email Verified</span>
+                        <span class="info-value" id="infoEmailVerified">-</span>
+                    </div>
+                </div>
+
+                <!-- Enrollment Information -->
+                <div class="info-card">
+                    <h2>Enrollment Information</h2>
+                    <div class="info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-value" id="enrollStatus">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Enrolled Date</span>
+                        <span class="info-value" id="enrollDate">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Activity</span>
+                        <span class="info-value" id="lastActivity">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Grade</span>
+                        <span class="info-value" id="currentGrade">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Stats -->
+            <div class="info-card">
+                <h2>Performance Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statSessions">0</div>
+                        <div class="stat-label">Sessions Attended</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statQuestions">0</div>
+                        <div class="stat-label">Questions Answered</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statCorrect">0</div>
+                        <div class="stat-label">Correct Answers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statAccuracy">0%</div>
+                        <div class="stat-label">Accuracy Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statPoints">0</div>
+                        <div class="stat-label">Total Points</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statStreak">0</div>
+                        <div class="stat-label">Current Streak</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

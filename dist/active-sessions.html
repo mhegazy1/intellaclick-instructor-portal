@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Sessions - IntellaClick</title>
+  <script type="module" crossorigin src="/assets/active-sessions-DEm0g_cq.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/toast-DdlZoz3i.js">
+  <link rel="modulepreload" crossorigin href="/assets/api-BBvzFwfC.js">
+  <link rel="modulepreload" crossorigin href="/assets/logger-D123dQQV.js">
+  <link rel="stylesheet" crossorigin href="/assets/active-sessions-CA0Ot9w9.css">
+  <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">IntellaClick Instructor</div>
+        <div class="navbar-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="classes.html">Classes</a>
+            <a href="active-sessions.html" class="active">Active Sessions</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="sessions-container">
+        <div class="page-header">
+            <h1>Active Sessions</h1>
+            <p>Resume or end your active sessions</p>
+        </div>
+
+        <div id="sessionsContainer">
+            <div class="loading">Loading active sessions...</div>
+        </div>
+    </div>
+
+</body>
+</html>

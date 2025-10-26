@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.0.10-filters-fixed">
+    <title>Session History - IntellaClick</title>
+  <script type="module" crossorigin src="/assets/session-history-BlV3AAFQ.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/toast-DdlZoz3i.js">
+  <link rel="modulepreload" crossorigin href="/assets/api-BBvzFwfC.js">
+  <link rel="modulepreload" crossorigin href="/assets/logger-D123dQQV.js">
+  <link rel="stylesheet" crossorigin href="/assets/session-history-K1JkrZlH.css">
+  <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Version Check: 1.0.10-filters-fixed - If you see this in page source, file is loading -->
+        <a href="classes.html" class="back-link">← Back to Classes</a>
+        <div class="header">
+            <h1>Session History</h1>
+            <div class="bulk-actions">
+                <button class="btn btn-secondary btn-small" onclick="toggleSelectAll()">
+                    <span id="selectAllText">Select All</span>
+                </button>
+                <button class="btn btn-danger btn-small" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                    Delete Selected (<span id="selectedCount">0</span>)
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <input type="text" id="searchInput" placeholder="Search by title or code..." oninput="filterSessions()">
+            <select id="classFilter" onchange="filterSessions()">
+                <option value="all">All Classes</option>
+                <!-- Classes will be loaded dynamically -->
+            </select>
+            <select id="statusFilter" onchange="filterSessions()">
+                <option value="all">All Sessions</option>
+                <option value="ended">Ended</option>
+                <option value="active">Active</option>
+            </select>
+        </div>
+
+        <div id="historyContainer" class="history-grid">
+            <!-- Sessions will be loaded here -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <h3>No Sessions Found</h3>
+            <p>You haven't created any sessions yet.</p>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="paginationControls" class="pagination-controls" style="display: none;">
+            <div class="page-size-selector">
+                <label>Show:</label>
+                <select id="pageSizeSelect" onchange="changePageSize()">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="all">All</option>
+                </select>
+                <span style="font-size: 0.9rem; color: var(--text-secondary);">per page</span>
+            </div>
+
+            <div class="pagination-info">
+                Showing <strong id="showingStart">1</strong> to <strong id="showingEnd">20</strong> of <strong id="totalSessions">0</strong> sessions
+            </div>
+
+            <div class="pagination-buttons">
+                <button class="btn btn-secondary" onclick="goToFirstPage()" id="firstPageBtn" disabled>
+                    ⏮ First
+                </button>
+                <button class="btn btn-secondary" onclick="previousPage()" id="prevPageBtn" disabled>
+                    ← Previous
+                </button>
+                <span style="padding: 0 1rem; font-weight: 600;">
+                    Page <span id="currentPageNum">1</span> of <span id="totalPagesNum">1</span>
+                </span>
+                <button class="btn btn-secondary" onclick="nextPage()" id="nextPageBtn" disabled>
+                    Next →
+                </button>
+                <button class="btn btn-secondary" onclick="goToLastPage()" id="lastPageBtn" disabled>
+                    Last ⏭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Session Modal -->
+    <div id="sessionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Session Details</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody">
+                <!-- Session details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

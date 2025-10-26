@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.0.9-smaller-headers">
+    <title>Saved Question Sets - IntellaClick</title>
+  <script type="module" crossorigin src="/assets/saved-questions-VmPW3tjH.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/toast-DdlZoz3i.js">
+  <link rel="modulepreload" crossorigin href="/assets/api-BBvzFwfC.js">
+  <link rel="modulepreload" crossorigin href="/assets/logger-D123dQQV.js">
+  <link rel="modulepreload" crossorigin href="/assets/loading-CWfhFw7n.js">
+  <link rel="stylesheet" crossorigin href="/assets/saved-questions-DpMn0d7g.css">
+  <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Version Check: 1.0.8-three-columns - If you see this in page source, file is loading -->
+        <a href="classes.html" class="back-link">← Back to Classes</a>
+        <div class="header">
+            <h1>Saved Question Sets</h1>
+            <div class="bulk-actions">
+                <button class="btn btn-secondary btn-small" onclick="toggleSelectAll()">
+                    <span id="selectAllText">Select All</span>
+                </button>
+                <button class="btn btn-danger btn-small" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                    Delete Selected (<span id="selectedCount">0</span>)
+                </button>
+                <button class="btn btn-primary btn-small" onclick="showCreateQuestionSetModal()">
+                    ➕ Create New Question Set
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalSets">0</div>
+                <div class="stat-label">Question Sets</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalQuestions">0</div>
+                <div class="stat-label">Total Questions</div>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Search question sets..." oninput="filterQuestionSets()">
+        </div>
+
+        <div id="questionSetsContainer" class="question-sets-grid">
+            <!-- Question sets will be loaded here -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg width="64" height="64" fill="currentColor">
+                <path d="M6 9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9Zm2-1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H8Z"/>
+            </svg>
+            <p style="font-size: 1.125rem; margin-bottom: 0.5rem;">No saved question sets yet</p>
+            <p>Create a new question set or use questions from sessions</p>
+        </div>
+    </div>
+
+    <!-- Create Question Set Modal -->
+    <div id="createModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; padding: 2rem; overflow-y: auto;">
+        <div style="background: white; max-width: 800px; margin: 0 auto; border-radius: 12px; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 700;">Create New Question Set</h2>
+                <button onclick="closeCreateModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">&times;</button>
+            </div>
+
+            <!-- Question Set Name -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Question Set Name *</label>
+                <input type="text" id="newSetName" placeholder="e.g., Week 5 Review Questions" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+            </div>
+
+            <!-- Questions List -->
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <label style="font-weight: 600;">Questions</label>
+                    <button class="btn btn-secondary" onclick="addNewQuestion()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
+                        ➕ Add Question
+                    </button>
+                </div>
+                <div id="newQuestionsList"></div>
+                <div id="emptyQuestions" style="text-align: center; padding: 2rem; color: #6b7280; background: #f9fafb; border-radius: 8px;">
+                    <p>No questions added yet. Click "Add Question" to get started.</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="editingSetId ? updateQuestionSet() : saveNewQuestionSet()">
+                    <span id="saveButtonText">Save Question Set</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Builder Modal -->
+    <div id="questionBuilderModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 10001; padding: 2rem; overflow-y: auto;">
+        <div style="background: white; max-width: 700px; margin: 0 auto; border-radius: 12px; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 700;">Add Question</h3>
+                <button onclick="closeQuestionBuilder()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <form id="questionBuilderForm" onsubmit="saveQuestion(event)">
+                <!-- Question Type -->
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Question Type *</label>
+                    <select id="builderQuestionType" onchange="updateQuestionBuilderUI()" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                        <option value="mcq">Multiple Choice</option>
+                        <option value="poll">Poll (No Correct Answer)</option>
+                        <option value="tf">True/False</option>
+                        <option value="fillblank">Fill in the Blank</option>
+                    </select>
+                </div>
+
+                <!-- Question Text -->
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Question Text *</label>
+                    <textarea id="builderQuestionText" rows="3" placeholder="Enter your question here..." required style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"></textarea>
+                </div>
+
+                <!-- MCQ Options -->
+                <div id="mcqOptions" style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Answer Options *</label>
+                    <div id="optionsList"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addOption()" style="margin-top: 0.5rem; font-size: 0.875rem;">+ Add Option</button>
+                </div>
+
+                <!-- Poll Options (No Correct Answer) -->
+                <div id="pollOptions" style="margin-bottom: 1rem; display: none;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Poll Options *</label>
+                    <div id="pollOptionsList"></div>
+                    <button type="button" class="btn btn-secondary" onclick="addPollOption()" style="margin-top: 0.5rem; font-size: 0.875rem;">+ Add Option</button>
+                    <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">No correct answer - results will show distribution</p>
+                </div>
+
+                <!-- TF Options -->
+                <div id="tfOptions" style="margin-bottom: 1rem; display: none;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Correct Answer *</label>
+                    <select id="builderTFAnswer" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                </div>
+
+                <!-- Fill-in-Blank Options -->
+                <div id="fillBlankOptions" style="margin-bottom: 1rem; display: none;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Correct Answer(s) *</label>
+                    <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Use [blank] in the question text to indicate where the blank should go. Enter acceptable answers below (one per line, case-insensitive).</p>
+                    <textarea id="builderFillBlankAnswers" rows="3" placeholder="Enter acceptable answers, one per line&#10;Example:&#10;photosynthesis&#10;Photosynthesis" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeQuestionBuilder()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Question</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Question Selector Modal -->
+    <div id="questionSelectorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; padding: 2rem; overflow-y: auto;">
+        <div style="background: white; max-width: 800px; margin: 0 auto; border-radius: 12px; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 700;">Select Questions to Use</h2>
+                <button onclick="closeSelectorModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">&times;</button>
+            </div>
+
+            <div style="margin-bottom: 1rem; display: flex; gap: 12px;">
+                <button class="btn btn-secondary" onclick="selectAllQuestions()">Select All</button>
+                <button class="btn btn-secondary" onclick="deselectAllQuestions()">Deselect All</button>
+            </div>
+
+            <div id="questionCheckboxList" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+                <!-- Checkboxes will be populated here -->
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeSelectorModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="loadSelectedQuestions()">Use Selected Questions</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

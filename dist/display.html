@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.0.1-timer-fix">
+    <title>Session Display - IntellaClick</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script type="module" crossorigin src="/assets/display-Ea7Qvbsg.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/toast-DdlZoz3i.js">
+  <link rel="modulepreload" crossorigin href="/assets/api-BBvzFwfC.js">
+  <link rel="modulepreload" crossorigin href="/assets/logger-D123dQQV.js">
+  <link rel="stylesheet" crossorigin href="/assets/display-DypvUs3x.css">
+  <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
+</head>
+<body>
+    <!-- Settings Button -->
+    <button class="settings-btn" onclick="toggleSettings()">
+        ⚙️
+    </button>
+
+    <!-- Session Info Card -->
+    <div class="session-info-card" id="sessionInfo">
+        <div class="session-code-display">
+            <div class="session-code-label">Session Code</div>
+            <div class="session-code" id="sessionCode">Loading...</div>
+            <div class="join-url" id="joinUrl">join.intellaclick.com</div>
+        </div>
+        <div class="qr-code-container" id="qrCodeContainer">
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <!-- Question Display -->
+    <div class="question-area" id="questionArea">
+        <div id="waitingMessage" class="waiting-message">
+            <div class="spinner"></div>
+            <div>Waiting for question...</div>
+        </div>
+
+        <div class="question-card" id="questionCard" style="display: none;">
+            <div class="question-header">
+                <div class="question-number" id="questionNumber">Question 1</div>
+                <div class="timer" id="timer">
+                    <span>⏱️</span>
+                    <span id="timeLeft">30</span>
+                </div>
+            </div>
+
+            <div class="question-text" id="questionText"></div>
+
+            <div class="options-grid" id="optionsGrid"></div>
+        </div>
+    </div>
+
+    <!-- Analytics Panel -->
+    <div class="analytics-panel" id="analyticsPanel">
+        <div class="analytics-header">
+            <div class="analytics-title">Live Results</div>
+        </div>
+
+        <div class="response-stats">
+            <div class="stat">
+                <div class="stat-value" id="responseCount">0</div>
+                <div class="stat-label">Responses</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="participantCount">0</div>
+                <div class="stat-label">Participants</div>
+            </div>
+        </div>
+
+        <div class="response-chart" id="responseChart"></div>
+    </div>
+
+    <!-- Control Bar -->
+    <div class="control-bar" id="controlBar">
+        <button class="btn btn-secondary" onclick="if (window.opener) { window.close(); } else { window.location.href='session.html?id=' + sessionId + '&code=' + sessionCode; }">
+            ← Back
+        </button>
+
+        <button class="btn btn-primary" onclick="sendNextQuestion()" id="nextQuestionBtn" style="font-size: 1.125rem; padding: 1rem 2rem;">
+            ▶ Next Question
+        </button>
+
+        <button class="btn btn-success" onclick="addTime(10)" id="addTimeBtn" disabled>
+            + 10s
+        </button>
+
+        <button class="btn btn-success" onclick="addTime(30)" id="addTime30Btn" disabled>
+            + 30s
+        </button>
+
+        <button class="btn btn-danger" onclick="endQuestion()" id="endBtn" disabled>
+            End Question
+        </button>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <div class="settings-title">Display Settings</div>
+            <button class="close-settings" onclick="toggleSettings()">×</button>
+        </div>
+
+        <div class="settings-body">
+            <div class="setting-group">
+                <div class="setting-group-title">Session Information</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Session Code & QR</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showSessionInfo" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Question Display</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Question Text</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showQuestion" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Timer</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showTimer" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Live Analytics</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Analytics Panel</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showAnalytics" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Controls</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Control Bar</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showControls" checked onchange="applySettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Question End Behavior</div>
+                <div class="setting-item">
+                    <span class="setting-label">Show Correct Answer</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showCorrectAnswer">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-label">Keep Results on Screen</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="keepResults" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-group-title">Session Questions</div>
+                <div style="padding: 0.5rem 0;">
+                    <button class="btn btn-primary" onclick="saveSessionQuestions()" style="width: 100%; margin-bottom: 0.5rem;">
+                        💾 Save Questions for Reuse
+                    </button>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">
+                        Save current question queue to use in future sessions
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

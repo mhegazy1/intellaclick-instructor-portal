@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamification Dashboard - IntellaClick</title>
+  <script type="module" crossorigin src="/assets/gamification-dashboard-BZbhCX14.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/toast-DdlZoz3i.js">
+  <link rel="modulepreload" crossorigin href="/assets/api-BBvzFwfC.js">
+  <link rel="modulepreload" crossorigin href="/assets/logger-D123dQQV.js">
+  <link rel="stylesheet" crossorigin href="/assets/gamification-dashboard-it3g1f7z.css">
+  <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>🏆 Gamification Dashboard</h1>
+            <div class="header-actions">
+                <div class="refresh-indicator" id="refreshIndicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <span>Refreshing...</span>
+                </div>
+                <button class="btn btn-secondary" onclick="window.location.href='gamification-settings.html'">
+                    ⚙️ Settings
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='classes.html'">
+                    ← Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Class Selector -->
+        <div class="class-selector">
+            <label><strong>Select Class:</strong></label>
+            <select id="classSelector" onchange="loadDashboardData()">
+                <option value="">All Classes (Instructor-wide)</option>
+            </select>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">👥</div>
+                <div class="stat-value" id="totalStudents">0</div>
+                <div class="stat-label">Active Students</div>
+                <div class="stat-change positive" id="studentsChange">+0 this week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">⭐</div>
+                <div class="stat-value" id="totalPoints">0</div>
+                <div class="stat-label">Total Points Earned</div>
+                <div class="stat-change positive" id="pointsChange">+0 this week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">🏅</div>
+                <div class="stat-value" id="totalAchievements">0</div>
+                <div class="stat-label">Achievements Unlocked</div>
+                <div class="stat-change positive" id="achievementsChange">+0 this week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">📊</div>
+                <div class="stat-value" id="avgParticipation">0%</div>
+                <div class="stat-label">Avg. Participation Rate</div>
+                <div class="stat-change positive" id="participationChange">+0% this week</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content-grid">
+            <!-- Leaderboard -->
+            <div class="leaderboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">🏆 Leaderboard</h2>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" onclick="filterLeaderboard('points')">Points</button>
+                        <button class="filter-tab" onclick="filterLeaderboard('level')">Level</button>
+                        <button class="filter-tab" onclick="filterLeaderboard('achievements')">Achievements</button>
+                    </div>
+                </div>
+                <div class="leaderboard-list" id="leaderboardList">
+                    <!-- Leaderboard items will be loaded here -->
+                </div>
+                <div id="emptyLeaderboard" class="empty-state" style="display: none;">
+                    <div class="empty-state-icon">🏆</div>
+                    <p>No students have earned points yet</p>
+                    <p style="font-size: 0.875rem;">Points will appear here after you run sessions with gamification enabled</p>
+                </div>
+            </div>
+
+            <!-- Recent Achievements -->
+            <div class="achievements-card">
+                <div class="card-header">
+                    <h2 class="card-title">🎉 Recent Achievements</h2>
+                </div>
+                <div id="recentAchievementsList">
+                    <!-- Achievement items will be loaded here -->
+                </div>
+                <div id="emptyAchievements" class="empty-state" style="display: none;">
+                    <div class="empty-state-icon">🎉</div>
+                    <p>No achievements unlocked yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Engagement Chart -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h2 class="card-title">📈 Weekly Engagement</h2>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="changeChartPeriod('week')">Week</button>
+                    <button class="filter-tab" onclick="changeChartPeriod('month')">Month</button>
+                </div>
+            </div>
+            <div class="chart-container" id="engagementChart">
+                <!-- Chart bars will be generated here -->
+            </div>
+        </div>
+
+        <!-- Achievement Distribution -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h2 class="card-title">🏅 Achievement Distribution</h2>
+            </div>
+            <div class="distribution-grid" id="achievementDistribution">
+                <!-- Distribution items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Detail Modal -->
+    <div class="modal" id="studentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalStudentName">Student Progress</h2>
+                <button class="close-modal" onclick="closeStudentModal()">×</button>
+            </div>
+
+            <div class="student-progress-grid">
+                <div class="progress-card">
+                    <div class="progress-label">Total Points</div>
+                    <div class="progress-value" id="modalPoints">0</div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-label">Current Level</div>
+                    <div class="progress-value" id="modalLevel">1</div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-label">Achievements</div>
+                    <div class="progress-value" id="modalAchievements">0</div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-label">Participation Rate</div>
+                    <div class="progress-value" id="modalParticipation">0%</div>
+                </div>
+            </div>
+
+            <div class="progress-card" style="margin-bottom: 1.5rem;">
+                <div class="progress-label">Level Progress</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="modalLevelProgress" style="width: 0%"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                    <span id="modalCurrentXP">0 XP</span>
+                    <span id="modalNextLevelXP">100 XP</span>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem;">Achievements</h3>
+            <div class="achievement-showcase" id="modalAchievementList">
+                <!-- Student achievements will be loaded here -->
+            </div>
+
+            <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Recent Activity</h3>
+            <div id="modalActivityList">
+                <!-- Recent activity will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
