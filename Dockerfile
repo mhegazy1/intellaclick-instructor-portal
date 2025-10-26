@@ -4,7 +4,6 @@ FROM nginx:alpine
 COPY *.html /usr/share/nginx/html/
 COPY styles /usr/share/nginx/html/styles
 COPY utils /usr/share/nginx/html/utils
-COPY components /usr/share/nginx/html/components
 
 # Use default nginx config with minor adjustments
 RUN echo 'server { \
