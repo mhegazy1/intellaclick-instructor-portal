@@ -317,6 +317,9 @@
 
             // Filter classes based on current filters
             let filteredClasses = classes.filter(c => {
+                // Never show deleted classes
+                if (c.status === 'deleted') return false;
+
                 if (statusFilterValue && c.status !== statusFilterValue) return false;
                 if (yearFilter || semesterFilter) {
                     const [semester, year] = c.term.split(' ');
@@ -447,6 +450,9 @@
 
                 // Filter classes based on current filters
                 let filteredClasses = classes.filter(c => {
+                    // Never show deleted classes
+                    if (c.status === 'deleted') return false;
+
                     // Status filter
                     if (statusFilter && c.status !== statusFilter) return false;
 
@@ -559,6 +565,9 @@
 
             // Filter classes
             let filteredClasses = classes.filter(c => {
+                // Never show deleted classes (soft-deleted for DB integrity only)
+                if (c.status === 'deleted') return false;
+
                 // Status filter
                 if (statusFilter && c.status !== statusFilter) return false;
 
