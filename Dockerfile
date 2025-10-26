@@ -13,9 +13,18 @@ RUN echo 'server { \
     server_name _; \
     root /usr/share/nginx/html; \
     index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
+    \
+    # Serve static files directly \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
     } \
+    \
+    # Only redirect HTML requests to index.html \
+    location / { \
+        try_files $uri $uri/ $uri.html /index.html; \
+    } \
+    \
     location /health { \
         access_log off; \
         return 200 "healthy"; \
