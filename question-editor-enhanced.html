@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Editor - IntellaQuiz</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        
+        .question-type-selector {
+            margin-bottom: 2rem;
+        }
+        
+        .question-type-selector h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #666;
+        }
+        
+        .question-type-grid {
+            display: grid;
+            gap: 0.5rem;
+        }
+        
+        .question-type-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        .question-type-btn:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
+        }
+        
+        .question-type-btn.active {
+            border-color: #3498db;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .question-type-btn i {
+            font-size: 1.25rem;
+            width: 30px;
+            text-align: center;
+        }
+        
+        .question-form {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+        }
+        
+        .form-section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        /* Rich Text Editor */
+        .rich-editor {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .editor-toolbar {
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            padding: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+        
+        .editor-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 0.4rem 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 32px;
+        }
+        
+        .editor-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .editor-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .editor-separator {
+            width: 1px;
+            height: 24px;
+            background: #ddd;
+            margin: 0 0.25rem;
+            align-self: center;
+        }
+        
+        .editor-content {
+            min-height: 150px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        
+        .editor-content:focus {
+            outline: none;
+        }
+        
+        /* Category Selector */
+        .category-selector {
+            position: relative;
+        }
+        
+        .category-display {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+        }
+        
+        .category-display:hover {
+            border-color: #3498db;
+        }
+        
+        .category-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            margin-top: 4px;
+        }
+        
+        .category-dropdown.show {
+            display: block;
+        }
+        
+        .category-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .category-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .category-item.selected {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .category-item i {
+            color: #666;
+        }
+        
+        .category-path {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        /* Options Editor */
+        .options-editor {
+            margin-top: 1rem;
+        }
+        
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        
+        .option-item.correct {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+        
+        .option-radio {
+            cursor: pointer;
+        }
+        
+        .option-label {
+            font-weight: 500;
+            color: #666;
+            min-width: 30px;
+        }
+        
+        .option-input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        
+        .option-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .option-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 0.4rem 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+        }
+        
+        .option-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .option-btn.danger:hover {
+            background: #fee;
+            border-color: #f44336;
+            color: #f44336;
+        }
+        
+        .add-option-btn {
+            background: #f8f9fa;
+            border: 1px dashed #3498db;
+            color: #3498db;
+            padding: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+        
+        .add-option-btn:hover {
+            background: #e3f2fd;
+            border-style: solid;
+        }
+        
+        /* Fill-in-blank Editor */
+        .blank-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .blank-type-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .blank-type-btn:hover {
+            background: #f8f9fa;
+            border-color: #3498db;
+        }
+        
+        .blank-type-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .blank-preview {
+            padding: 1rem;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+        
+        .blank-placeholder {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: #3498db;
+            color: white;
+            border-radius: 3px;
+            margin: 0 0.25rem;
+            font-weight: 500;
+        }
+        
+        /* Matching Editor */
+        .matching-editor {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .matching-column {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 1rem;
+        }
+        
+        .matching-column h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #666;
+        }
+        
+        .matching-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .matching-item-label {
+            font-weight: 600;
+            color: #3498db;
+            min-width: 30px;
+        }
+        
+        .matching-item input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        /* Tags and Metadata */
+        .tags-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 44px;
+            cursor: text;
+        }
+        
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        .tag-remove {
+            cursor: pointer;
+            color: #1976d2;
+            font-weight: bold;
+        }
+        
+        .tag-remove:hover {
+            color: #f44336;
+        }
+        
+        .tags-input input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 100px;
+            font-size: 0.875rem;
+        }
+        
+        /* Settings Grid */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .setting-item input[type="number"] {
+            width: 80px;
+        }
+        
+        /* Action Buttons */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .btn-outline {
+            background: white;
+            border: 1px solid #ddd;
+            color: #666;
+        }
+        
+        .btn-outline:hover {
+            background: #f8f9fa;
+            border-color: #adb5bd;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* Media Upload */
+        .media-upload {
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8f9fa;
+        }
+        
+        .media-upload:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        .media-upload.dragover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        .media-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .media-item {
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            background: #f8f9fa;
+        }
+        
+        .media-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .media-item-remove {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Loading and Status */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .loading-spinner {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .matching-editor {
+                grid-template-columns: 1fr;
+            }
+            
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-question-circle"></i> Question Editor</h1>
+        <div class="header-actions">
+            <button class="btn btn-outline" onclick="previewQuestion()">
+                <i class="fas fa-eye"></i> Preview
+            </button>
+            <button class="btn btn-primary" onclick="saveQuestion()">
+                <i class="fas fa-save"></i> Save Question
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <aside class="sidebar">
+            <div class="question-type-selector">
+                <h3>Question Type</h3>
+                <div class="question-type-grid">
+                    <button class="question-type-btn active" data-type="multiple_choice" onclick="selectQuestionType('multiple_choice')">
+                        <i class="fas fa-list-ul"></i>
+                        <span>Multiple Choice</span>
+                    </button>
+                    <button class="question-type-btn" data-type="true_false" onclick="selectQuestionType('true_false')">
+                        <i class="fas fa-check-circle"></i>
+                        <span>True/False</span>
+                    </button>
+                    <button class="question-type-btn" data-type="fill_blank" onclick="selectQuestionType('fill_blank')">
+                        <i class="fas fa-fill-drip"></i>
+                        <span>Fill in the Blank</span>
+                    </button>
+                    <button class="question-type-btn" data-type="multiple_answer" onclick="selectQuestionType('multiple_answer')">
+                        <i class="fas fa-check-square"></i>
+                        <span>Multiple Answer</span>
+                    </button>
+                    <button class="question-type-btn" data-type="matching" onclick="selectQuestionType('matching')">
+                        <i class="fas fa-arrows-alt-h"></i>
+                        <span>Matching</span>
+                    </button>
+                    <button class="question-type-btn" data-type="essay" onclick="selectQuestionType('essay')">
+                        <i class="fas fa-align-left"></i>
+                        <span>Essay/Short Answer</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Question Settings</h3>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="shuffleAnswers" checked>
+                            Shuffle Answers
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Points:</label>
+                        <input type="number" id="points" value="10" min="0" class="form-control">
+                    </div>
+                    <div class="setting-item">
+                        <label>Time Limit:</label>
+                        <input type="number" id="timeLimit" value="30" min="0" class="form-control">
+                        <span>sec</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <form class="question-form" id="questionForm">
+                <div id="alertContainer"></div>
+                
+                <div class="form-section">
+                    <h3>Category</h3>
+                    <div class="form-group">
+                        <div class="category-selector">
+                            <div class="category-display" onclick="toggleCategoryDropdown()">
+                                <span id="selectedCategory">Select a category...</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="category-dropdown" id="categoryDropdown"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Question Text</h3>
+                    <div class="form-group">
+                        <div class="rich-editor">
+                            <div class="editor-toolbar">
+                                <button type="button" class="editor-btn" onclick="formatText('bold')" title="Bold">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button type="button" class="editor-btn" onclick="formatText('italic')" title="Italic">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button type="button" class="editor-btn" onclick="formatText('underline')" title="Underline">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                                <div class="editor-separator"></div>
+                                <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList')" title="Bullet List">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <button type="button" class="editor-btn" onclick="formatText('insertOrderedList')" title="Numbered List">
+                                    <i class="fas fa-list-ol"></i>
+                                </button>
+                                <div class="editor-separator"></div>
+                                <button type="button" class="editor-btn" onclick="insertLink()" title="Insert Link">
+                                    <i class="fas fa-link"></i>
+                                </button>
+                                <button type="button" class="editor-btn" onclick="insertImage()" title="Insert Image">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                                <button type="button" class="editor-btn" onclick="insertMath()" title="Insert Math">
+                                    <i class="fas fa-square-root-alt"></i>
+                                </button>
+                                <div class="editor-separator"></div>
+                                <button type="button" class="editor-btn" onclick="formatText('removeFormat')" title="Clear Formatting">
+                                    <i class="fas fa-eraser"></i>
+                                </button>
+                            </div>
+                            <div class="editor-content" contenteditable="true" id="questionText"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section" id="answerSection">
+                    <h3>Answer Options</h3>
+                    <div id="answerContent">
+                        <!-- Dynamic content based on question type -->
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Explanation (Optional)</h3>
+                    <div class="form-group">
+                        <div class="rich-editor">
+                            <div class="editor-toolbar">
+                                <button type="button" class="editor-btn" onclick="formatText('bold', 'explanationText')" title="Bold">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button type="button" class="editor-btn" onclick="formatText('italic', 'explanationText')" title="Italic">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button type="button" class="editor-btn" onclick="formatText('underline', 'explanationText')" title="Underline">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                            </div>
+                            <div class="editor-content" contenteditable="true" id="explanationText"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Tags & Metadata</h3>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div class="tags-input" onclick="focusTagInput()">
+                            <input type="text" id="tagInput" placeholder="Add a tag..." onkeydown="handleTagInput(event)">
+                        </div>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label>Difficulty</label>
+                            <select class="form-control" id="difficulty">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Chapter</label>
+                            <input type="text" class="form-control" id="chapter" placeholder="e.g., Chapter 5">
+                        </div>
+                        <div class="form-group">
+                            <label>Topic</label>
+                            <input type="text" class="form-control" id="topic" placeholder="e.g., Photosynthesis">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Media Attachments</h3>
+                    <div class="media-upload" id="mediaUpload" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                        <i class="fas fa-cloud-upload-alt fa-3x" style="color: #3498db; margin-bottom: 1rem;"></i>
+                        <p>Drag and drop files here or click to browse</p>
+                        <p style="font-size: 0.875rem; color: #666;">Supported: Images, Audio, Video</p>
+                        <input type="file" id="fileInput" multiple accept="image/*,audio/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
+                    </div>
+                    <div class="media-preview" id="mediaPreview"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="cancelEdit()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline" onclick="saveAsDraft()">
+                            <i class="fas fa-save"></i> Save as Draft
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Save Question
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+    
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Saving question...</p>
+        </div>
+    </div>
+    
+    <script>
+        let currentQuestionType = 'multiple_choice';
+        let questionId = null;
+        let categories = [];
+        let selectedCategoryId = null;
+        let tags = [];
+        let mediaFiles = [];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if editing existing question
+            const urlParams = new URLSearchParams(window.location.search);
+            questionId = urlParams.get('id');
+            
+            // Load categories
+            await loadCategories();
+            
+            // Initialize rich text editors
+            initializeEditors();
+            
+            // Add event listener to update fill-in-blank preview when typing
+            document.getElementById('questionText').addEventListener('input', () => {
+                if (currentQuestionType === 'fill_blank') {
+                    updateBlankPreviewFromMainEditor();
+                }
+            });
+            
+            // Set up form submission
+            document.getElementById('questionForm').addEventListener('submit', handleSubmit);
+            
+            // Load question if editing
+            if (questionId) {
+                await loadQuestion(questionId);
+            } else {
+                // Initialize with default question type
+                renderAnswerSection();
+            }
+        });
+        
+        function initializeEditors() {
+            // Add paste event listeners for rich text
+            document.getElementById('questionText').addEventListener('paste', handlePaste);
+            document.getElementById('explanationText').addEventListener('paste', handlePaste);
+            
+            // Focus event to update toolbar state
+            document.getElementById('questionText').addEventListener('focus', () => updateToolbarState('questionText'));
+            document.getElementById('explanationText').addEventListener('focus', () => updateToolbarState('explanationText'));
+        }
+        
+        function handlePaste(e) {
+            e.preventDefault();
+            const text = e.clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        }
+        
+        function updateToolbarState(editorId) {
+            // Update active state of toolbar buttons based on current selection
+            const buttons = document.querySelectorAll('.editor-btn');
+            buttons.forEach(btn => {
+                const command = btn.getAttribute('data-command');
+                if (command && document.queryCommandState(command)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        
+        async function loadCategories() {
+            try {
+                categories = await window.electronAPI.categories.getAll();
+                renderCategoryDropdown();
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+                showAlert('Failed to load categories', 'error');
+            }
+        }
+        
+        function renderCategoryDropdown() {
+            const dropdown = document.getElementById('categoryDropdown');
+            dropdown.innerHTML = '';
+            
+            // Build category tree
+            const rootCategories = categories.filter(c => !c.parent_id);
+            
+            rootCategories.forEach(root => {
+                const rootItem = createCategoryItem(root, 0);
+                dropdown.appendChild(rootItem);
+                
+                // Add children recursively
+                renderCategoryChildren(root.id, dropdown, 1);
+            });
+        }
+        
+        function renderCategoryChildren(parentId, container, level) {
+            const children = categories.filter(c => c.parent_id === parentId);
+            children.forEach(child => {
+                const item = createCategoryItem(child, level);
+                container.appendChild(item);
+                renderCategoryChildren(child.id, container, level + 1);
+            });
+        }
+        
+        function createCategoryItem(category, level) {
+            const item = document.createElement('div');
+            item.className = 'category-item';
+            item.style.paddingLeft = `${1 + level * 1.5}rem`;
+            item.onclick = () => selectCategory(category);
+            
+            if (category.id === selectedCategoryId) {
+                item.classList.add('selected');
+            }
+            
+            item.innerHTML = `
+                <i class="fas ${category.icon || 'fa-folder'}"></i>
+                <div>
+                    <div>${category.name}</div>
+                    ${category.path ? `<div class="category-path">${category.path}</div>` : ''}
+                </div>
+            `;
+            
+            return item;
+        }
+        
+        function toggleCategoryDropdown() {
+            const dropdown = document.getElementById('categoryDropdown');
+            dropdown.classList.toggle('show');
+        }
+        
+        function selectCategory(category) {
+            selectedCategoryId = category.id;
+            document.getElementById('selectedCategory').textContent = category.path || category.name;
+            document.getElementById('categoryDropdown').classList.remove('show');
+            renderCategoryDropdown();
+        }
+        
+        // Click outside to close dropdown
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.category-selector')) {
+                document.getElementById('categoryDropdown').classList.remove('show');
+            }
+        });
+        
+        function selectQuestionType(type) {
+            currentQuestionType = type;
+            
+            // Update UI
+            document.querySelectorAll('.question-type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+            
+            // Render appropriate answer section
+            renderAnswerSection();
+        }
+        
+        function renderAnswerSection() {
+            const content = document.getElementById('answerContent');
+            
+            switch (currentQuestionType) {
+                case 'multiple_choice':
+                    renderMultipleChoice(content);
+                    break;
+                case 'true_false':
+                    renderTrueFalse(content);
+                    break;
+                case 'fill_blank':
+                    renderFillBlank(content);
+                    break;
+                case 'multiple_answer':
+                    renderMultipleAnswer(content);
+                    break;
+                case 'matching':
+                    renderMatching(content);
+                    break;
+                case 'essay':
+                    renderEssay(content);
+                    break;
+            }
+        }
+        
+        function renderMultipleChoice(container) {
+            container.innerHTML = `
+                <div class="options-editor" id="optionsContainer">
+                    <div class="option-item">
+                        <input type="radio" name="correct" class="option-radio" value="0" checked>
+                        <span class="option-label">A)</span>
+                        <input type="text" class="option-input" placeholder="Enter option A">
+                        <div class="option-actions">
+                            <button type="button" class="option-btn" onclick="moveOption(0, -1)" title="Move Up">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="option-btn" onclick="moveOption(0, 1)" title="Move Down">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="option-btn danger" onclick="removeOption(0)" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" name="correct" class="option-radio" value="1">
+                        <span class="option-label">B)</span>
+                        <input type="text" class="option-input" placeholder="Enter option B">
+                        <div class="option-actions">
+                            <button type="button" class="option-btn" onclick="moveOption(1, -1)" title="Move Up">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="option-btn" onclick="moveOption(1, 1)" title="Move Down">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="option-btn danger" onclick="removeOption(1)" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" name="correct" class="option-radio" value="2">
+                        <span class="option-label">C)</span>
+                        <input type="text" class="option-input" placeholder="Enter option C">
+                        <div class="option-actions">
+                            <button type="button" class="option-btn" onclick="moveOption(2, -1)" title="Move Up">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="option-btn" onclick="moveOption(2, 1)" title="Move Down">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="option-btn danger" onclick="removeOption(2)" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" name="correct" class="option-radio" value="3">
+                        <span class="option-label">D)</span>
+                        <input type="text" class="option-input" placeholder="Enter option D">
+                        <div class="option-actions">
+                            <button type="button" class="option-btn" onclick="moveOption(3, -1)" title="Move Up">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="option-btn" onclick="moveOption(3, 1)" title="Move Down">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="option-btn danger" onclick="removeOption(3)" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="add-option-btn" onclick="addOption()">
+                    <i class="fas fa-plus"></i> Add Option
+                </button>
+            `;
+            
+            // Update correct answer highlighting
+            container.querySelectorAll('.option-radio').forEach(radio => {
+                radio.addEventListener('change', updateCorrectHighlight);
+            });
+        }
+        
+        function renderTrueFalse(container) {
+            container.innerHTML = `
+                <div class="options-editor">
+                    <div class="option-item">
+                        <input type="radio" name="correct" value="true" checked>
+                        <span class="option-label">True</span>
+                    </div>
+                    <div class="option-item">
+                        <input type="radio" name="correct" value="false">
+                        <span class="option-label">False</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderFillBlank(container) {
+            container.innerHTML = `
+                <div class="blank-toolbar">
+                    <button type="button" class="blank-type-btn active" onclick="setBlankType('text')">
+                        <i class="fas fa-font"></i> Text
+                    </button>
+                    <button type="button" class="blank-type-btn" onclick="setBlankType('number')">
+                        <i class="fas fa-hashtag"></i> Number
+                    </button>
+                    <button type="button" class="blank-type-btn" onclick="insertBlankInMainEditor()">
+                        <i class="fas fa-plus-square"></i> Insert Blank
+                    </button>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Type your question in the main editor above, then click "Insert Blank" to add blanks where needed.
+                </div>
+                <div class="blank-preview" id="blankPreview"></div>
+                <div id="blankAnswers"></div>
+            `;
+            
+            // Update preview immediately
+            updateBlankPreviewFromMainEditor();
+        }
+        
+        function renderMultipleAnswer(container) {
+            container.innerHTML = `
+                <div class="options-editor" id="optionsContainer">
+                    <div class="option-item">
+                        <input type="checkbox" class="option-checkbox" value="0">
+                        <span class="option-label">A)</span>
+                        <input type="text" class="option-input" placeholder="Enter option A">
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" class="option-checkbox" value="1">
+                        <span class="option-label">B)</span>
+                        <input type="text" class="option-input" placeholder="Enter option B">
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" class="option-checkbox" value="2">
+                        <span class="option-label">C)</span>
+                        <input type="text" class="option-input" placeholder="Enter option C">
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" class="option-checkbox" value="3">
+                        <span class="option-label">D)</span>
+                        <input type="text" class="option-input" placeholder="Enter option D">
+                    </div>
+                </div>
+                <button type="button" class="add-option-btn" onclick="addOption()">
+                    <i class="fas fa-plus"></i> Add Option
+                </button>
+                <div class="alert alert-info" style="margin-top: 1rem;">
+                    <i class="fas fa-info-circle"></i>
+                    Select all correct answers. Students must select all correct options to get points.
+                </div>
+            `;
+        }
+        
+        function renderMatching(container) {
+            container.innerHTML = `
+                <div class="matching-editor">
+                    <div class="matching-column">
+                        <h4>Items</h4>
+                        <div id="matchingItems">
+                            <div class="matching-item">
+                                <span class="matching-item-label">1.</span>
+                                <input type="text" placeholder="Item 1">
+                            </div>
+                            <div class="matching-item">
+                                <span class="matching-item-label">2.</span>
+                                <input type="text" placeholder="Item 2">
+                            </div>
+                            <div class="matching-item">
+                                <span class="matching-item-label">3.</span>
+                                <input type="text" placeholder="Item 3">
+                            </div>
+                        </div>
+                        <button type="button" class="add-option-btn" onclick="addMatchingItem()">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                    <div class="matching-column">
+                        <h4>Matches</h4>
+                        <div id="matchingMatches">
+                            <div class="matching-item">
+                                <span class="matching-item-label">A.</span>
+                                <input type="text" placeholder="Match A">
+                            </div>
+                            <div class="matching-item">
+                                <span class="matching-item-label">B.</span>
+                                <input type="text" placeholder="Match B">
+                            </div>
+                            <div class="matching-item">
+                                <span class="matching-item-label">C.</span>
+                                <input type="text" placeholder="Match C">
+                            </div>
+                        </div>
+                        <button type="button" class="add-option-btn" onclick="addMatchingMatch()">
+                            <i class="fas fa-plus"></i> Add Match
+                        </button>
+                    </div>
+                </div>
+                <div class="alert alert-info" style="margin-top: 1rem;">
+                    <i class="fas fa-info-circle"></i>
+                    Items will be matched in order (1→A, 2→B, etc.). You can add distractor matches.
+                </div>
+            `;
+        }
+        
+        function renderEssay(container) {
+            container.innerHTML = `
+                <div class="form-group">
+                    <label>Sample Answer (Optional)</label>
+                    <div class="rich-editor">
+                        <div class="editor-content" contenteditable="true" id="sampleAnswer" style="min-height: 200px;">
+                            Provide a sample answer or grading rubric...
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-grid" style="margin-top: 1rem;">
+                    <div class="form-group">
+                        <label>Minimum Words</label>
+                        <input type="number" class="form-control" id="minWords" min="0" placeholder="e.g., 100">
+                    </div>
+                    <div class="form-group">
+                        <label>Maximum Words</label>
+                        <input type="number" class="form-control" id="maxWords" min="0" placeholder="e.g., 500">
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Rich Text Editor Functions
+        function formatText(command, editorId = 'questionText') {
+            const editor = document.getElementById(editorId);
+            editor.focus();
+            document.execCommand(command, false, null);
+            updateToolbarState(editorId);
+        }
+        
+        function insertLink() {
+            const url = prompt('Enter URL:');
+            if (url) {
+                document.execCommand('createLink', false, url);
+            }
+        }
+        
+        function insertImage() {
+            const url = prompt('Enter image URL:');
+            if (url) {
+                document.execCommand('insertImage', false, url);
+            }
+        }
+        
+        function insertMath() {
+            const formula = prompt('Enter LaTeX formula:');
+            if (formula) {
+                const mathElement = `<span class="math-formula" data-formula="${formula}">\\(${formula}\\)</span>`;
+                document.execCommand('insertHTML', false, mathElement);
+            }
+        }
+        
+        // Options Management
+        function addOption() {
+            const container = document.getElementById('optionsContainer');
+            const optionCount = container.children.length;
+            const optionLetter = String.fromCharCode(65 + optionCount);
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-item';
+            
+            if (currentQuestionType === 'multiple_choice') {
+                optionDiv.innerHTML = `
+                    <input type="radio" name="correct" class="option-radio" value="${optionCount}">
+                    <span class="option-label">${optionLetter})</span>
+                    <input type="text" class="option-input" placeholder="Enter option ${optionLetter}">
+                    <div class="option-actions">
+                        <button type="button" class="option-btn" onclick="moveOption(${optionCount}, -1)" title="Move Up">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button type="button" class="option-btn" onclick="moveOption(${optionCount}, 1)" title="Move Down">
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                        <button type="button" class="option-btn danger" onclick="removeOption(${optionCount})" title="Remove">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // Add event listener for new radio
+                optionDiv.querySelector('.option-radio').addEventListener('change', updateCorrectHighlight);
+            } else {
+                optionDiv.innerHTML = `
+                    <input type="checkbox" class="option-checkbox" value="${optionCount}">
+                    <span class="option-label">${optionLetter})</span>
+                    <input type="text" class="option-input" placeholder="Enter option ${optionLetter}">
+                `;
+            }
+            
+            container.appendChild(optionDiv);
+        }
+        
+        function removeOption(index) {
+            const container = document.getElementById('optionsContainer');
+            const options = Array.from(container.children);
+            
+            if (options.length <= 2) {
+                showAlert('You must have at least 2 options', 'error');
+                return;
+            }
+            
+            options[index].remove();
+            updateOptionLabels();
+        }
+        
+        function moveOption(index, direction) {
+            const container = document.getElementById('optionsContainer');
+            const options = Array.from(container.children);
+            const newIndex = index + direction;
+            
+            if (newIndex < 0 || newIndex >= options.length) return;
+            
+            if (direction === -1) {
+                container.insertBefore(options[index], options[newIndex]);
+            } else {
+                container.insertBefore(options[index], options[newIndex].nextSibling);
+            }
+            
+            updateOptionLabels();
+        }
+        
+        function updateOptionLabels() {
+            const container = document.getElementById('optionsContainer');
+            const options = Array.from(container.children);
+            
+            options.forEach((option, index) => {
+                const letter = String.fromCharCode(65 + index);
+                option.querySelector('.option-label').textContent = `${letter})`;
+                
+                // Update radio/checkbox value
+                const input = option.querySelector('.option-radio, .option-checkbox');
+                if (input) input.value = index;
+                
+                // Update button onclick handlers
+                const buttons = option.querySelectorAll('.option-btn');
+                if (buttons[0]) buttons[0].onclick = () => moveOption(index, -1);
+                if (buttons[1]) buttons[1].onclick = () => moveOption(index, 1);
+                if (buttons[2]) buttons[2].onclick = () => removeOption(index);
+            });
+        }
+        
+        function updateCorrectHighlight() {
+            const options = document.querySelectorAll('.option-item');
+            options.forEach(option => {
+                const radio = option.querySelector('.option-radio');
+                if (radio && radio.checked) {
+                    option.classList.add('correct');
+                } else {
+                    option.classList.remove('correct');
+                }
+            });
+        }
+        
+        // Fill-in-blank Functions
+        let blankCount = 0;
+        let blankAnswers = {};
+        let blankType = 'text';
+        
+        function setBlankType(type) {
+            blankType = type;
+            document.querySelectorAll('.blank-type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(type));
+            });
+        }
+        
+        function insertBlankInMainEditor() {
+            const editor = document.getElementById('questionText');
+            const blankId = `blank_${blankCount}`;
+            const blankHtml = `<span class="blank-placeholder" contenteditable="false" data-blank-id="${blankId}" style="background: #e3f2fd; padding: 2px 8px; border-radius: 4px; color: #1976d2; font-weight: bold;">[BLANK ${blankCount + 1}]</span>`;
+            
+            editor.focus();
+            document.execCommand('insertHTML', false, blankHtml);
+            
+            blankCount++;
+            updateBlankAnswers();
+            updateBlankPreviewFromMainEditor();
+        }
+        
+        function updateBlankPreviewFromMainEditor() {
+            const questionText = document.getElementById('questionText').innerHTML;
+            const preview = document.getElementById('blankPreview');
+            
+            if (!preview) return;
+            
+            let previewHtml = questionText;
+            for (let i = 0; i < blankCount; i++) {
+                const answer = blankAnswers[i] || `[Answer ${i + 1}]`;
+                previewHtml = previewHtml.replace(
+                    new RegExp(`\\[BLANK ${i + 1}\\]`, 'g'),
+                    `<span style="color: #27ae60; font-weight: bold; text-decoration: underline;">${answer}</span>`
+                );
+            }
+            
+            preview.innerHTML = '<h4>Preview:</h4>' + previewHtml;
+        }
+        
+        function updateBlankAnswers() {
+            const answersDiv = document.getElementById('blankAnswers');
+            answersDiv.innerHTML = '<h4 style="margin-top: 1rem;">Correct Answers for Blanks:</h4>';
+            
+            for (let i = 0; i < blankCount; i++) {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'form-group';
+                answerDiv.innerHTML = `
+                    <label>Blank ${i + 1} Answer:</label>
+                    <input type="text" class="form-control" id="blankAnswer_${i}" 
+                           placeholder="Enter correct answer" 
+                           value="${blankAnswers[i] || ''}"
+                           onchange="blankAnswers[${i}] = this.value; updateBlankPreviewFromMainEditor()">
+                `;
+                answersDiv.appendChild(answerDiv);
+            }
+        }
+        
+        // Matching Functions
+        function addMatchingItem() {
+            const container = document.getElementById('matchingItems');
+            const itemCount = container.children.length;
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'matching-item';
+            itemDiv.innerHTML = `
+                <span class="matching-item-label">${itemCount + 1}.</span>
+                <input type="text" placeholder="Item ${itemCount + 1}">
+            `;
+            
+            container.appendChild(itemDiv);
+        }
+        
+        function addMatchingMatch() {
+            const container = document.getElementById('matchingMatches');
+            const matchCount = container.children.length;
+            const letter = String.fromCharCode(65 + matchCount);
+            
+            const matchDiv = document.createElement('div');
+            matchDiv.className = 'matching-item';
+            matchDiv.innerHTML = `
+                <span class="matching-item-label">${letter}.</span>
+                <input type="text" placeholder="Match ${letter}">
+            `;
+            
+            container.appendChild(matchDiv);
+        }
+        
+        // Tags Management
+        function focusTagInput() {
+            document.getElementById('tagInput').focus();
+        }
+        
+        function handleTagInput(event) {
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                const input = event.target;
+                const tag = input.value.trim();
+                
+                if (tag && !tags.includes(tag)) {
+                    tags.push(tag);
+                    renderTags();
+                    input.value = '';
+                }
+            }
+        }
+        
+        function renderTags() {
+            const container = document.querySelector('.tags-input');
+            const input = document.getElementById('tagInput');
+            
+            // Clear existing tags
+            container.querySelectorAll('.tag').forEach(tag => tag.remove());
+            
+            // Add tags before input
+            tags.forEach((tag, index) => {
+                const tagElement = document.createElement('span');
+                tagElement.className = 'tag';
+                tagElement.innerHTML = `
+                    ${tag}
+                    <span class="tag-remove" onclick="removeTag(${index})">×</span>
+                `;
+                container.insertBefore(tagElement, input);
+            });
+        }
+        
+        function removeTag(index) {
+            tags.splice(index, 1);
+            renderTags();
+        }
+        
+        // Media Upload
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('mediaUpload').classList.add('dragover');
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('mediaUpload').classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('mediaUpload').classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
+        }
+        
+        document.getElementById('mediaUpload').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+        
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        }
+        
+        function handleFiles(files) {
+            files.forEach(file => {
+                if (file.type.startsWith('image/') || file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+                    mediaFiles.push(file);
+                    renderMediaPreview();
+                } else {
+                    showAlert(`File type not supported: ${file.name}`, 'error');
+                }
+            });
+        }
+        
+        function renderMediaPreview() {
+            const preview = document.getElementById('mediaPreview');
+            preview.innerHTML = '';
+            
+            mediaFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'media-item';
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        item.innerHTML = `
+                            <img src="${e.target.result}" alt="${file.name}">
+                            <button class="media-item-remove" onclick="removeMedia(${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    item.innerHTML = `
+                        <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                            <i class="fas fa-${file.type.startsWith('audio/') ? 'music' : 'video'} fa-3x"></i>
+                        </div>
+                        <button class="media-item-remove" onclick="removeMedia(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                }
+                
+                preview.appendChild(item);
+            });
+        }
+        
+        function removeMedia(index) {
+            mediaFiles.splice(index, 1);
+            renderMediaPreview();
+        }
+        
+        // Form Submission
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+            
+            const questionData = collectQuestionData();
+            
+            try {
+                showLoading(true);
+                
+                if (questionId) {
+                    // Update existing question
+                    questionData.id = questionId;
+                    const result = await window.electronAPI.updateQuestion(questionData);
+                    if (result.success) {
+                        showAlert('Question updated successfully!', 'success');
+                        setTimeout(() => window.close(), 1500);
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } else {
+                    // Create new question
+                    const result = await window.electronAPI.createQuestion(questionData);
+                    if (result.success) {
+                        showAlert('Question created successfully!', 'success');
+                        
+                        // If in quiz mode, send the question back to quiz creator
+                        if (window.isQuizMode && result.question) {
+                            console.log('Quiz mode detected, sending question back:', result.question);
+                            // Send the created question via IPC
+                            if (window.electronAPI && window.electronAPI.send) {
+                                window.electronAPI.send('quiz:send-created-question', result.question);
+                                console.log('Question sent via IPC');
+                            } else {
+                                console.error('IPC send method not available');
+                            }
+                            // Close the window after a short delay
+                            setTimeout(() => window.close(), 1500);
+                        } else {
+                            // Reset form for next question
+                            resetForm();
+                        }
+                    } else {
+                        throw new Error(result.error);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to save question:', error);
+                showAlert(`Failed to save question: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function validateForm() {
+            // Check category
+            if (!selectedCategoryId) {
+                showAlert('Please select a category', 'error');
+                return false;
+            }
+            
+            // Check question text
+            const questionText = document.getElementById('questionText').textContent.trim();
+            if (!questionText) {
+                showAlert('Please enter question text', 'error');
+                return false;
+            }
+            
+            // Validate based on question type
+            switch (currentQuestionType) {
+                case 'multiple_choice':
+                case 'multiple_answer':
+                    const options = document.querySelectorAll('.option-input');
+                    const filledOptions = Array.from(options).filter(opt => opt.value.trim());
+                    if (filledOptions.length < 2) {
+                        showAlert('Please provide at least 2 options', 'error');
+                        return false;
+                    }
+                    
+                    if (currentQuestionType === 'multiple_choice') {
+                        const selectedRadio = document.querySelector('.option-radio:checked');
+                        if (!selectedRadio) {
+                            showAlert('Please select the correct answer', 'error');
+                            return false;
+                        }
+                    } else {
+                        const selectedCheckboxes = document.querySelectorAll('.option-checkbox:checked');
+                        if (selectedCheckboxes.length === 0) {
+                            showAlert('Please select at least one correct answer', 'error');
+                            return false;
+                        }
+                    }
+                    break;
+                    
+                case 'fill_blank':
+                    if (blankCount === 0) {
+                        showAlert('Please insert at least one blank', 'error');
+                        return false;
+                    }
+                    
+                    for (let i = 0; i < blankCount; i++) {
+                        if (!blankAnswers[i]?.trim()) {
+                            showAlert(`Please provide answer for blank ${i + 1}`, 'error');
+                            return false;
+                        }
+                    }
+                    break;
+                    
+                case 'matching':
+                    const items = document.querySelectorAll('#matchingItems input');
+                    const matches = document.querySelectorAll('#matchingMatches input');
+                    const filledItems = Array.from(items).filter(item => item.value.trim());
+                    const filledMatches = Array.from(matches).filter(match => match.value.trim());
+                    
+                    if (filledItems.length < 2 || filledMatches.length < 2) {
+                        showAlert('Please provide at least 2 items and 2 matches', 'error');
+                        return false;
+                    }
+                    break;
+            }
+            
+            return true;
+        }
+        
+        function collectQuestionData() {
+            const questionText = document.getElementById('questionText').innerHTML;
+                
+            const data = {
+                type: currentQuestionType,
+                text: questionText,
+                categoryId: selectedCategoryId,
+                difficulty: document.getElementById('difficulty').value,
+                points: parseInt(document.getElementById('points').value) || 10,
+                timeLimit: parseInt(document.getElementById('timeLimit').value) || 30,
+                shuffleAnswers: document.getElementById('shuffleAnswers').checked,
+                tags: tags,
+                metadata: {
+                    chapter: document.getElementById('chapter').value,
+                    topic: document.getElementById('topic').value
+                },
+                explanation: document.getElementById('explanationText').innerHTML,
+                mediaUrls: [] // TODO: Handle media upload
+            };
+            
+            // Collect answer data based on type
+            switch (currentQuestionType) {
+                case 'multiple_choice':
+                    const mcOptions = Array.from(document.querySelectorAll('.option-input'))
+                        .map(input => input.value)
+                        .filter(val => val.trim());
+                    const correctRadio = document.querySelector('.option-radio:checked');
+                    data.options = mcOptions;
+                    data.correctAnswer = correctRadio ? parseInt(correctRadio.value) : 0;
+                    break;
+                    
+                case 'true_false':
+                    const tfAnswer = document.querySelector('input[name="correct"]:checked').value;
+                    data.correctAnswer = tfAnswer === 'true';
+                    break;
+                    
+                case 'fill_blank':
+                    data.blanks = Object.values(blankAnswers);
+                    break;
+                    
+                case 'multiple_answer':
+                    const maOptions = Array.from(document.querySelectorAll('.option-input'))
+                        .map(input => input.value)
+                        .filter(val => val.trim());
+                    const correctCheckboxes = Array.from(document.querySelectorAll('.option-checkbox:checked'))
+                        .map(cb => parseInt(cb.value));
+                    data.options = maOptions;
+                    data.correctAnswers = correctCheckboxes;
+                    break;
+                    
+                case 'matching':
+                    const items = Array.from(document.querySelectorAll('#matchingItems input'))
+                        .map(input => input.value)
+                        .filter(val => val.trim());
+                    const matches = Array.from(document.querySelectorAll('#matchingMatches input'))
+                        .map(input => input.value)
+                        .filter(val => val.trim());
+                    data.items = items;
+                    data.matches = matches;
+                    data.correctPairs = items.map((_, index) => [index, index]); // Default pairing
+                    break;
+                    
+                case 'essay':
+                    data.sampleAnswer = document.getElementById('sampleAnswer')?.innerHTML || '';
+                    data.minWords = parseInt(document.getElementById('minWords')?.value) || null;
+                    data.maxWords = parseInt(document.getElementById('maxWords')?.value) || null;
+                    break;
+            }
+            
+            return data;
+        }
+        
+        function resetForm() {
+            document.getElementById('questionText').innerHTML = '';
+            document.getElementById('explanationText').innerHTML = '';
+            tags = [];
+            renderTags();
+            mediaFiles = [];
+            renderMediaPreview();
+            selectedCategoryId = null;
+            document.getElementById('selectedCategory').textContent = 'Select a category...';
+            
+            // Reset type-specific content
+            blankCount = 0;
+            blankAnswers = {};
+            renderAnswerSection();
+        }
+        
+        async function saveAsDraft() {
+            const questionData = collectQuestionData();
+            questionData.status = 'draft';
+            
+            try {
+                showLoading(true);
+                const result = await window.electronAPI.questions.create(questionData);
+                if (result.success) {
+                    showAlert('Question saved as draft!', 'success');
+                    resetForm();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Failed to save draft:', error);
+                showAlert(`Failed to save draft: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function cancelEdit() {
+            if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                window.close();
+            }
+        }
+        
+        function previewQuestion() {
+            // TODO: Implement question preview
+            showAlert('Preview feature coming soon!', 'info');
+        }
+        
+        // Utility Functions
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                ${message}
+            `;
+            
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+        
+        // Load existing question for editing
+        async function loadQuestion(id) {
+            try {
+                showLoading(true);
+                const question = await window.electronAPI.database.findById('questions', id);
+                
+                if (question) {
+                    // Set question type
+                    selectQuestionType(question.type);
+                    
+                    // Set basic fields
+                    document.getElementById('questionText').innerHTML = question.text || '';
+                    document.getElementById('explanationText').innerHTML = question.explanation || '';
+                    document.getElementById('difficulty').value = question.difficulty || 'medium';
+                    document.getElementById('points').value = question.points || 10;
+                    document.getElementById('timeLimit').value = question.timeLimit || 30;
+                    document.getElementById('shuffleAnswers').checked = question.shuffleAnswers !== false;
+                    
+                    // Set category
+                    if (question.categoryId) {
+                        const category = categories.find(c => c.id === question.categoryId);
+                        if (category) {
+                            selectCategory(category);
+                        }
+                    }
+                    
+                    // Set tags
+                    tags = question.tags || [];
+                    renderTags();
+                    
+                    // Set metadata
+                    if (question.metadata) {
+                        document.getElementById('chapter').value = question.metadata.chapter || '';
+                        document.getElementById('topic').value = question.metadata.topic || '';
+                    }
+                    
+                    // Load type-specific data
+                    // TODO: Implement loading for each question type
+                    
+                } else {
+                    throw new Error('Question not found');
+                }
+            } catch (error) {
+                console.error('Failed to load question:', error);
+                showAlert(`Failed to load question: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Add the missing saveQuestion function for the header button
+        function saveQuestion() {
+            // Trigger form submission
+            document.getElementById('questionForm').dispatchEvent(new Event('submit'));
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Attach form submit handler
+            document.getElementById('questionForm').addEventListener('submit', handleSubmit);
+            
+            // Load categories
+            loadCategories();
+            
+            // Check URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const editId = urlParams.get('id');
+            const mode = urlParams.get('mode');
+            const returnToQuiz = urlParams.get('returnToQuiz');
+            
+            // Store quiz mode state
+            if (mode === 'quiz' || returnToQuiz === 'true') {
+                window.isQuizMode = true;
+            }
+            
+            if (editId) {
+                questionId = editId;
+                editingQuestion = true;
+                loadQuestion(editId);
+            }
+        });
+    </script>
+
+    <script>
+        // Home navigation function
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+    </script>
+
+
+
+    <!-- Home Button -->
+    <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+        <button class="btn btn-secondary" onclick="goHome()" style="
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0, 0, 0, 0.2)';" 
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.15)';">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            Back to Home
+        </button>
+    </div>
+</body>
+</html>

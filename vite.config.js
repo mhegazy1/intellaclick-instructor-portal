@@ -13,6 +13,7 @@ export default defineConfig({
         classes: path.resolve(__dirname, 'classes.html'),
         quizzes: path.resolve(__dirname, 'quizzes.html'),
         'quiz-creator': path.resolve(__dirname, 'quiz-creator.html'),
+        'question-editor-enhanced': path.resolve(__dirname, 'question-editor-enhanced.html'),
         'saved-questions': path.resolve(__dirname, 'saved-questions.html'),
         session: path.resolve(__dirname, 'session.html'),
         display: path.resolve(__dirname, 'display.html'),
