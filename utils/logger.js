@@ -14,13 +14,16 @@ const LOG_LEVELS = {
   DEBUG: 3
 };
 
+// Detect production mode (default to production if import.meta.env not available)
+const MODE = (typeof import.meta !== 'undefined' && import.meta.env?.MODE) || 'production';
+
 // Current log level (can be set via environment or config)
-const CURRENT_LEVEL = import.meta.env.MODE === 'production'
+const CURRENT_LEVEL = MODE === 'production'
   ? LOG_LEVELS.WARN
   : LOG_LEVELS.DEBUG;
 
 // Enable/disable console output
-const CONSOLE_ENABLED = import.meta.env.MODE !== 'production';
+const CONSOLE_ENABLED = MODE !== 'production';
 
 /**
  * Log error message
