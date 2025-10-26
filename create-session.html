@@ -258,7 +258,6 @@
         import toast from './utils/toast.js';
         import logger from './utils/logger.js';
         import loading from './utils/loading.js';
-        import confirm from './utils/confirm.js';
 
         let classId;
         let classData;
@@ -641,7 +640,7 @@
         }
 
         function removeQuickPollQuestion(index) {
-            if (confirm('Remove this question?')) {
+            if (window.confirm('Remove this question?')) {
                 quickPollQuestions.splice(index, 1);
                 renderQuestionsList();
             }
@@ -827,7 +826,7 @@
         }
 
         function cancelSession() {
-            if (confirm('Are you sure you want to cancel?')) {
+            if (window.confirm('Are you sure you want to cancel?')) {
                 window.location.href = 'classes.html';
             }
         }

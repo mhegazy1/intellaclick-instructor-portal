@@ -105,7 +105,6 @@
         import toast from './utils/toast.js';
         import logger from './utils/logger.js';
         import loading from './utils/loading.js';
-        import confirm from './utils/confirm.js';
 
         let allSessions = [];
         let filteredSessions = [];
@@ -737,7 +736,7 @@
         }
 
         async function deleteSession(sessionId) {
-            if (!confirm('Are you sure you want to delete this session? This cannot be undone.')) {
+            if (!window.confirm('Are you sure you want to delete this session? This cannot be undone.')) {
                 return;
             }
 
@@ -821,7 +820,7 @@
             const count = selectedSessions.size;
             if (count === 0) return;
 
-            if (!confirm(`Are you sure you want to delete ${count} session(s)? This cannot be undone.`)) {
+            if (!window.confirm(`Are you sure you want to delete ${count} session(s)? This cannot be undone.`)) {
                 return;
             }
 
@@ -878,7 +877,7 @@
         // ========== END SESSION FUNCTION ==========
 
         async function endSession(sessionId) {
-            if (!confirm('Are you sure you want to end this session?')) {
+            if (!window.confirm('Are you sure you want to end this session?')) {
                 return;
             }
 

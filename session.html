@@ -176,7 +176,6 @@
         import toast from './utils/toast.js';
         import logger from './utils/logger.js';
         import loading from './utils/loading.js';
-        import confirm from './utils/confirm.js';
 
         let sessionId;
         let sessionCode;
@@ -606,7 +605,7 @@
                     });
                     
                     // Show more detailed error in alert for debugging
-                    if (confirm('Network error detected. This is likely a CORS configuration issue.\n\nThe backend needs to add instructor.intellaclick.com to its allowed origins.\n\nClick OK to open the CORS test page for more details.')) {
+                    if (window.confirm('Network error detected. This is likely a CORS configuration issue.\n\nThe backend needs to add instructor.intellaclick.com to its allowed origins.\n\nClick OK to open the CORS test page for more details.')) {
                         window.open('/cors-test.html', '_blank');
                     }
                 } else {
