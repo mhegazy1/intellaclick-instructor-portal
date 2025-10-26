@@ -594,8 +594,8 @@
                 const totalEnrolled = enrollmentSummary.totalEnrolled || stats.enrolledCount || 0;
                 const pendingCount = enrollmentSummary.pending || stats.pendingCount || 0;
 
-                // Determine if we're viewing archived classes
-                const isArchivedView = statusFilter === 'archived';
+                // Determine if THIS CLASS is archived (not the filter)
+                const isArchived = classData.status === 'archived';
 
                 return `
                     <div class="class-card">
@@ -676,7 +676,7 @@
                                 <button class="btn btn-secondary" onclick="editClass(event, '${classData._id}')">
                                     Settings
                                 </button>
-                                ${isArchivedView ? `
+                                ${isArchived ? `
                                     <button class="btn btn-danger" onclick="deleteClassPermanently(event, '${classData._id}', '${classData.name.replace(/'/g, "\\'")}')">
                                         Permanently Delete
                                     </button>
