@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Quiz - IntellaClick</title>
+  <link rel="stylesheet" href="styles/common.css">
+  <style>
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .form-card {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    textarea.form-control {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .question-list {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .question-item {
+      background: #f8f9fa;
+      border-left: 4px solid #4F46E5;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+    }
+
+    .question-text {
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .question-meta {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    #question-count {
+      font-weight: 500;
+      color: #4F46E5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="quizzes.html" class="back-link">← Back to Quizzes</a>
+
+    <h1>Create Quiz</h1>
+
+    <div class="form-card">
+      <div class="form-group">
+        <label for="quiz-title">Quiz Title *</label>
+        <input type="text" class="form-control" id="quiz-title"
+               placeholder="Enter quiz title" required>
+      </div>
+
+      <div class="form-group">
+        <label for="quiz-description">Description</label>
+        <textarea class="form-control" id="quiz-description"
+                  placeholder="Brief description of the quiz"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Questions</label>
+        <div style="display: flex; gap: 12px; margin-bottom: 1rem;">
+          <button class="btn btn-primary" onclick="addFromQuestionSets()">
+            Add from Question Sets
+          </button>
+          <button class="btn btn-secondary" onclick="createNewQuestion()">
+            Create New Question
+          </button>
+        </div>
+        <p style="color: #6b7280; font-size: 0.875rem; margin: 0;">
+          <span id="question-count">0 questions</span> added to this quiz
+        </p>
+      </div>
+    </div>
+
+    <div class="question-list">
+      <h3>Questions</h3>
+      <div id="question-list">
+        <div class="empty-state">
+          <p>No questions added yet. Click the buttons above to add questions.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="saveQuiz()">Save Quiz</button>
+      <a href="quizzes.html" class="btn btn-secondary">Cancel</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { quizzes } from './utils/api.js';
+    import toast from './utils/toast.js';
+    import logger from './utils/logger.js';
+
+    let quizQuestions = [];
+    let editingQuizId = null;
+
+    // Check if editing existing quiz
+    const urlParams = new URLSearchParams(window.location.search);
+    editingQuizId = urlParams.get('id');
+
+    if (editingQuizId) {
+      loadQuiz(editingQuizId);
+    }
+
+    async function loadQuiz(id) {
+      try {
+        const data = await quizzes.getById(id);
+        const quiz = data.quiz;
+
+        document.getElementById('quiz-title').value = quiz.title;
+        document.getElementById('quiz-description').value = quiz.description || '';
+        quizQuestions = quiz.questions || [];
+        renderQuestions();
+
+        document.querySelector('h1').textContent = 'Edit Quiz';
+      } catch (error) {
+        logger.error('Error loading quiz:', error);
+        toast.error('Failed to load quiz: ' + error.message);
+      }
+    }
+
+    function addFromQuestionSets() {
+      // Navigate to question sets page with return URL
+      window.location.href = `saved-questions.html?returnUrl=${encodeURIComponent(window.location.href)}&mode=select`;
+    }
+
+    function createNewQuestion() {
+      toast.info('Question creator coming soon! For now, use Question Sets.');
+    }
+
+    function renderQuestions() {
+      const listEl = document.getElementById('question-list');
+      const countEl = document.getElementById('question-count');
+
+      if (quizQuestions.length === 0) {
+        listEl.innerHTML = '<div class="empty-state"><p>No questions added yet. Click the buttons above to add questions.</p></div>';
+        countEl.textContent = '0 questions';
+        return;
+      }
+
+      listEl.innerHTML = quizQuestions.map((q, index) => `
+        <div class="question-item">
+          <div class="question-text">${index + 1}. ${q.text || q.questionText || 'Question'}</div>
+          <div class="question-meta">
+            Type: ${q.type || 'MCQ'} |
+            ${q.options ? `${q.options.length} options` : ''} |
+            ${q.correctAnswer ? 'Answer: ' + q.correctAnswer : ''}
+            <button class="btn btn-danger btn-small" style="float: right; padding: 0.25rem 0.75rem; font-size: 0.875rem;"
+                    onclick="window.removeQuestion(${index})">Remove</button>
+          </div>
+        </div>
+      `).join('');
+
+      countEl.textContent = `${quizQuestions.length} question${quizQuestions.length !== 1 ? 's' : ''}`;
+    }
+
+    window.removeQuestion = function(index) {
+      quizQuestions.splice(index, 1);
+      renderQuestions();
+    };
+
+    window.saveQuiz = async function() {
+      const title = document.getElementById('quiz-title').value.trim();
+      const description = document.getElementById('quiz-description').value.trim();
+
+      if (!title) {
+        toast.error('Please enter a quiz title');
+        return;
+      }
+
+      if (quizQuestions.length === 0) {
+        toast.error('Please add at least one question to the quiz');
+        return;
+      }
+
+      const quizData = {
+        title,
+        description,
+        type: 'standard',
+        questions: quizQuestions,
+        settings: {}
+      };
+
+      try {
+        let result;
+        if (editingQuizId) {
+          result = await quizzes.update(editingQuizId, quizData);
+          toast.success('Quiz updated successfully!');
+        } else {
+          result = await quizzes.create(quizData);
+          toast.success('Quiz created successfully!');
+        }
+
+        // Redirect back to quizzes page after a short delay
+        setTimeout(() => {
+          window.location.href = 'quizzes.html';
+        }, 1000);
+      } catch (error) {
+        logger.error('Failed to save quiz:', error);
+        toast.error('Failed to save quiz: ' + error.message);
+      }
+    };
+
+    // Listen for questions added from question sets page
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'selected_questions') {
+        const questions = JSON.parse(e.newValue || '[]');
+        if (questions.length > 0) {
+          quizQuestions.push(...questions);
+          renderQuestions();
+          toast.success(`Added ${questions.length} question(s) to quiz`);
+          localStorage.removeItem('selected_questions');
+        }
+      }
+    });
+
+    // Make functions available globally
+    window.addFromQuestionSets = addFromQuestionSets;
+    window.createNewQuestion = createNewQuestion;
+  </script>
+</body>
+</html>

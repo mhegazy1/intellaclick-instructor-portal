@@ -12,6 +12,7 @@ export default defineConfig({
         login: path.resolve(__dirname, 'login.html'),
         classes: path.resolve(__dirname, 'classes.html'),
         quizzes: path.resolve(__dirname, 'quizzes.html'),
+        'quiz-creator': path.resolve(__dirname, 'quiz-creator.html'),
         'saved-questions': path.resolve(__dirname, 'saved-questions.html'),
         session: path.resolve(__dirname, 'session.html'),
         display: path.resolve(__dirname, 'display.html'),
