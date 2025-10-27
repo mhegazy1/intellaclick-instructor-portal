@@ -61,23 +61,12 @@
                     <!-- Multiple Choice Options -->
                     <div id="mcqOptions" style="margin-top: 16px;">
                         <label>Answer Options</label>
-                        <div class="radio-group" style="flex-direction: column; gap: 10px;">
-                            <div class="radio-option">
-                                <input type="radio" name="correctAnswer" value="A" checked>
-                                <input type="text" id="optionA" placeholder="Option A" style="width: calc(100% - 40px); margin-left: 8px;">
-                            </div>
-                            <div class="radio-option">
-                                <input type="radio" name="correctAnswer" value="B">
-                                <input type="text" id="optionB" placeholder="Option B" style="width: calc(100% - 40px); margin-left: 8px;">
-                            </div>
-                            <div class="radio-option">
-                                <input type="radio" name="correctAnswer" value="C">
-                                <input type="text" id="optionC" placeholder="Option C" style="width: calc(100% - 40px); margin-left: 8px;">
-                            </div>
-                            <div class="radio-option">
-                                <input type="radio" name="correctAnswer" value="D">
-                                <input type="text" id="optionD" placeholder="Option D" style="width: calc(100% - 40px); margin-left: 8px;">
-                            </div>
+                        <div id="mcqOptionsContainer" class="radio-group" style="flex-direction: column; gap: 10px;">
+                            <!-- Options will be added dynamically -->
+                        </div>
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="addMcqOption()">+ Add Option</button>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="removeMcqOption()">- Remove Last</button>
                         </div>
                         <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Select the radio button next to the correct answer</small>
                     </div>
@@ -85,11 +74,12 @@
                     <!-- Poll Options (No Correct Answer) -->
                     <div id="pollOptions" style="margin-top: 16px; display: none;">
                         <label>Poll Options</label>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <input type="text" id="pollOptionA" placeholder="Option A" style="width: 100%;">
-                            <input type="text" id="pollOptionB" placeholder="Option B" style="width: 100%;">
-                            <input type="text" id="pollOptionC" placeholder="Option C" style="width: 100%;">
-                            <input type="text" id="pollOptionD" placeholder="Option D" style="width: 100%;">
+                        <div id="pollOptionsContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Options will be added dynamically -->
+                        </div>
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="addPollOption()">+ Add Option</button>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="removePollOption()">- Remove Last</button>
                         </div>
                         <small style="color: var(--text-secondary); margin-top: 8px; display: block;">No correct answer - results will show distribution</small>
                     </div>
@@ -168,11 +158,18 @@
         let quizQuestions = [];
         let editingQuizId = null;
         let editingQuestionIndex = null; // Track which question is being edited
+        let mcqOptionCount = 4; // Start with 4 options
+        let pollOptionCount = 4; // Start with 4 options
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
             document.getElementById('quizForm').addEventListener('submit', handleSaveQuiz);
+
+            // Initialize dynamic options
+            initializeMcqOptions(4);
+            initializePollOptions(4);
+
             updateQuestionOptions(); // Show default MCQ options
 
             // Check if editing existing quiz
@@ -182,6 +179,81 @@
                 loadExistingQuiz(quizId);
             }
         });
+
+        // Initialize MCQ options with specified count
+        function initializeMcqOptions(count) {
+            mcqOptionCount = count;
+            const container = document.getElementById('mcqOptionsContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const letter = String.fromCharCode(65 + i);
+                const div = document.createElement('div');
+                div.className = 'radio-option';
+                div.innerHTML = `
+                    <input type="radio" name="correctAnswer" value="${letter}" ${i === 0 ? 'checked' : ''}>
+                    <input type="text" id="option${letter}" placeholder="Option ${letter}" style="width: calc(100% - 40px); margin-left: 8px;">
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        // Initialize Poll options with specified count
+        function initializePollOptions(count) {
+            pollOptionCount = count;
+            const container = document.getElementById('pollOptionsContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const letter = String.fromCharCode(65 + i);
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `pollOption${letter}`;
+                input.placeholder = `Option ${letter}`;
+                input.style.width = '100%';
+                container.appendChild(input);
+            }
+        }
+
+        // Add MCQ option
+        function addMcqOption() {
+            if (mcqOptionCount >= 26) {
+                toast.error('Maximum 26 options allowed');
+                return;
+            }
+            mcqOptionCount++;
+            initializeMcqOptions(mcqOptionCount);
+        }
+
+        // Remove MCQ option
+        function removeMcqOption() {
+            if (mcqOptionCount <= 2) {
+                toast.error('Minimum 2 options required');
+                return;
+            }
+            mcqOptionCount--;
+            initializeMcqOptions(mcqOptionCount);
+        }
+
+        // Add Poll option
+        function addPollOption() {
+            if (pollOptionCount >= 26) {
+                toast.error('Maximum 26 options allowed');
+                return;
+            }
+            pollOptionCount++;
+            initializePollOptions(pollOptionCount);
+        }
+
+        // Remove Poll option
+        function removePollOption() {
+            if (pollOptionCount <= 2) {
+                toast.error('Minimum 2 options required');
+                return;
+            }
+            pollOptionCount--;
+            initializePollOptions(pollOptionCount);
+        }
 
         function checkAuth() {
             const token = localStorage.getItem('token');
@@ -290,7 +362,9 @@
                         const options = [];
                         let correctAnswer = null;
 
-                        ['A', 'B', 'C', 'D'].forEach(letter => {
+                        // Iterate through all MCQ options dynamically
+                        for (let i = 0; i < mcqOptionCount; i++) {
+                            const letter = String.fromCharCode(65 + i);
                             const optionInput = document.getElementById(`option${letter}`);
                             if (optionInput && optionInput.value.trim()) {
                                 options.push(optionInput.value.trim());
@@ -299,7 +373,7 @@
                                     correctAnswer = letter;
                                 }
                             }
-                        });
+                        }
 
                         if (options.length < 2) {
                             toast.error('Please provide at least 2 answer options');
@@ -313,12 +387,14 @@
                     case 'poll':
                         const pollOptions = [];
 
-                        ['A', 'B', 'C', 'D'].forEach(letter => {
+                        // Iterate through all poll options dynamically
+                        for (let i = 0; i < pollOptionCount; i++) {
+                            const letter = String.fromCharCode(65 + i);
                             const pollOptionInput = document.getElementById(`pollOption${letter}`);
                             if (pollOptionInput && pollOptionInput.value.trim()) {
                                 pollOptions.push(pollOptionInput.value.trim());
                             }
-                        });
+                        }
 
                         if (pollOptions.length < 2) {
                             toast.error('Please provide at least 2 poll options');
@@ -451,11 +527,16 @@
             switch(question.questionType) {
                 case 'mcq':
                     if (question.options) {
+                        // Initialize with correct number of options
+                        initializeMcqOptions(question.options.length);
+
+                        // Then populate values
                         question.options.forEach((opt, i) => {
-                            const letter = String.fromCharCode(65 + i); // A, B, C, D
+                            const letter = String.fromCharCode(65 + i);
                             const input = document.getElementById(`option${letter}`);
                             if (input) input.value = opt;
                         });
+
                         // Set correct answer
                         if (question.correctAnswer) {
                             const radio = document.querySelector(`input[name="correctAnswer"][value="${question.correctAnswer}"]`);
@@ -466,6 +547,10 @@
 
                 case 'poll':
                     if (question.options) {
+                        // Initialize with correct number of options
+                        initializePollOptions(question.options.length);
+
+                        // Then populate values
                         question.options.forEach((opt, i) => {
                             const letter = String.fromCharCode(65 + i);
                             const input = document.getElementById(`pollOption${letter}`);
@@ -705,6 +790,10 @@
         window.cancelEditQuestion = cancelEditQuestion;
         window.cancelQuiz = cancelQuiz;
         window.insertBlank = insertBlank;
+        window.addMcqOption = addMcqOption;
+        window.removeMcqOption = removeMcqOption;
+        window.addPollOption = addPollOption;
+        window.removePollOption = removePollOption;
     </script>
 </body>
 </html>
