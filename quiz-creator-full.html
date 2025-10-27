@@ -144,8 +144,9 @@
                     </div>
 
                     <!-- Add Question Button -->
-                    <div style="margin-top: 16px;">
+                    <div style="margin-top: 16px; display: flex; gap: 8px;">
                         <button type="button" class="btn btn-primary" onclick="addQuestion()">+ Add This Question</button>
+                        <button type="button" class="btn btn-secondary" id="cancelEditBtn" onclick="cancelEditQuestion()" style="display: none;">Cancel</button>
                     </div>
                 </div>
 
@@ -166,6 +167,7 @@
 
         let quizQuestions = [];
         let editingQuizId = null;
+        let editingQuestionIndex = null; // Track which question is being edited
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -383,16 +385,30 @@
                         break;
                 }
 
-                // Add question to array
-                quizQuestions.push(question);
+                // Check if editing or adding
+                if (editingQuestionIndex !== null) {
+                    // Update existing question
+                    quizQuestions[editingQuestionIndex] = question;
+                    toast.success('Question updated successfully!');
+                    editingQuestionIndex = null;
+
+                    // Reset button text
+                    const addButton = document.querySelector('button[onclick="addQuestion()"]');
+                    if (addButton) {
+                        addButton.textContent = '+ Add This Question';
+                        addButton.className = 'btn btn-primary';
+                    }
+                } else {
+                    // Add new question to array
+                    quizQuestions.push(question);
+                    toast.success('Question added successfully!');
+                }
 
                 // Clear form
                 clearQuestionForm();
 
                 // Render questions list
                 renderQuestionsList();
-
-                toast.success('Question added successfully!');
 
             } catch (error) {
                 logger.error('Error adding question:', error);
@@ -420,12 +436,129 @@
             if (blankAnswer) blankAnswer.value = '';
         }
 
+        function editQuestion(index) {
+            const question = quizQuestions[index];
+            editingQuestionIndex = index;
+
+            // Load question text
+            document.getElementById('questionText').value = question.questionText;
+
+            // Set question type
+            document.getElementById('questionType').value = question.questionType;
+            updateQuestionOptions(); // Show correct options for this type
+
+            // Load type-specific data
+            switch(question.questionType) {
+                case 'mcq':
+                    if (question.options) {
+                        question.options.forEach((opt, i) => {
+                            const letter = String.fromCharCode(65 + i); // A, B, C, D
+                            const input = document.getElementById(`option${letter}`);
+                            if (input) input.value = opt;
+                        });
+                        // Set correct answer
+                        if (question.correctAnswer) {
+                            const radio = document.querySelector(`input[name="correctAnswer"][value="${question.correctAnswer}"]`);
+                            if (radio) radio.checked = true;
+                        }
+                    }
+                    break;
+
+                case 'poll':
+                    if (question.options) {
+                        question.options.forEach((opt, i) => {
+                            const letter = String.fromCharCode(65 + i);
+                            const input = document.getElementById(`pollOption${letter}`);
+                            if (input) input.value = opt;
+                        });
+                    }
+                    break;
+
+                case 'tf':
+                    if (question.correctAnswer) {
+                        const radio = document.querySelector(`input[name="tfAnswer"][value="${question.correctAnswer}"]`);
+                        if (radio) radio.checked = true;
+                    }
+                    break;
+
+                case 'matching':
+                    if (question.pairs) {
+                        question.pairs.forEach((pair, i) => {
+                            const num = i + 1;
+                            const leftInput = document.getElementById(`match${num}Left`);
+                            const rightInput = document.getElementById(`match${num}Right`);
+                            if (leftInput) leftInput.value = pair.left;
+                            if (rightInput) rightInput.value = pair.right;
+                        });
+                    }
+                    break;
+
+                case 'ordering':
+                    if (question.correctOrder) {
+                        question.correctOrder.forEach((item, i) => {
+                            const input = document.getElementById(`order${i + 1}`);
+                            if (input) input.value = item;
+                        });
+                    }
+                    break;
+
+                case 'fillblank':
+                    if (question.correctAnswer) {
+                        document.getElementById('blankAnswer').value = question.correctAnswer;
+                    }
+                    break;
+            }
+
+            // Update button text
+            const addButton = document.querySelector('button[onclick="addQuestion()"]');
+            if (addButton) {
+                addButton.textContent = 'Update Question';
+                addButton.className = 'btn btn-success';
+            }
+
+            // Show cancel button
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) {
+                cancelBtn.style.display = 'inline-block';
+            }
+
+            // Scroll to form
+            document.getElementById('questionText').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            toast.success('Question loaded for editing');
+        }
+
         function removeQuestion(index) {
             if (window.confirm('Remove this question?')) {
                 quizQuestions.splice(index, 1);
                 renderQuestionsList();
+
+                // If we were editing this question, clear the edit state
+                if (editingQuestionIndex === index) {
+                    cancelEditQuestion();
+                }
+
                 toast.success('Question removed');
             }
+        }
+
+        function cancelEditQuestion() {
+            editingQuestionIndex = null;
+            clearQuestionForm();
+
+            // Reset button text
+            const addButton = document.querySelector('button[onclick="addQuestion()"]');
+            if (addButton) {
+                addButton.textContent = '+ Add This Question';
+                addButton.className = 'btn btn-primary';
+            }
+
+            // Hide cancel button
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) {
+                cancelBtn.style.display = 'none';
+            }
+
+            toast.success('Edit cancelled');
         }
 
         function renderQuestionsList() {
@@ -446,7 +579,10 @@
                             <div style="font-weight: 500; margin-bottom: 4px;">Q${index + 1}: ${q.questionText}</div>
                             <div style="font-size: 12px; color: var(--text-secondary);">Type: ${getQuestionTypeLabel(q.questionType)}</div>
                         </div>
-                        <button type="button" class="btn btn-danger btn-small" onclick="removeQuestion(${index})" style="margin-left: 12px;">Remove</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="editQuestion(${index})">Edit</button>
+                            <button type="button" class="btn btn-danger btn-small" onclick="removeQuestion(${index})">Remove</button>
+                        </div>
                     </div>
                 `).join('')}
             `;
@@ -564,7 +700,9 @@
         // Expose functions to window for onclick handlers
         window.updateQuestionOptions = updateQuestionOptions;
         window.addQuestion = addQuestion;
+        window.editQuestion = editQuestion;
         window.removeQuestion = removeQuestion;
+        window.cancelEditQuestion = cancelEditQuestion;
         window.cancelQuiz = cancelQuiz;
         window.insertBlank = insertBlank;
     </script>

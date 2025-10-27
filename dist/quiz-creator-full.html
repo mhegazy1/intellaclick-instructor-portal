@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Quiz - IntellaClick</title>
-  <script type="module" crossorigin src="/assets/quiz-creator-full-DRD8Loyg.js"></script>
+  <script type="module" crossorigin src="/assets/quiz-creator-full-WscZBZ0Z.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/toast-93yYkT8V.js">
   <link rel="modulepreload" crossorigin href="/assets/api-BBvzFwfC.js">
   <link rel="modulepreload" crossorigin href="/assets/logger-gSLuc3Ra.js">
@@ -148,8 +148,9 @@
                     </div>
 
                     <!-- Add Question Button -->
-                    <div style="margin-top: 16px;">
+                    <div style="margin-top: 16px; display: flex; gap: 8px;">
                         <button type="button" class="btn btn-primary" onclick="addQuestion()">+ Add This Question</button>
+                        <button type="button" class="btn btn-secondary" id="cancelEditBtn" onclick="cancelEditQuestion()" style="display: none;">Cancel</button>
                     </div>
                 </div>
 
