@@ -815,7 +815,7 @@
 
             try {
                 // Check if gamification is enabled for this session
-                const hasGamification = sessionData?.gamificationEnabled && sessionData?.classId;
+                const hasGamification = sessionData?.gamification?.enabled && sessionData?.classId;
 
                 let response;
                 if (hasGamification) {
