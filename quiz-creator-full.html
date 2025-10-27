@@ -165,18 +165,70 @@
         import logger from './utils/logger.js';
 
         let quizQuestions = [];
+        let editingQuizId = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
             document.getElementById('quizForm').addEventListener('submit', handleSaveQuiz);
             updateQuestionOptions(); // Show default MCQ options
+
+            // Check if editing existing quiz
+            const urlParams = new URLSearchParams(window.location.search);
+            const quizId = urlParams.get('id');
+            if (quizId) {
+                loadExistingQuiz(quizId);
+            }
         });
 
         function checkAuth() {
             const token = localStorage.getItem('token');
             if (!token) {
                 window.location.href = 'login.html';
+            }
+        }
+
+        async function loadExistingQuiz(quizId) {
+            try {
+                logger.debug('Loading quiz for editing:', quizId);
+                const result = await quizzes.getById(quizId);
+                const quiz = result.quiz || result;
+
+                // Store the quiz ID for updating
+                editingQuizId = quizId;
+
+                // Populate quiz details
+                document.getElementById('quizTitle').value = quiz.title || '';
+                document.getElementById('quizDescription').value = quiz.description || '';
+
+                // Update header
+                document.querySelector('.header h1').textContent = 'Edit Quiz';
+
+                // Update button text
+                document.getElementById('saveButton').textContent = 'Update Quiz';
+
+                // Load questions from quiz
+                if (quiz.questions && quiz.questions.length > 0) {
+                    quizQuestions = quiz.questions.map(q => {
+                        const snapshot = q.questionSnapshot || {};
+                        return {
+                            questionText: snapshot.questionText || '',
+                            questionType: snapshot.questionType || 'mcq',
+                            options: snapshot.options || [],
+                            correctAnswer: snapshot.correctAnswer,
+                            pairs: snapshot.pairs,
+                            correctOrder: snapshot.correctOrder,
+                            points: q.points || 10
+                        };
+                    });
+
+                    renderQuestionsList();
+                }
+
+                toast.success('Quiz loaded for editing');
+            } catch (error) {
+                logger.error('Error loading quiz:', error);
+                toast.error('Failed to load quiz: ' + error.message);
             }
         }
 
@@ -458,10 +510,18 @@
                 document.getElementById('saveButton').disabled = true;
                 document.getElementById('saveButton').textContent = 'Saving...';
 
-                const result = await quizzes.create(quizData);
-                logger.debug('Quiz created:', result);
-
-                toast.success('Quiz saved successfully!');
+                let result;
+                if (editingQuizId) {
+                    // Update existing quiz
+                    result = await quizzes.update(editingQuizId, quizData);
+                    logger.debug('Quiz updated:', result);
+                    toast.success('Quiz updated successfully!');
+                } else {
+                    // Create new quiz
+                    result = await quizzes.create(quizData);
+                    logger.debug('Quiz created:', result);
+                    toast.success('Quiz saved successfully!');
+                }
 
                 // Redirect to quizzes page
                 setTimeout(() => {
