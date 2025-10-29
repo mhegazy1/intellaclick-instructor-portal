@@ -162,26 +162,24 @@
                     <!-- Matching Options -->
                     <div id="matchingOptions" style="margin-top: 16px; display: none;">
                         <label>Matching Pairs</label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
-                            <input type="text" id="match1Left" placeholder="Item 1">
-                            <input type="text" id="match1Right" placeholder="Match 1">
-                            <input type="text" id="match2Left" placeholder="Item 2">
-                            <input type="text" id="match2Right" placeholder="Match 2">
-                            <input type="text" id="match3Left" placeholder="Item 3">
-                            <input type="text" id="match3Right" placeholder="Match 3">
-                            <input type="text" id="match4Left" placeholder="Item 4">
-                            <input type="text" id="match4Right" placeholder="Match 4">
+                        <div id="matchingPairsContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+                            <!-- Pairs will be added dynamically -->
+                        </div>
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="addMatchingPair()">+ Add Pair</button>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="removeMatchingPair()">- Remove Last</button>
                         </div>
                     </div>
                     
                     <!-- Ordering Options -->
                     <div id="orderingOptions" style="margin-top: 16px; display: none;">
                         <label>Items in Correct Order</label>
-                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                            <input type="text" id="order1" placeholder="1st item">
-                            <input type="text" id="order2" placeholder="2nd item">
-                            <input type="text" id="order3" placeholder="3rd item">
-                            <input type="text" id="order4" placeholder="4th item">
+                        <div id="orderingItemsContainer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                            <!-- Items will be added dynamically -->
+                        </div>
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="addOrderingItem()">+ Add Item</button>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="removeOrderingItem()">- Remove Last</button>
                         </div>
                         <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Enter items in the correct order</small>
                     </div>
@@ -274,6 +272,8 @@
         let quickPollQuestions = []; // Store multiple questions for quick poll
         let mcqOptionCount = 4; // Start with 4 options
         let pollOptionCount = 4; // Start with 4 options
+        let matchingPairCount = 4; // Start with 4 pairs
+        let orderingItemCount = 4; // Start with 4 items
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -291,6 +291,8 @@
             // Initialize dynamic options
             initializeMcqOptions(4);
             initializePollOptions(4);
+            initializeMatchingPairs(4);
+            initializeOrderingItems(4);
 
             document.getElementById('sessionForm').addEventListener('submit', handleStartSession);
 
@@ -393,6 +395,95 @@
             }
             pollOptionCount--;
             initializePollOptions(pollOptionCount);
+        }
+
+        // Initialize Matching pairs with specified count
+        function initializeMatchingPairs(count) {
+            matchingPairCount = count;
+            const container = document.getElementById('matchingPairsContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const num = i + 1;
+                const leftInput = document.createElement('input');
+                leftInput.type = 'text';
+                leftInput.id = `match${num}Left`;
+                leftInput.placeholder = `Item ${num}`;
+                leftInput.style.width = '100%';
+
+                const rightInput = document.createElement('input');
+                rightInput.type = 'text';
+                rightInput.id = `match${num}Right`;
+                rightInput.placeholder = `Match ${num}`;
+                rightInput.style.width = '100%';
+
+                container.appendChild(leftInput);
+                container.appendChild(rightInput);
+            }
+        }
+
+        // Add Matching pair
+        function addMatchingPair() {
+            if (matchingPairCount >= 10) {
+                toast.error('Maximum 10 pairs allowed');
+                return;
+            }
+            matchingPairCount++;
+            initializeMatchingPairs(matchingPairCount);
+        }
+
+        // Remove Matching pair
+        function removeMatchingPair() {
+            if (matchingPairCount <= 2) {
+                toast.error('Minimum 2 pairs required');
+                return;
+            }
+            matchingPairCount--;
+            initializeMatchingPairs(matchingPairCount);
+        }
+
+        // Initialize Ordering items with specified count
+        function initializeOrderingItems(count) {
+            orderingItemCount = count;
+            const container = document.getElementById('orderingItemsContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const num = i + 1;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `order${num}`;
+                input.placeholder = `${getOrdinal(num)} item`;
+                input.style.width = '100%';
+                container.appendChild(input);
+            }
+        }
+
+        // Add Ordering item
+        function addOrderingItem() {
+            if (orderingItemCount >= 10) {
+                toast.error('Maximum 10 items allowed');
+                return;
+            }
+            orderingItemCount++;
+            initializeOrderingItems(orderingItemCount);
+        }
+
+        // Remove Ordering item
+        function removeOrderingItem() {
+            if (orderingItemCount <= 2) {
+                toast.error('Minimum 2 items required');
+                return;
+            }
+            orderingItemCount--;
+            initializeOrderingItems(orderingItemCount);
+        }
+
+        // Helper function to get ordinal suffix
+        function getOrdinal(num) {
+            const suffixes = ['th', 'st', 'nd', 'rd'];
+            const value = num % 100;
+            return num + (suffixes[(value - 20) % 10] || suffixes[value] || suffixes[0]);
         }
 
         async function loadSavedSettings() {
@@ -679,7 +770,7 @@
 
                     case 'matching':
                         const pairs = [];
-                        for (let i = 1; i <= 4; i++) {
+                        for (let i = 1; i <= matchingPairCount; i++) {
                             const left = document.getElementById(`match${i}Left`).value.trim();
                             const right = document.getElementById(`match${i}Right`).value.trim();
                             if (left && right) {
@@ -697,7 +788,7 @@
 
                     case 'ordering':
                         const items = [];
-                        for (let i = 1; i <= 4; i++) {
+                        for (let i = 1; i <= orderingItemCount; i++) {
                             const item = document.getElementById(`order${i}`).value.trim();
                             if (item) {
                                 items.push(item);
@@ -746,20 +837,35 @@
 
         function clearQuestionForm() {
             document.getElementById('questionText').value = '';
-            ['A', 'B', 'C', 'D'].forEach(letter => {
+
+            // Clear MCQ options (dynamic count)
+            for (let i = 0; i < mcqOptionCount; i++) {
+                const letter = String.fromCharCode(65 + i);
                 const input = document.getElementById(`option${letter}`);
                 if (input) input.value = '';
+            }
+
+            // Clear Poll options (dynamic count)
+            for (let i = 0; i < pollOptionCount; i++) {
+                const letter = String.fromCharCode(65 + i);
                 const pollInput = document.getElementById(`pollOption${letter}`);
                 if (pollInput) pollInput.value = '';
-            });
-            for (let i = 1; i <= 4; i++) {
+            }
+
+            // Clear Matching pairs (dynamic count)
+            for (let i = 1; i <= matchingPairCount; i++) {
                 const matchLeft = document.getElementById(`match${i}Left`);
                 const matchRight = document.getElementById(`match${i}Right`);
-                const order = document.getElementById(`order${i}`);
                 if (matchLeft) matchLeft.value = '';
                 if (matchRight) matchRight.value = '';
+            }
+
+            // Clear Ordering items (dynamic count)
+            for (let i = 1; i <= orderingItemCount; i++) {
+                const order = document.getElementById(`order${i}`);
                 if (order) order.value = '';
             }
+
             const blankAnswer = document.getElementById('blankAnswer');
             if (blankAnswer) blankAnswer.value = '';
         }
@@ -1051,6 +1157,14 @@
         window.addQuickPollQuestion = addQuickPollQuestion;
         window.cancelSession = cancelSession;
         window.removeQuickPollQuestion = removeQuickPollQuestion;
+        window.addMcqOption = addMcqOption;
+        window.removeMcqOption = removeMcqOption;
+        window.addPollOption = addPollOption;
+        window.removePollOption = removePollOption;
+        window.addMatchingPair = addMatchingPair;
+        window.removeMatchingPair = removeMatchingPair;
+        window.addOrderingItem = addOrderingItem;
+        window.removeOrderingItem = removeOrderingItem;
     </script>
 </body>
 </html>
