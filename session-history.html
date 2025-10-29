@@ -115,20 +115,34 @@
         let allClasses = [];
 
         // Helper function to format answer for display based on question type
-        function formatAnswerForDisplay(answer, questionType) {
+        function formatAnswerForDisplay(answer, questionType, question) {
             if (!answer) return 'No answer';
 
             // For matching questions - display as pairs
             if (questionType === 'matching') {
                 try {
                     const answerObj = typeof answer === 'string' ? JSON.parse(answer) : answer;
-                    if (Array.isArray(answerObj)) {
+
+                    // If it's an array of pairs with left/right properties
+                    if (Array.isArray(answerObj) && answerObj.length > 0 && answerObj[0].left) {
                         return answerObj.map(pair => `${pair.left} → ${pair.right}`).join(', ');
-                    } else if (typeof answerObj === 'object') {
+                    }
+
+                    // If it's a simple array (student selected right-side values by index)
+                    if (Array.isArray(answerObj) && question?.pairs) {
+                        // answerObj is like ["cairo", "dc", "london"] where index = left item
+                        return answerObj.map((rightValue, idx) => {
+                            const leftValue = question.pairs[idx]?.left || `Item ${idx + 1}`;
+                            return `${leftValue} → ${rightValue}`;
+                        }).join(', ');
+                    }
+
+                    // If it's an object mapping
+                    if (typeof answerObj === 'object' && !Array.isArray(answerObj)) {
                         return Object.entries(answerObj).map(([left, right]) => `${left} → ${right}`).join(', ');
                     }
                 } catch (e) {
-                    // Fall through to default
+                    console.warn('Error formatting matching answer:', e);
                 }
             }
 
@@ -649,7 +663,7 @@
                                     return `
                                         <tr>
                                             <td>${participant?.name || r.participantId}</td>
-                                            <td>${formatAnswerForDisplay(r.answer, question.questionType)}</td>
+                                            <td>${formatAnswerForDisplay(r.answer, question.questionType, question)}</td>
                                             <td class="${isCorrect ? 'correct' : 'incorrect'}">
                                                 ${earnedPoints} / ${question.points}
                                             </td>

@@ -63,6 +63,11 @@ async function handleResponse(response) {
     // Improve error messages for common errors
     let errorMessage = error.error || error.message || `HTTP ${response.status}`;
 
+    // Ensure errorMessage is always a string
+    if (typeof errorMessage !== 'string') {
+      errorMessage = JSON.stringify(errorMessage);
+    }
+
     // Handle duplicate key errors
     if (errorMessage.includes('E11000') || errorMessage.includes('duplicate key')) {
       if (errorMessage.includes('code_1') || errorMessage.includes('code:')) {
