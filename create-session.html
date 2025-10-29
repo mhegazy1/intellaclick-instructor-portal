@@ -827,6 +827,7 @@
                         }
 
                         question.pairs = pairs;
+                        logger.debug('🔍 Created matching question with pairs:', { pairs, questionPairs: question.pairs });
                         break;
 
                     case 'ordering':
@@ -864,6 +865,7 @@
 
                 // Add question to array
                 quickPollQuestions.push(question);
+                logger.debug('✅ Added question to array:', { type: question.type, question, arrayLength: quickPollQuestions.length });
 
                 // Clear form
                 clearQuestionForm();
@@ -1076,8 +1078,13 @@
 
                 // Store all questions in sessionStorage for the session page to use
                 if (sessionData.questions && sessionData.questions.length > 0) {
+                    logger.debug('📦 Storing questions in sessionStorage:', sessionData.questions);
                     sessionStorage.setItem('pendingQuestions', JSON.stringify(sessionData.questions));
                     sessionStorage.setItem('currentQuestionIndex', '0'); // Start with first question
+
+                    // Verify what was stored
+                    const stored = JSON.parse(sessionStorage.getItem('pendingQuestions'));
+                    logger.debug('✅ Verified stored questions:', stored);
                 }
 
                 // AUTO-SAVE: Save questions for reuse (for ALL session types with questions)
