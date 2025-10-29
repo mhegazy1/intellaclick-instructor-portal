@@ -192,6 +192,18 @@
         function initializeMcqOptions(count) {
             mcqOptionCount = count;
             const container = document.getElementById('mcqOptionsContainer');
+
+            // Save existing values
+            const existingValues = {};
+            let selectedAnswer = null;
+            for (let i = 0; i < 26; i++) {
+                const letter = String.fromCharCode(65 + i);
+                const input = document.getElementById(`option${letter}`);
+                const radio = document.querySelector(`input[name="correctAnswer"][value="${letter}"]`);
+                if (input) existingValues[letter] = input.value;
+                if (radio && radio.checked) selectedAnswer = letter;
+            }
+
             container.innerHTML = '';
 
             for (let i = 0; i < count; i++) {
@@ -199,8 +211,8 @@
                 const div = document.createElement('div');
                 div.className = 'radio-option';
                 div.innerHTML = `
-                    <input type="radio" name="correctAnswer" value="${letter}" ${i === 0 ? 'checked' : ''}>
-                    <input type="text" id="option${letter}" placeholder="Option ${letter}" style="width: calc(100% - 40px); margin-left: 8px;">
+                    <input type="radio" name="correctAnswer" value="${letter}" ${selectedAnswer === letter || (i === 0 && !selectedAnswer) ? 'checked' : ''}>
+                    <input type="text" id="option${letter}" placeholder="Option ${letter}" value="${existingValues[letter] || ''}" style="width: calc(100% - 40px); margin-left: 8px;">
                 `;
                 container.appendChild(div);
             }
@@ -210,6 +222,15 @@
         function initializePollOptions(count) {
             pollOptionCount = count;
             const container = document.getElementById('pollOptionsContainer');
+
+            // Save existing values
+            const existingValues = {};
+            for (let i = 0; i < 26; i++) {
+                const letter = String.fromCharCode(65 + i);
+                const input = document.getElementById(`pollOption${letter}`);
+                if (input) existingValues[letter] = input.value;
+            }
+
             container.innerHTML = '';
 
             for (let i = 0; i < count; i++) {
@@ -218,6 +239,7 @@
                 input.type = 'text';
                 input.id = `pollOption${letter}`;
                 input.placeholder = `Option ${letter}`;
+                input.value = existingValues[letter] || '';
                 input.style.width = '100%';
                 container.appendChild(input);
             }
@@ -267,6 +289,16 @@
         function initializeMatchingPairs(count) {
             matchingPairCount = count;
             const container = document.getElementById('matchingPairsContainer');
+
+            // Save existing values
+            const existingValues = {};
+            for (let i = 1; i <= 10; i++) {
+                const leftInput = document.getElementById(`match${i}Left`);
+                const rightInput = document.getElementById(`match${i}Right`);
+                if (leftInput) existingValues[`${i}Left`] = leftInput.value;
+                if (rightInput) existingValues[`${i}Right`] = rightInput.value;
+            }
+
             container.innerHTML = '';
 
             for (let i = 0; i < count; i++) {
@@ -275,12 +307,14 @@
                 leftInput.type = 'text';
                 leftInput.id = `match${num}Left`;
                 leftInput.placeholder = `Item ${num}`;
+                leftInput.value = existingValues[`${num}Left`] || '';
                 leftInput.style.width = '100%';
 
                 const rightInput = document.createElement('input');
                 rightInput.type = 'text';
                 rightInput.id = `match${num}Right`;
                 rightInput.placeholder = `Match ${num}`;
+                rightInput.value = existingValues[`${num}Right`] || '';
                 rightInput.style.width = '100%';
 
                 container.appendChild(leftInput);
@@ -310,6 +344,14 @@
         function initializeOrderingItems(count) {
             orderingItemCount = count;
             const container = document.getElementById('orderingItemsContainer');
+
+            // Save existing values
+            const existingValues = {};
+            for (let i = 1; i <= 10; i++) {
+                const input = document.getElementById(`order${i}`);
+                if (input) existingValues[i] = input.value;
+            }
+
             container.innerHTML = '';
 
             for (let i = 0; i < count; i++) {
@@ -318,6 +360,7 @@
                 input.type = 'text';
                 input.id = `order${num}`;
                 input.placeholder = `${getOrdinal(num)} item`;
+                input.value = existingValues[num] || '';
                 input.style.width = '100%';
                 container.appendChild(input);
             }
