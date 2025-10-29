@@ -114,6 +114,40 @@
         let pageSize = 20;
         let allClasses = [];
 
+        // Helper function to format answer for display based on question type
+        function formatAnswerForDisplay(answer, questionType) {
+            if (!answer) return 'No answer';
+
+            // For matching questions - display as pairs
+            if (questionType === 'matching') {
+                try {
+                    const answerObj = typeof answer === 'string' ? JSON.parse(answer) : answer;
+                    if (Array.isArray(answerObj)) {
+                        return answerObj.map(pair => `${pair.left} → ${pair.right}`).join(', ');
+                    } else if (typeof answerObj === 'object') {
+                        return Object.entries(answerObj).map(([left, right]) => `${left} → ${right}`).join(', ');
+                    }
+                } catch (e) {
+                    // Fall through to default
+                }
+            }
+
+            // For ordering questions - display as ordered list
+            if (questionType === 'ordering') {
+                try {
+                    const answerArr = typeof answer === 'string' ? JSON.parse(answer) : answer;
+                    if (Array.isArray(answerArr)) {
+                        return answerArr.map((item, idx) => `${idx + 1}. ${item}`).join(', ');
+                    }
+                } catch (e) {
+                    // Fall through to default
+                }
+            }
+
+            // For simple answers (MCQ, True/False, etc.)
+            return String(answer);
+        }
+
         // Helper function to compare answers (handles different question types properly)
         function compareAnswers(studentAnswer, correctAnswer, questionType) {
             // Handle null/undefined
@@ -615,7 +649,7 @@
                                     return `
                                         <tr>
                                             <td>${participant?.name || r.participantId}</td>
-                                            <td>${r.answer}</td>
+                                            <td>${formatAnswerForDisplay(r.answer, question.questionType)}</td>
                                             <td class="${isCorrect ? 'correct' : 'incorrect'}">
                                                 ${earnedPoints} / ${question.points}
                                             </td>

@@ -512,7 +512,9 @@
 
         async function viewStudentDetails(playerId) {
             try {
+                logger.debug('Loading student details:', { playerId, classId: currentClassId, instructorId: currentInstructorId });
                 const data = await gamification.getStudentStats(currentClassId || currentInstructorId, playerId);
+                logger.debug('Student stats response:', data);
                 const student = data.player;
 
                 // Populate modal
@@ -560,7 +562,8 @@
                 document.getElementById('studentModal').classList.add('active');
             } catch (error) {
                 logger.error('Error loading student details:', error);
-                toast.error('Failed to load student details');
+                logger.error('Error details:', { message: error.message, stack: error.stack });
+                toast.error(`Failed to load student details: ${error.message}`);
             }
         }
 
