@@ -123,8 +123,16 @@
                 try {
                     const answerObj = typeof answer === 'string' ? JSON.parse(answer) : answer;
 
+                    console.log('🔍 Matching answer debug:', {
+                        answerObj,
+                        answerType: Array.isArray(answerObj) ? 'array' : typeof answerObj,
+                        questionPairs: question?.pairs,
+                        questionLeftColumn: question?.leftColumn,
+                        questionRightColumn: question?.rightColumn
+                    });
+
                     // If it's an array of pairs with left/right properties
-                    if (Array.isArray(answerObj) && answerObj.length > 0 && answerObj[0].left) {
+                    if (Array.isArray(answerObj) && answerObj.length > 0 && answerObj[0]?.left) {
                         return answerObj.map(pair => `${pair.left} → ${pair.right}`).join(', ');
                     }
 
@@ -137,12 +145,34 @@
                         }).join(', ');
                     }
 
-                    // If it's an object mapping
-                    if (typeof answerObj === 'object' && !Array.isArray(answerObj)) {
-                        return Object.entries(answerObj).map(([left, right]) => `${left} → ${right}`).join(', ');
+                    // Try using leftColumn instead of pairs
+                    if (Array.isArray(answerObj) && question?.leftColumn) {
+                        return answerObj.map((rightValue, idx) => {
+                            const leftValue = question.leftColumn[idx] || `Item ${idx + 1}`;
+                            return `${leftValue} → ${rightValue}`;
+                        }).join(', ');
                     }
+
+                    // If it's an object mapping (like {0: "cairo", 1: "dc"})
+                    if (typeof answerObj === 'object' && !Array.isArray(answerObj)) {
+                        // Check if keys are numeric indices
+                        const entries = Object.entries(answerObj);
+                        if (question?.pairs || question?.leftColumn) {
+                            const leftItems = question.pairs || question.leftColumn;
+                            return entries.map(([idx, rightValue]) => {
+                                const leftValue = leftItems[parseInt(idx)]?.left || leftItems[parseInt(idx)] || `Item ${parseInt(idx) + 1}`;
+                                return `${leftValue} → ${rightValue}`;
+                            }).join(', ');
+                        }
+                        // Fallback: display as-is
+                        return entries.map(([left, right]) => `${left} → ${right}`).join(', ');
+                    }
+
+                    console.warn('Could not format matching answer - falling back to JSON:', answerObj);
+                    return JSON.stringify(answerObj);
                 } catch (e) {
-                    console.warn('Error formatting matching answer:', e);
+                    console.error('Error formatting matching answer:', e, answer);
+                    return String(answer);
                 }
             }
 
