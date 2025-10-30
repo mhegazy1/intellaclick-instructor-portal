@@ -542,18 +542,35 @@
                 const rightItems = normalizedQuestion.pairs.map(p => p.right);
                 const shuffledRight = rightItems.sort(() => Math.random() - 0.5);
                 normalizedQuestion.shuffledMatchingRight = shuffledRight;
+                console.log('🎲 MATCHING SHUFFLE DEBUG:', {
+                    originalPairs: normalizedQuestion.pairs,
+                    originalRight: rightItems,
+                    shuffledRight: shuffledRight
+                });
             } else if (question.type === 'ordering') {
                 // Ensure ordering has correctOrder
                 normalizedQuestion.correctOrder = question.correctOrder || [];
                 // Shuffle the items ONCE here, so both instructor and student see same order
                 const shuffledItems = [...normalizedQuestion.correctOrder].sort(() => Math.random() - 0.5);
                 normalizedQuestion.shuffledOrderingItems = shuffledItems;
+                console.log('🎲 ORDERING SHUFFLE DEBUG:', {
+                    originalOrder: normalizedQuestion.correctOrder,
+                    shuffledItems: shuffledItems
+                });
             } else if (question.type === 'fillblank') {
                 // Ensure fill-in-blank has correctAnswer
                 normalizedQuestion.correctAnswer = question.correctAnswer || '';
             }
             
             // Debug logging
+            console.log('📤 SENDING QUESTION TO BACKEND:', {
+                sessionId: sessionId,
+                questionType: normalizedQuestion.questionType,
+                type: normalizedQuestion.type,
+                shuffledMatchingRight: normalizedQuestion.shuffledMatchingRight,
+                shuffledOrderingItems: normalizedQuestion.shuffledOrderingItems,
+                fullQuestion: normalizedQuestion
+            });
             logger.debug('Sending question:', {
                 sessionId: sessionId,
                 endpoint: `https://api-modular.intellaclick.com/api/sessions/${sessionId}/questions`,
