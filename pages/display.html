@@ -1134,6 +1134,16 @@
                 logger.debug('timeLimit field:', normalizedQuestion.timeLimit);
                 logger.debug('points field:', normalizedQuestion.points);
 
+                // Debug log to see what's being sent
+                console.log('📤 SENDING TO BACKEND:', {
+                    type: normalizedQuestion.type,
+                    hasShuffledMatchingRight: !!normalizedQuestion.shuffledMatchingRight,
+                    shuffledMatchingRight: normalizedQuestion.shuffledMatchingRight,
+                    hasShuffledOrderingItems: !!normalizedQuestion.shuffledOrderingItems,
+                    shuffledOrderingItems: normalizedQuestion.shuffledOrderingItems,
+                    fullQuestion: normalizedQuestion
+                });
+
                 // Send the question using direct fetch (same as session.html)
                 const response = await fetch(`https://api-modular.intellaclick.com/api/sessions/${sessionId}/questions`, {
                     method: 'POST',
