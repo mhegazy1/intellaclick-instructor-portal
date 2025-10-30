@@ -85,6 +85,18 @@
                     </label>
                 </div>
 
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="autoSaveQuestions" checked style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-weight: 600; font-size: 14px;">💾 Save Questions for Reuse</span>
+                            <span style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">
+                                Automatically save this session's questions to "Saved Question Sets" for future use
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
                 <div class="form-group" id="quickPollConfig" style="display: none;">
                     <!-- Load Saved Questions Button -->
                     <div style="margin-bottom: 16px;">
@@ -334,6 +346,9 @@
                     }
                     if (settings.enableGamification !== undefined) {
                         document.getElementById('enableGamification').checked = settings.enableGamification;
+                    }
+                    if (settings.autoSaveQuestions !== undefined) {
+                        document.getElementById('autoSaveQuestions').checked = settings.autoSaveQuestions;
                     }
 
                     logger.debug('✅ Loaded saved session settings from backend:', settings);
@@ -781,7 +796,8 @@
                     openToAll: document.getElementById('openToAll').checked,
                     allowAnswerChange: document.getElementById('allowAnswerChange').checked,
                     showCorrectAnswer: document.getElementById('showCorrectAnswer').checked,
-                    enableGamification: document.getElementById('enableGamification').checked
+                    enableGamification: document.getElementById('enableGamification').checked,
+                    autoSaveQuestions: document.getElementById('autoSaveQuestions').checked
                 };
 
                 // Save to backend (async, don't wait)
@@ -807,10 +823,16 @@
                     sessionStorage.setItem('currentQuestionIndex', '0'); // Start with first question
                 }
 
-                // AUTO-SAVE: Save questions for reuse (for ALL session types with questions)
-                if (sessionData.questions && sessionData.questions.length > 0) {
+                // AUTO-SAVE: Save questions for reuse (only if checkbox is checked)
+                const shouldAutoSave = document.getElementById('autoSaveQuestions').checked;
+                logger.debug('Auto-save checkbox state:', shouldAutoSave);
+
+                if (shouldAutoSave && sessionData.questions && sessionData.questions.length > 0) {
                     // Don't wait for auto-save to complete - let it run in background
+                    logger.debug('Auto-saving questions because checkbox is checked');
                     autoSaveQuestions(sessionData.title, sessionData.questions);
+                } else if (!shouldAutoSave) {
+                    logger.debug('⏭️ Skipping auto-save - user unchecked the box');
                 }
 
                 // Redirect to session management page with session info
