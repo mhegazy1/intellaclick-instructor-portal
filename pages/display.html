@@ -396,15 +396,12 @@
             optionsGrid.innerHTML = '';
 
             if (questionType === 'ordering') {
-                // For ordering questions, show items shuffled
-                // Check for items, correctOrder, or options
-                const itemsToDisplay = question.items || question.correctOrder || question.options || [];
+                // For ordering questions, use pre-shuffled items from backend
+                // Use the shuffled order that was sent to backend and students
+                const itemsToDisplay = question.shuffledOrderingItems || question.items || question.correctOrder || question.options || [];
 
                 if (itemsToDisplay.length > 0) {
-                    // Shuffle the items using Fisher-Yates
-                    const shuffledItems = shuffleArray(itemsToDisplay);
-
-                    shuffledItems.forEach((item, index) => {
+                    itemsToDisplay.forEach((item, index) => {
                         const optionDiv = document.createElement('div');
                         optionDiv.className = 'option';
                         const optionText = typeof item === 'string' ? item : (item.text || item);
@@ -438,8 +435,8 @@
                             </div>`
                         ).join('');
 
-                    // Shuffle right items for display using Fisher-Yates
-                    const shuffledRight = shuffleArray(rightItems);
+                    // Use pre-shuffled right items from backend (same as students see)
+                    const shuffledRight = question.shuffledMatchingRight || rightItems;
 
                     rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
                         shuffledRight.map((item, i) =>
@@ -468,8 +465,8 @@
                             </div>`
                         ).join('');
 
-                    // Shuffle right column for display using Fisher-Yates
-                    const shuffledRightCol = shuffleArray(question.rightColumn);
+                    // Use pre-shuffled right column from backend (same as students see)
+                    const shuffledRightCol = question.shuffledMatchingRight || question.rightColumn;
 
                     rightCol.innerHTML = '<h3 style="margin-bottom: 1rem;">With:</h3>' +
                         shuffledRightCol.map((item, i) =>
