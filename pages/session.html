@@ -234,7 +234,7 @@
 
         async function loadSession() {
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/sessions/code/${sessionCode}`, {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/sessions/code/${sessionCode}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
@@ -302,7 +302,7 @@
             const participantsList = document.getElementById('participantsList');
             
             // Load detailed participant info if available
-            fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/participants`, {
+            fetch(`https://api-modular.intellaclick.com/api/sessions/${sessionId}/participants`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -557,14 +557,14 @@
             // Debug logging
             logger.debug('Sending question:', {
                 sessionId: sessionId,
-                endpoint: `https://api.intellaclick.com/api/sessions/${sessionId}/questions`,
+                endpoint: `https://api-modular.intellaclick.com/api/sessions/${sessionId}/questions`,
                 questionData: normalizedQuestion,
                 hasQuestionText: !!normalizedQuestion.questionText,
                 questionType: normalizedQuestion.questionType
             });
 
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/sessions/${sessionId}/questions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -609,7 +609,7 @@
                         error: error,
                         message: 'The API server may need to add instructor.intellaclick.com to its allowed origins',
                         currentOrigin: window.location.origin,
-                        apiUrl: 'https://api.intellaclick.com'
+                        apiUrl: 'https://api-modular.intellaclick.com'
                     });
                     
                     // Show more detailed error in alert for debugging
@@ -808,7 +808,7 @@
                 // Get current question ID from session data
                 const questionId = sessionData.currentQuestion?.questionId || 'current';
                 
-                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions/${questionId}/end`, {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/sessions/${sessionId}/questions/${questionId}/end`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -843,7 +843,7 @@
                 if (hasGamification) {
                     logger.debug('Ending session with gamification processing...');
                     // Use gamification endpoint which processes points, levels, achievements
-                    response = await fetch(`https://api.intellaclick.com/api/sessions-gamified/${sessionId}/end-with-gamification`, {
+                    response = await fetch(`https://api-modular.intellaclick.com/api/sessions-gamified/${sessionId}/end-with-gamification`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -853,7 +853,7 @@
                 } else {
                     logger.debug('Ending session (no gamification)...');
                     // Use regular endpoint
-                    response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/status`, {
+                    response = await fetch(`https://api-modular.intellaclick.com/api/sessions/${sessionId}/status`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1064,7 +1064,7 @@
         // Load and Import Quizzes
         async function loadQuizzes() {
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/quizzes`, {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/quizzes`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
@@ -1118,7 +1118,7 @@
             }
 
             try {
-                const response = await fetch(`https://api.intellaclick.com/api/quizzes/${selectedQuizId}`, {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/quizzes/${selectedQuizId}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
