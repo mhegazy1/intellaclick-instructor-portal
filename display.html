@@ -240,7 +240,7 @@
 
         function connectSocket() {
             try {
-                socket = io('https://api.intellaclick.com', {
+                socket = io('https://api-modular.intellaclick.com', {
                     transports: ['websocket', 'polling'],
                     reconnection: true,
                     reconnectionDelay: 1000,
@@ -1113,7 +1113,7 @@
                 logger.debug('points field:', normalizedQuestion.points);
 
                 // Send the question using direct fetch (same as session.html)
-                const response = await fetch(`https://api.intellaclick.com/api/sessions/${sessionId}/questions`, {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/sessions/${sessionId}/questions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

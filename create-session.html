@@ -532,7 +532,7 @@
         async function loadSavedSettings() {
             try {
                 // Load settings from backend API instead of localStorage
-                const response = await fetch('https://api.intellaclick.com/api/users/session-settings', {
+                const response = await fetch('https://api-modular.intellaclick.com/api/users/session-settings', {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
@@ -658,7 +658,7 @@
 
         async function loadQuizzes() {
             try {
-                const response = await fetch('https://api.intellaclick.com/api/quizzes', {
+                const response = await fetch('https://api-modular.intellaclick.com/api/quizzes', {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
@@ -998,7 +998,7 @@
 
                 // Fetch quiz data
                 try {
-                    const quizResponse = await fetch(`https://api.intellaclick.com/api/quizzes/${quizId}`, {
+                    const quizResponse = await fetch(`https://api-modular.intellaclick.com/api/quizzes/${quizId}`, {
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('token')}`
                         }
@@ -1060,7 +1060,7 @@
                 };
 
                 // Save to backend (async, don't wait)
-                fetch('https://api.intellaclick.com/api/users/session-settings', {
+                fetch('https://api-modular.intellaclick.com/api/users/session-settings', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

@@ -339,7 +339,7 @@
 
             try {
                 // Fetch class enrollments to get student data
-                const response = await fetch(`https://api.intellaclick.com/api/enrollment/class/${classId}/students`, {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/enrollment/class/${classId}/students`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
