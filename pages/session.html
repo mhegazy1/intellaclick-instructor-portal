@@ -539,9 +539,16 @@
             } else if (question.type === 'matching') {
                 // Ensure matching has pairs
                 normalizedQuestion.pairs = question.pairs || [];
+                // Shuffle the right column items ONCE here, so both instructor and student see same order
+                const rightItems = normalizedQuestion.pairs.map(p => p.right);
+                const shuffledRight = rightItems.sort(() => Math.random() - 0.5);
+                normalizedQuestion.shuffledMatchingRight = shuffledRight;
             } else if (question.type === 'ordering') {
                 // Ensure ordering has correctOrder
                 normalizedQuestion.correctOrder = question.correctOrder || [];
+                // Shuffle the items ONCE here, so both instructor and student see same order
+                const shuffledItems = [...normalizedQuestion.correctOrder].sort(() => Math.random() - 0.5);
+                normalizedQuestion.shuffledOrderingItems = shuffledItems;
             } else if (question.type === 'fillblank') {
                 // Ensure fill-in-blank has correctAnswer
                 normalizedQuestion.correctAnswer = question.correctAnswer || '';
@@ -662,17 +669,31 @@
                 optionsDiv.innerHTML = '<div style="margin-top: 8px;">A: True</div><div style="margin-top: 8px;">B: False</div>';
             } else if (questionType === 'matching' && question.pairs) {
                 optionsDiv.innerHTML = '<strong>Match the following:</strong>';
+                // Display left column (stays in order)
                 question.pairs.forEach((pair, index) => {
                     const pairEl = document.createElement('div');
                     pairEl.style.marginTop = '8px';
                     pairEl.textContent = `${index + 1}. ${pair.left} → ?`;
                     optionsDiv.appendChild(pairEl);
                 });
+                // Display shuffled right column that students will see
+                if (question.shuffledMatchingRight) {
+                    const rightDiv = document.createElement('div');
+                    rightDiv.style.marginTop = '12px';
+                    rightDiv.innerHTML = '<strong>Options to match:</strong>';
+                    question.shuffledMatchingRight.forEach((item, index) => {
+                        const optEl = document.createElement('div');
+                        optEl.style.marginTop = '4px';
+                        optEl.textContent = `${String.fromCharCode(65 + index)}. ${item}`;
+                        rightDiv.appendChild(optEl);
+                    });
+                    optionsDiv.appendChild(rightDiv);
+                }
             } else if ((questionType === 'ordering' || questionType === 'ordering') && question.correctOrder) {
                 optionsDiv.innerHTML = '<strong>Put in correct order:</strong>';
-                // Shuffle the items for display
-                const shuffled = [...question.correctOrder].sort(() => Math.random() - 0.5);
-                shuffled.forEach((item, index) => {
+                // Use shuffled order if available (same order students see)
+                const itemsToDisplay = question.shuffledOrderingItems || question.correctOrder;
+                itemsToDisplay.forEach((item, index) => {
                     const itemEl = document.createElement('div');
                     itemEl.style.marginTop = '8px';
                     itemEl.textContent = `${String.fromCharCode(65 + index)}. ${item}`;
