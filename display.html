@@ -1076,6 +1076,18 @@
                         logger.warn('⚠️ MATCHING QUESTION HAS NO DATA - pairs, leftColumn, and rightColumn all missing!');
                     }
                     if (question.correctPairs) normalizedQuestion.correctPairs = question.correctPairs;
+
+                    // Shuffle the right column items ONCE here for synchronized display
+                    normalizedQuestion.pairs = normalizedQuestion.pairs || [];
+                    const rightItems = normalizedQuestion.pairs.map(p => p.right);
+                    const shuffledRight = rightItems.sort(() => Math.random() - 0.5);
+                    normalizedQuestion.shuffledMatchingRight = shuffledRight;
+                    console.log('🎲 MATCHING SHUFFLE DEBUG:', {
+                        originalPairs: normalizedQuestion.pairs,
+                        rightItems: rightItems,
+                        shuffledMatchingRight: shuffledRight,
+                        willBeSentToBackend: true
+                    });
                 }
 
                 // For ordering questions, ensure items field is present
@@ -1103,6 +1115,16 @@
                     } else {
                         logger.warn('⚠️ ORDERING QUESTION HAS NO DATA - both correctOrder and items are missing!');
                     }
+
+                    // Shuffle the items ONCE here for synchronized display
+                    normalizedQuestion.correctOrder = normalizedQuestion.correctOrder || [];
+                    const shuffledItems = [...normalizedQuestion.correctOrder].sort(() => Math.random() - 0.5);
+                    normalizedQuestion.shuffledOrderingItems = shuffledItems;
+                    console.log('🎲 ORDERING SHUFFLE DEBUG:', {
+                        originalOrder: normalizedQuestion.correctOrder,
+                        shuffledOrderingItems: shuffledItems,
+                        willBeSentToBackend: true
+                    });
                 }
 
                 logger.debug('=== SENDING QUESTION DEBUG ===');
