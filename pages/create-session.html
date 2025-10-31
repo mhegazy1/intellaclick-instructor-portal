@@ -443,9 +443,11 @@
                 showDesktopInstructions();
             }
 
-            // Set default session name
+            // Set default session name with timestamp to ensure uniqueness
             const now = new Date();
-            document.getElementById('sessionName').value = `${classData.name} - ${now.toLocaleDateString()}`;
+            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            document.getElementById('sessionName').value = `${classData.name} Session - ${dateStr} ${timeStr}`;
         }
 
         async function loadQuizzes() {
