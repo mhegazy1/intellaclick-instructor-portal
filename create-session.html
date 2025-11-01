@@ -204,8 +204,9 @@
                     </div>
 
                     <!-- Add Question Button -->
-                    <div style="margin-top: 16px;">
-                        <button type="button" class="btn btn-primary" onclick="addQuickPollQuestion()">+ Add This Question</button>
+                    <div style="margin-top: 16px; display: flex; gap: 8px;">
+                        <button type="button" id="addQuestionBtn" class="btn btn-primary" onclick="addQuickPollQuestion()">+ Add This Question</button>
+                        <button type="button" id="cancelEditBtn" class="btn btn-secondary" onclick="cancelEdit()" style="display: none;">Cancel</button>
                     </div>
                 </div>
 
@@ -281,7 +282,8 @@
         let classId;
         let classData;
         let selectedType = null;
-        let quickPollQuestions = []; // Store multiple questions for quick poll
+        let quickPollQuestions = [];
+        let editingQuestionIndex = null; // Track which question is being edited // Store multiple questions for quick poll
         let mcqOptionCount = 4; // Start with 4 options
         let pollOptionCount = 4; // Start with 4 options
         let matchingPairCount = 4; // Start with 4 pairs
@@ -880,17 +882,27 @@
                         break;
                 }
 
-                // Add question to array
-                quickPollQuestions.push(question);
-                logger.debug('✅ Added question to array:', { type: question.type, question, arrayLength: quickPollQuestions.length });
+                // Check if we're editing or adding
+                if (editingQuestionIndex !== null) {
+                    // Update existing question
+                    quickPollQuestions[editingQuestionIndex] = question;
+                    logger.debug('✅ Updated question at index:', editingQuestionIndex);
+                    toast.success('Question updated successfully!');
+                    editingQuestionIndex = null;
+                    document.getElementById('addQuestionBtn').textContent = 'Add Question';
+                    document.getElementById('cancelEditBtn').style.display = 'none';
+                } else {
+                    // Add new question to array
+                    quickPollQuestions.push(question);
+                    logger.debug('✅ Added question to array:', { type: question.type, question, arrayLength: quickPollQuestions.length });
+                    toast.success('Question added successfully!');
+                }
 
                 // Clear form
                 clearQuestionForm();
 
                 // Render questions list
                 renderQuestionsList();
-
-                toast.success('Question added successfully!');
 
             } catch (error) {
                 toast.error('Error adding question: ' + error.message);
@@ -935,8 +947,110 @@
         function removeQuickPollQuestion(index) {
             if (window.confirm('Remove this question?')) {
                 quickPollQuestions.splice(index, 1);
+                // If we're editing this question, cancel the edit
+                if (editingQuestionIndex === index) {
+                    cancelEdit();
+                } else if (editingQuestionIndex !== null && editingQuestionIndex > index) {
+                    // Adjust the editing index if we removed a question before it
+                    editingQuestionIndex--;
+                }
                 renderQuestionsList();
             }
+        }
+
+        function editQuickPollQuestion(index) {
+            const question = quickPollQuestions[index];
+
+            // Set editing mode
+            editingQuestionIndex = index;
+            document.getElementById('addQuestionBtn').textContent = 'Update Question';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+
+            // Update question type selector
+            document.getElementById('questionType').value = question.type;
+            updateQuestionOptions();
+
+            // Set question text
+            document.getElementById('questionText').value = question.text;
+
+            // Set points and time limit
+            document.getElementById('duration').value = question.timeLimit || 60;
+            document.getElementById('points').value = question.points || 10;
+
+            // Populate type-specific fields
+            switch (question.type) {
+                case 'mcq':
+                    // Set MCQ options
+                    mcqOptionCount = question.options.length;
+                    initializeMcqOptions(mcqOptionCount);
+                    question.optionTexts.forEach((text, i) => {
+                        const letter = String.fromCharCode(65 + i);
+                        const input = document.getElementById(`option${letter}`);
+                        if (input) input.value = text;
+                    });
+                    // Set correct answer
+                    const correctRadio = document.querySelector(`input[name="correctAnswer"][value="${question.correctAnswer}"]`);
+                    if (correctRadio) correctRadio.checked = true;
+                    break;
+
+                case 'poll':
+                    // Set poll options
+                    pollOptionCount = question.options.length;
+                    initializePollOptions(pollOptionCount);
+                    question.optionTexts.forEach((text, i) => {
+                        const letter = String.fromCharCode(65 + i);
+                        const input = document.getElementById(`pollOption${letter}`);
+                        if (input) input.value = text;
+                    });
+                    // Set participation points checkbox
+                    document.getElementById('pollParticipationPoints').checked = question.awardParticipationPoints || false;
+                    break;
+
+                case 'tf':
+                    // Set true/false answer
+                    const tfRadio = document.querySelector(`input[name="tfAnswer"][value="${question.correctAnswer}"]`);
+                    if (tfRadio) tfRadio.checked = true;
+                    break;
+
+                case 'matching':
+                    // Set matching pairs
+                    matchingPairCount = question.pairs.length;
+                    initializeMatchingPairs(matchingPairCount);
+                    question.pairs.forEach((pair, i) => {
+                        const leftInput = document.getElementById(`match${i + 1}Left`);
+                        const rightInput = document.getElementById(`match${i + 1}Right`);
+                        if (leftInput) leftInput.value = pair.left;
+                        if (rightInput) rightInput.value = pair.right;
+                    });
+                    break;
+
+                case 'ordering':
+                    // Set ordering items
+                    orderingItemCount = question.correctOrder.length;
+                    initializeOrderingItems(orderingItemCount);
+                    question.correctOrder.forEach((item, i) => {
+                        const input = document.getElementById(`order${i + 1}`);
+                        if (input) input.value = item;
+                    });
+                    break;
+
+                case 'fillblank':
+                    // Set fill-in-blank answer
+                    document.getElementById('blankAnswer').value = question.correctAnswer;
+                    break;
+            }
+
+            // Scroll to question form
+            document.getElementById('quickPollQuestionForm').scrollIntoView({ behavior: 'smooth' });
+            toast.info('Editing question. Click "Update Question" when done.');
+        }
+
+        function cancelEdit() {
+            editingQuestionIndex = null;
+            document.getElementById('addQuestionBtn').textContent = '+ Add This Question';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            clearQuestionForm();
+            toast.info('Edit cancelled');
         }
 
         function renderQuestionsList() {
@@ -955,9 +1069,12 @@
                     <div style="background-color: #F9FAFB; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: start;">
                         <div style="flex: 1;">
                             <div style="font-weight: 500; margin-bottom: 4px;">Q${index + 1}: ${q.text}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">Type: ${q.type.toUpperCase()}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Type: ${q.type.toUpperCase()}${q.awardParticipationPoints ? ' | Participation Points: ✓' : ''}</div>
                         </div>
-                        <button type="button" class="btn btn-danger btn-small" onclick="removeQuickPollQuestion(${index})" style="margin-left: 12px;">Remove</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="editQuickPollQuestion(${index})">Edit</button>
+                            <button type="button" class="btn btn-danger btn-small" onclick="removeQuickPollQuestion(${index})">Remove</button>
+                        </div>
                     </div>
                 `).join('')}
             `;
@@ -1231,6 +1348,8 @@
         window.addQuickPollQuestion = addQuickPollQuestion;
         window.cancelSession = cancelSession;
         window.removeQuickPollQuestion = removeQuickPollQuestion;
+        window.editQuickPollQuestion = editQuickPollQuestion;
+        window.cancelEdit = cancelEdit;
         window.addMcqOption = addMcqOption;
         window.removeMcqOption = removeMcqOption;
         window.addPollOption = addPollOption;
