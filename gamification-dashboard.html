@@ -322,32 +322,8 @@
             const totalPoints = leaderboardData.reduce((sum, student) => sum + (student.totalPoints || student.points || 0), 0);
             document.getElementById('totalPoints').textContent = totalPoints.toLocaleString();
 
-            // Total achievements - calculate based on student stats
-            const totalAchievements = leaderboardData.reduce((sum, student) => {
-                const points = student.totalPoints || student.points || 0;
-                const level = student.level || calculateLevelFromPoints(points);
-
-                // Count achievements based on milestones (same logic as backend)
-                let count = 0;
-
-                // Point milestones
-                if (points >= 100) count++;
-                if (points >= 250) count++;
-                if (points >= 500) count++;
-                if (points >= 1000) count++;
-                if (points >= 2500) count++;
-                if (points >= 5000) count++;
-
-                // Level achievements
-                if (level >= 2) count++;
-                if (level >= 5) count++;
-                if (level >= 10) count++;
-
-                // First session achievement (everyone on leaderboard has this)
-                count++;
-
-                return sum + count;
-            }, 0);
+            // Total achievements - use count from API
+            const totalAchievements = leaderboardData.reduce((sum, student) => sum + (student.achievementCount || 0), 0);
             document.getElementById('totalAchievements').textContent = totalAchievements;
 
             // Average participation (placeholder - would need session data)
