@@ -423,8 +423,13 @@
 
         async function loadRecentAchievements() {
             try {
-                // Mock data for now - would use API endpoint
-                const achievements = [];
+                logger.debug('🏆 Loading recent achievements for classId:', currentClassId);
+
+                // Fetch recent achievements from API
+                const data = await gamification.getRecentAchievements(currentClassId, 10);
+                const achievements = data.achievements || [];
+
+                logger.debug('🏆 Received achievements:', achievements.length);
 
                 const container = document.getElementById('recentAchievementsList');
                 const emptyState = document.getElementById('emptyAchievements');

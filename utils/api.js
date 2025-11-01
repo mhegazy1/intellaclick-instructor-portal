@@ -326,6 +326,13 @@ export const gamification = {
     return request(`/gamification/sync-instructor-sessions/${instructorId}${queryString ? `?${queryString}` : ''}`, {
       method: 'POST'
     });
+  },
+
+  async getRecentAchievements(classId, limit = 10) {
+    const params = new URLSearchParams();
+    if (classId) params.append('classId', classId);
+    if (limit) params.append('limit', limit);
+    return request(`/gamification/achievements/recent?${params.toString()}`);
   }
 };
 
