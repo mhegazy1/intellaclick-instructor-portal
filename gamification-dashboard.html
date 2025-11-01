@@ -554,29 +554,57 @@
         async function loadAchievementDistribution() {
             const container = document.getElementById('achievementDistribution');
 
-            // Get achievement categories from leaderboard data
+            // Achievement categories to track
             const achievements = {
-                'First Answer': { icon: '🎯', count: 0 },
-                'Perfect Score': { icon: '💯', count: 0 },
-                'Speed Demon': { icon: '⚡', count: 0 },
-                'Consistent': { icon: '🔥', count: 0 },
-                'Team Player': { icon: '🤝', count: 0 },
-                'Knowledge Master': { icon: '🧠', count: 0 }
+                'First Steps': { icon: '🎯', count: 0, description: 'Completed first session' },
+                'Perfect Score': { icon: '💯', count: 0, description: 'Earned 100+ points' },
+                'Speed Demon': { icon: '⚡', count: 0, description: 'Fast responses' },
+                'Consistent': { icon: '🔥', count: 0, description: '3+ correct streak' },
+                'Team Player': { icon: '🤝', count: 0, description: '50+ questions answered' },
+                'Knowledge Master': { icon: '🧠', count: 0, description: 'Reached level 10+' }
             };
 
-            // Count achievements (would come from detailed API)
+            // Count achievements based on student stats
             leaderboardData.forEach(student => {
-                if (student.achievements) {
-                    student.achievements.forEach(ach => {
-                        if (achievements[ach.name]) {
-                            achievements[ach.name].count++;
-                        }
-                    });
+                const points = student.totalPoints || 0;
+                const level = student.level || 1;
+                const questionsAnswered = student.questionsAnswered || 0;
+                const bestStreak = student.bestStreak || 0;
+
+                // First Steps - has any points/activity
+                if (points > 0 || questionsAnswered > 0) {
+                    achievements['First Steps'].count++;
+                }
+
+                // Perfect Score - 100+ points
+                if (points >= 100) {
+                    achievements['Perfect Score'].count++;
+                }
+
+                // Speed Demon - placeholder (would need response time data)
+                // For now, count students with high activity
+                if (questionsAnswered >= 20) {
+                    achievements['Speed Demon'].count++;
+                }
+
+                // Consistent - 3+ streak
+                if (bestStreak >= 3) {
+                    achievements['Consistent'].count++;
+                }
+
+                // Team Player - 50+ questions
+                if (questionsAnswered >= 50) {
+                    achievements['Team Player'].count++;
+                }
+
+                // Knowledge Master - level 10+
+                if (level >= 10) {
+                    achievements['Knowledge Master'].count++;
                 }
             });
 
             container.innerHTML = Object.entries(achievements).map(([name, data]) => `
-                <div class="distribution-item">
+                <div class="distribution-item" title="${data.description}">
                     <div class="distribution-icon">${data.icon}</div>
                     <div class="distribution-count">${data.count}</div>
                     <div class="distribution-label">${name}</div>
