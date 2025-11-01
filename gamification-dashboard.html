@@ -323,7 +323,18 @@
             document.getElementById('totalPoints').textContent = totalPoints.toLocaleString();
 
             // Total achievements - use count from API
-            const totalAchievements = leaderboardData.reduce((sum, student) => sum + (student.achievementCount || 0), 0);
+            console.log('🔍 DEBUG - Leaderboard data for achievement count:', leaderboardData.map(s => ({
+                name: s.name || s.studentName,
+                achievementCount: s.achievementCount,
+                questionsAnswered: s.questionsAnswered,
+                bestStreak: s.bestStreak,
+                points: s.totalPoints || s.points
+            })));
+            const totalAchievements = leaderboardData.reduce((sum, student) => {
+                console.log(`🔍 DEBUG - Student ${student.name || student.studentName}: ${student.achievementCount || 0} achievements`);
+                return sum + (student.achievementCount || 0);
+            }, 0);
+            console.log(`🔍 DEBUG - Total achievements: ${totalAchievements}`);
             document.getElementById('totalAchievements').textContent = totalAchievements;
 
             // Average participation (placeholder - would need session data)
