@@ -960,7 +960,6 @@
 
         function editQuickPollQuestion(index) {
             const question = quickPollQuestions[index];
-            console.log('🔧 EDIT DEBUG - Starting edit for question:', question);
 
             // Set editing mode
             editingQuestionIndex = index;
@@ -983,86 +982,59 @@
 
             // Wait for DOM to update after updateQuestionOptions(), then populate fields
             setTimeout(() => {
-                console.log('🔧 EDIT DEBUG - After first delay, question type:', question.type);
-
                 // Populate type-specific fields
                 switch (question.type) {
                     case 'mcq':
-                        console.log('🔧 MCQ - Setting count to:', question.options.length);
-                        console.log('🔧 MCQ - Option texts:', question.optionTexts);
-
                         // Set MCQ options count and initialize
                         mcqOptionCount = question.options.length;
                         initializeMcqOptions(mcqOptionCount);
 
                         // Wait for init, then set values
                         setTimeout(() => {
-                            console.log('🔧 MCQ - Populating options now...');
                             question.optionTexts.forEach((text, i) => {
                                 const letter = String.fromCharCode(65 + i);
                                 const input = document.getElementById(`option${letter}`);
-                                console.log(`🔧 MCQ - Option ${letter}: element=${!!input}, text="${text}"`);
-                                if (input) {
-                                    input.value = text;
-                                    console.log(`🔧 MCQ - Set value for ${letter}, now="${input.value}"`);
-                                }
+                                if (input) input.value = text;
                             });
                             // Set correct answer
-                            console.log('🔧 MCQ - Correct answer:', question.correctAnswer);
                             const correctRadio = document.querySelector(`input[name="correctAnswer"][value="${question.correctAnswer}"]`);
-                            console.log('🔧 MCQ - Correct radio found:', !!correctRadio);
                             if (correctRadio) correctRadio.checked = true;
                         }, 50);
                         break;
 
                     case 'poll':
-                        console.log('🔧 POLL - Setting count to:', question.options.length);
-                        console.log('🔧 POLL - Option texts:', question.optionTexts);
-
                         // Set poll options count and initialize
                         pollOptionCount = question.options.length;
                         initializePollOptions(pollOptionCount);
 
                         // Wait for init, then set values
                         setTimeout(() => {
-                            console.log('🔧 POLL - Populating options now...');
                             question.optionTexts.forEach((text, i) => {
                                 const letter = String.fromCharCode(65 + i);
                                 const input = document.getElementById(`pollOption${letter}`);
-                                console.log(`🔧 POLL - Option ${letter}: element=${!!input}, text="${text}"`);
-                                if (input) {
-                                    input.value = text;
-                                    console.log(`🔧 POLL - Set value for ${letter}, now="${input.value}"`);
-                                }
+                                if (input) input.value = text;
                             });
                             // Set participation points checkbox
                             document.getElementById('pollParticipationPoints').checked = question.awardParticipationPoints || false;
-                            console.log('🔧 POLL - Participation points set to:', question.awardParticipationPoints);
                         }, 50);
                         break;
 
                     case 'tf':
-                        console.log('🔧 TF - Correct answer:', question.correctAnswer);
                         // Set true/false answer
                         const tfRadio = document.querySelector(`input[name="tfAnswer"][value="${question.correctAnswer}"]`);
-                        console.log('🔧 TF - Radio found:', !!tfRadio);
                         if (tfRadio) tfRadio.checked = true;
                         break;
 
                     case 'matching':
-                        console.log('🔧 MATCHING - Pairs:', question.pairs);
-
                         // Set matching pairs count and initialize
                         matchingPairCount = question.pairs.length;
                         initializeMatchingPairs(matchingPairCount);
 
                         // Wait for init, then set values
                         setTimeout(() => {
-                            console.log('🔧 MATCHING - Populating pairs now...');
                             question.pairs.forEach((pair, i) => {
                                 const leftInput = document.getElementById(`match${i + 1}Left`);
                                 const rightInput = document.getElementById(`match${i + 1}Right`);
-                                console.log(`🔧 MATCHING - Pair ${i + 1}: left=${!!leftInput}, right=${!!rightInput}`, pair);
                                 if (leftInput) leftInput.value = pair.left;
                                 if (rightInput) rightInput.value = pair.right;
                             });
@@ -1070,34 +1042,31 @@
                         break;
 
                     case 'ordering':
-                        console.log('🔧 ORDERING - Items:', question.correctOrder);
-
                         // Set ordering items count and initialize
                         orderingItemCount = question.correctOrder.length;
                         initializeOrderingItems(orderingItemCount);
 
                         // Wait for init, then set values
                         setTimeout(() => {
-                            console.log('🔧 ORDERING - Populating items now...');
                             question.correctOrder.forEach((item, i) => {
                                 const input = document.getElementById(`order${i + 1}`);
-                                console.log(`🔧 ORDERING - Item ${i + 1}: element=${!!input}, value="${item}"`);
                                 if (input) input.value = item;
                             });
                         }, 50);
                         break;
 
                     case 'fillblank':
-                        console.log('🔧 FILLBLANK - Answer:', question.correctAnswer);
                         // Set fill-in-blank answer
                         const blankInput = document.getElementById('blankAnswer');
-                        console.log('🔧 FILLBLANK - Input found:', !!blankInput);
                         if (blankInput) blankInput.value = question.correctAnswer;
                         break;
                 }
 
                 // Scroll to question form
-                document.getElementById('quickPollQuestionForm').scrollIntoView({ behavior: 'smooth' });
+                const formElement = document.getElementById('quickPollConfig') || document.getElementById('questionText');
+                if (formElement) {
+                    formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
                 toast.info('Editing question. Click "Update Question" when done.');
             }, 100);
         }
