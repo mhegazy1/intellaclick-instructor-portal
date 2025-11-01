@@ -571,11 +571,24 @@
                             responseCorrectAnswer: r.correctAnswer,
                             questionCorrectAnswer: question?.correctAnswer,
                             questionType: question?.questionType || question?.type,
-                            questionPoints: question?.points
+                            questionPoints: question?.points,
+                            awardParticipationPoints: question?.awardParticipationPoints
                         });
+
                         const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question?.correctAnswer, question?.questionType || question?.type);
-                        earnedPoints = isCorrectAnswer ? (question?.points || 10) : 0;
-                        logger.debug(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer})`);
+
+                        // Award points if correct OR if it's a poll with participation points
+                        if (isCorrectAnswer) {
+                            earnedPoints = question?.points || 10;
+                        } else if (question?.awardParticipationPoints && r.answer !== null && r.answer !== undefined) {
+                            // Award participation points for poll questions (any answer counts)
+                            earnedPoints = question?.points || 10;
+                            logger.debug('✅ Awarded participation points for poll question');
+                        } else {
+                            earnedPoints = 0;
+                        }
+
+                        logger.debug(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer}, participation: ${question?.awardParticipationPoints})`);
                     }
 
                     studentStats[r.participantId].totalPoints += earnedPoints;
