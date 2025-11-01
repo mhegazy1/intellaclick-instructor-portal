@@ -517,12 +517,33 @@
 
         async function viewStudentDetails(playerId) {
             try {
+                console.log('🔍 DEBUG - viewStudentDetails called with playerId:', playerId);
+                console.log('🔍 DEBUG - currentClassId:', currentClassId);
+                console.log('🔍 DEBUG - currentInstructorId:', currentInstructorId);
+                console.log('🔍 DEBUG - leaderboardData:', leaderboardData);
+
+                // Find the student in leaderboard data to see what we have
+                const studentInLeaderboard = leaderboardData.find(s =>
+                    s.playerId === playerId || s.studentId === playerId
+                );
+                console.log('🔍 DEBUG - Student found in leaderboard:', studentInLeaderboard);
+
                 logger.debug('Loading student details:', { playerId, classId: currentClassId, instructorId: currentInstructorId });
                 const data = await gamification.getStudentStats(currentClassId || currentInstructorId, playerId);
+                console.log('🔍 DEBUG - API response data:', data);
                 logger.debug('Student stats response:', data);
                 const student = data.player;
+                console.log('🔍 DEBUG - Extracted player object:', student);
 
                 // Populate modal
+                console.log('🔍 DEBUG - Setting modal values:');
+                console.log('  - Name:', student.name || 'Student');
+                console.log('  - Total Points:', student.totalPoints);
+                console.log('  - Level:', student.level);
+                console.log('  - Achievements:', student.achievements);
+                console.log('  - Experience Points:', student.experiencePoints);
+                console.log('  - Participation Rate:', student.participationRate);
+
                 document.getElementById('modalStudentName').textContent = student.name || 'Student';
                 document.getElementById('modalPoints').textContent = (student.totalPoints || 0).toLocaleString();
                 document.getElementById('modalLevel').textContent = student.level || 1;
@@ -533,6 +554,7 @@
                 const currentXP = student.experiencePoints || 0;
                 const nextLevelXP = student.nextLevelXP || 100;
                 const progress = (currentXP / nextLevelXP) * 100;
+                console.log('🔍 DEBUG - Level progress:', { currentXP, nextLevelXP, progress });
                 document.getElementById('modalLevelProgress').style.width = progress + '%';
                 document.getElementById('modalCurrentXP').textContent = currentXP + ' XP';
                 document.getElementById('modalNextLevelXP').textContent = nextLevelXP + ' XP';
@@ -566,6 +588,7 @@
                 // Show modal
                 document.getElementById('studentModal').classList.add('active');
             } catch (error) {
+                console.error('🔍 DEBUG - Error in viewStudentDetails:', error);
                 logger.error('Error loading student details:', error);
                 logger.error('Error details:', { message: error.message, stack: error.stack });
                 toast.error(`Failed to load student details: ${error.message}`);
