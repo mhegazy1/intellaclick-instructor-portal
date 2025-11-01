@@ -318,8 +318,8 @@
             const totalStudents = leaderboardData.length;
             document.getElementById('totalStudents').textContent = totalStudents;
 
-            // Total points
-            const totalPoints = leaderboardData.reduce((sum, student) => sum + (student.points || 0), 0);
+            // Total points (use correct field name from API)
+            const totalPoints = leaderboardData.reduce((sum, student) => sum + (student.totalPoints || student.points || 0), 0);
             document.getElementById('totalPoints').textContent = totalPoints.toLocaleString();
 
             // Total achievements
@@ -353,7 +353,7 @@
             // Sort based on current filter
             let sorted = [...leaderboardData];
             if (currentLeaderboardFilter === 'points') {
-                sorted.sort((a, b) => (b.points || 0) - (a.points || 0));
+                sorted.sort((a, b) => (b.totalPoints || b.points || 0) - (a.totalPoints || a.points || 0));
             } else if (currentLeaderboardFilter === 'level') {
                 sorted.sort((a, b) => (b.level || 0) - (a.level || 0));
             } else if (currentLeaderboardFilter === 'achievements') {
@@ -367,20 +367,25 @@
                 else if (rank === 2) rankClass = 'silver';
                 else if (rank === 3) rankClass = 'bronze';
 
-                const initials = student.studentName ? student.studentName.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
+                // Use correct field names from API response (playerId, name, totalPoints)
+                const studentName = student.name || student.studentName || 'Student';
+                const studentId = student.playerId || student.studentId;
+                const points = student.totalPoints || student.points || 0;
+
+                const initials = studentName ? studentName.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
                 const displayValue = currentLeaderboardFilter === 'points'
-                    ? (student.points || 0).toLocaleString()
+                    ? points.toLocaleString()
                     : currentLeaderboardFilter === 'level'
                     ? `Level ${student.level || 1}`
                     : `${student.achievementCount || 0} achievements`;
 
                 return `
-                    <div class="leaderboard-item" onclick="viewStudentDetails('${student.studentId}')">
+                    <div class="leaderboard-item" onclick="viewStudentDetails('${studentId}')">
                         <div class="rank ${rankClass}">${rank}</div>
                         <div class="student-avatar">${initials}</div>
                         <div class="student-info">
-                            <div class="student-name">${student.studentName || 'Student'}</div>
-                            <div class="student-meta">${student.points || 0} points • ${student.achievementCount || 0} achievements</div>
+                            <div class="student-name">${studentName}</div>
+                            <div class="student-meta">${points} points • ${student.achievementCount || 0} achievements</div>
                         </div>
                         <div class="student-points">
                             <div class="points-value">${displayValue}</div>
