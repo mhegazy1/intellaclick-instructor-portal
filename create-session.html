@@ -974,9 +974,12 @@
             // Set question text
             document.getElementById('questionText').value = question.text;
 
-            // Set points and time limit
-            document.getElementById('duration').value = question.timeLimit || 60;
-            document.getElementById('points').value = question.points || 10;
+            // Set points and time limit (check if elements exist)
+            const durationInput = document.getElementById('duration');
+            if (durationInput) durationInput.value = question.timeLimit || 60;
+
+            const pointsInput = document.getElementById('points');
+            if (pointsInput) pointsInput.value = question.points || 10;
 
             // Wait for DOM to update after updateQuestionOptions(), then populate fields
             setTimeout(() => {
