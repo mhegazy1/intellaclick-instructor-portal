@@ -333,6 +333,10 @@ export const gamification = {
     if (classId) params.append('classId', classId);
     if (limit) params.append('limit', limit);
     return request(`/gamification/achievements/recent?${params.toString()}`);
+  },
+
+  async getEngagement(classId, period = 'week') {
+    return request(`/gamification/engagement/${classId}?period=${period}`);
   }
 };
 

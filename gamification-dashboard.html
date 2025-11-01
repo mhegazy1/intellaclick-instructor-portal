@@ -465,28 +465,79 @@
         }
 
         async function loadEngagementChart() {
-            const container = document.getElementById('engagementChart');
+            try {
+                const container = document.getElementById('engagementChart');
 
-            // Mock data for now - would come from API
-            const weekData = [65, 72, 68, 80, 75, 82, 78];
-            const monthData = [70, 75, 72, 78, 80, 85, 82, 88, 84, 90, 87, 92, 89, 95, 91, 88, 85, 90, 92, 95, 93, 97, 94, 98, 96, 99, 97, 100, 98, 95];
+                logger.debug('📊 Loading engagement chart for classId:', currentClassId, 'period:', currentChartPeriod);
 
-            const data = currentChartPeriod === 'week' ? weekData : monthData;
-            const labels = currentChartPeriod === 'week'
-                ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                : Array.from({length: 30}, (_, i) => (i + 1).toString());
+                let allEngagementData = [];
 
-            const maxValue = Math.max(...data);
+                if (!currentClassId) {
+                    // "All Classes" - fetch and combine data from all classes
+                    const classesData = await classesAPI.getAll();
+                    const classes = classesData.classes || [];
 
-            container.innerHTML = data.map((value, index) => {
-                const height = (value / maxValue) * 100;
-                return `
-                    <div class="chart-bar" style="height: ${height}%;">
-                        <div class="chart-bar-value">${value}</div>
-                        <div class="chart-bar-label">${labels[index]}</div>
-                    </div>
-                `;
-            }).join('');
+                    logger.debug('📊 Fetching engagement for', classes.length, 'classes');
+
+                    // Aggregate engagement data by date
+                    const dailyStudents = {};
+
+                    for (const cls of classes) {
+                        try {
+                            const data = await gamification.getEngagement(cls._id || cls.id, currentChartPeriod);
+                            if (data.engagement) {
+                                data.engagement.forEach(day => {
+                                    if (!dailyStudents[day.date]) {
+                                        dailyStudents[day.date] = new Set();
+                                    }
+                                    // Note: We can't track unique students across classes without student IDs,
+                                    // so we sum the counts (may count same student multiple times if in multiple classes)
+                                    dailyStudents[day.date] = (dailyStudents[day.date] instanceof Set ? 0 : dailyStudents[day.date]) + day.activeStudents;
+                                });
+                            }
+                        } catch (err) {
+                            logger.warn(`Failed to load engagement for class ${cls.name}:`, err);
+                        }
+                    }
+
+                    // Convert to array format
+                    allEngagementData = Object.keys(dailyStudents)
+                        .sort()
+                        .map(date => ({
+                            date,
+                            activeStudents: dailyStudents[date]
+                        }));
+                } else {
+                    // Specific class
+                    const data = await gamification.getEngagement(currentClassId, currentChartPeriod);
+                    allEngagementData = data.engagement || [];
+                }
+
+                logger.debug('📊 Engagement data:', allEngagementData);
+
+                // Extract values and create labels
+                const data = allEngagementData.map(d => d.activeStudents);
+                const dates = allEngagementData.map(d => new Date(d.date));
+
+                // Create labels based on period
+                const labels = currentChartPeriod === 'week'
+                    ? dates.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()])
+                    : dates.map(d => (d.getDate()).toString());
+
+                const maxValue = Math.max(...data, 1); // Ensure at least 1 to avoid division by zero
+
+                container.innerHTML = data.map((value, index) => {
+                    const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
+                    return `
+                        <div class="chart-bar" style="height: ${Math.max(height, 5)}%;">
+                            <div class="chart-bar-value">${value}</div>
+                            <div class="chart-bar-label">${labels[index]}</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                logger.error('Error loading engagement chart:', error);
+            }
         }
 
         function changeChartPeriod(period) {
