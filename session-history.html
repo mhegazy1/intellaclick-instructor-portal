@@ -558,12 +558,25 @@
                     let earnedPoints = 0;
                     if (r.points !== undefined) {
                         earnedPoints = r.points;
+                        console.log('✓ Using backend-provided points:', r.points);
                         logger.debug('✓ Using backend-provided points:', r.points);
                     } else if (r.score !== undefined) {
                         earnedPoints = r.score;
+                        console.log('✓ Using backend-provided score:', r.score);
                         logger.debug('✓ Using backend-provided score:', r.score);
                     } else {
                         const question = questions.find(q => q.questionId === r.questionId);
+                        console.log('📊 POLL DEBUG - Calculating points for response:', {
+                            participantId: r.participantId,
+                            questionId: r.questionId,
+                            studentAnswer: r.answer,
+                            responseCorrectAnswer: r.correctAnswer,
+                            questionCorrectAnswer: question?.correctAnswer,
+                            questionType: question?.questionType || question?.type,
+                            questionPoints: question?.points,
+                            awardParticipationPoints: question?.awardParticipationPoints,
+                            hasAnswer: r.answer !== null && r.answer !== undefined
+                        });
                         logger.debug('📊 Calculating points for response:', {
                             participantId: r.participantId,
                             questionId: r.questionId,
@@ -580,14 +593,18 @@
                         // Award points if correct OR if it's a poll with participation points
                         if (isCorrectAnswer) {
                             earnedPoints = question?.points || 10;
+                            console.log('✅ Correct answer - points:', earnedPoints);
                         } else if (question?.awardParticipationPoints && r.answer !== null && r.answer !== undefined) {
                             // Award participation points for poll questions (any answer counts)
                             earnedPoints = question?.points || 10;
+                            console.log('✅ AWARDED PARTICIPATION POINTS:', earnedPoints);
                             logger.debug('✅ Awarded participation points for poll question');
                         } else {
                             earnedPoints = 0;
+                            console.log('❌ No points awarded - isCorrect:', isCorrectAnswer, 'awardParticipation:', question?.awardParticipationPoints, 'hasAnswer:', r.answer !== null && r.answer !== undefined);
                         }
 
+                        console.log(`💰 FINAL Earned points: ${earnedPoints} (correct: ${isCorrectAnswer}, participation: ${question?.awardParticipationPoints})`);
                         logger.debug(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer}, participation: ${question?.awardParticipationPoints})`);
                     }
 
