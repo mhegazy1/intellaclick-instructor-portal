@@ -337,8 +337,10 @@
             console.log(`🔍 DEBUG - Total achievements: ${totalAchievements}`);
             document.getElementById('totalAchievements').textContent = totalAchievements;
 
-            // Average participation (placeholder - would need session data)
-            const avgParticipation = leaderboardData.length > 0 ? 85 : 0;
+            // Average participation - calculate from all students' accuracy
+            const avgParticipation = leaderboardData.length > 0
+                ? Math.round(leaderboardData.reduce((sum, student) => sum + (student.accuracy || 0), 0) / leaderboardData.length)
+                : 0;
             document.getElementById('avgParticipation').textContent = avgParticipation + '%';
 
             // Changes (placeholder - would need historical data)
