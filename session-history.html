@@ -706,12 +706,23 @@
                                             responseCorrectAnswer: r.correctAnswer,
                                             questionCorrectAnswer: question.correctAnswer,
                                             questionType: question.questionType,
-                                            questionPoints: question.points
+                                            questionPoints: question.points,
+                                            awardParticipationPoints: question.awardParticipationPoints
                                         });
                                         // Calculate based on correct answer match using proper comparison
                                         const isCorrectAnswer = compareAnswers(r.answer, r.correctAnswer || question.correctAnswer, question.questionType);
-                                        earnedPoints = isCorrectAnswer ? (question.points || 10) : 0;
-                                        logger.debug(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer})`);
+
+                                        // Award points if correct OR if it's a poll with participation points
+                                        if (isCorrectAnswer) {
+                                            earnedPoints = question.points || 10;
+                                        } else if (question.awardParticipationPoints && r.answer !== null && r.answer !== undefined) {
+                                            // Award participation points for poll questions (any answer counts)
+                                            earnedPoints = question.points || 10;
+                                        } else {
+                                            earnedPoints = 0;
+                                        }
+
+                                        logger.debug(`💰 Earned points: ${earnedPoints} (correct: ${isCorrectAnswer}, participation: ${question.awardParticipationPoints})`);
                                     }
 
                                     const isCorrect = earnedPoints > 0;
