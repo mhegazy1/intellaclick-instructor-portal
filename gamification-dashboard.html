@@ -526,14 +526,14 @@
                 const studentInLeaderboard = leaderboardData.find(s =>
                     s.playerId === playerId || s.studentId === playerId
                 );
-                console.log('🔍 DEBUG - Student found in leaderboard:', studentInLeaderboard);
+                console.log('🔍 DEBUG - Student found in leaderboard:', JSON.parse(JSON.stringify(studentInLeaderboard)));
 
                 logger.debug('Loading student details:', { playerId, classId: currentClassId, instructorId: currentInstructorId });
                 const data = await gamification.getStudentStats(currentClassId || currentInstructorId, playerId);
-                console.log('🔍 DEBUG - API response data:', data);
+                console.log('🔍 DEBUG - API response data:', JSON.parse(JSON.stringify(data)));
                 logger.debug('Student stats response:', data);
                 const student = data.player;
-                console.log('🔍 DEBUG - Extracted player object:', student);
+                console.log('🔍 DEBUG - Extracted player object:', JSON.parse(JSON.stringify(student)));
 
                 // Populate modal
                 console.log('🔍 DEBUG - Setting modal values:');
@@ -554,7 +554,7 @@
                 const currentXP = student.experiencePoints || 0;
                 const nextLevelXP = student.nextLevelXP || 100;
                 const progress = (currentXP / nextLevelXP) * 100;
-                console.log('🔍 DEBUG - Level progress:', { currentXP, nextLevelXP, progress });
+                console.log('🔍 DEBUG - Level progress:', JSON.parse(JSON.stringify({ currentXP, nextLevelXP, progress })));
                 document.getElementById('modalLevelProgress').style.width = progress + '%';
                 document.getElementById('modalCurrentXP').textContent = currentXP + ' XP';
                 document.getElementById('modalNextLevelXP').textContent = nextLevelXP + ' XP';
@@ -563,9 +563,10 @@
                 const achievementList = document.getElementById('modalAchievementList');
                 if (student.achievements && student.achievements.length > 0) {
                     achievementList.innerHTML = student.achievements.map(ach => `
-                        <div class="achievement-showcase-item">
+                        <div class="achievement-showcase-item" title="${ach.description || ''}" style="cursor: help;">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;">${ach.icon || '🏅'}</div>
                             <div style="font-size: 0.75rem; font-weight: 600;">${ach.name}</div>
+                            <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 0.25rem;">${ach.description || ''}</div>
                         </div>
                     `).join('');
                 } else {
@@ -576,8 +577,11 @@
                 const activityList = document.getElementById('modalActivityList');
                 if (student.recentActivity && student.recentActivity.length > 0) {
                     activityList.innerHTML = student.recentActivity.map(activity => `
-                        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 0.75rem;">
-                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${activity.description}</div>
+                        <div style="padding: 1rem; background: ${activity.type === 'correct_answer' ? '#e8f5e9' : '#f8f9fa'}; border-radius: 8px; margin-bottom: 0.75rem; border-left: 3px solid ${activity.type === 'correct_answer' ? '#4caf50' : '#ddd'};">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.25rem;">
+                                <div style="font-weight: 600; flex: 1;">${activity.description}</div>
+                                ${activity.points > 0 ? `<div style="color: #4caf50; font-weight: 600; margin-left: 1rem;">+${activity.points}</div>` : ''}
+                            </div>
                             <div style="font-size: 0.875rem; color: var(--text-secondary);">${getTimeAgo(new Date(activity.timestamp))}</div>
                         </div>
                     `).join('');
