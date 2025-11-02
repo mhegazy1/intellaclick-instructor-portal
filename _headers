@@ -1,0 +1,22 @@
+# Cache-busting headers for Netlify/modern hosting
+# Forces browsers to check for updates instead of using stale cached files
+
+# HTML files - never cache
+/*.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+# JavaScript files - always revalidate
+/utils/*.js
+  Cache-Control: no-cache, must-revalidate
+
+/*.js
+  Cache-Control: no-cache, must-revalidate
+
+# CSS files - cache for 1 hour with revalidation
+/styles/*.css
+  Cache-Control: max-age=3600, must-revalidate
+
+/*.css
+  Cache-Control: max-age=3600, must-revalidate

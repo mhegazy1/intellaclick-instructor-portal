@@ -1,0 +1,24 @@
+# Cache-busting for commercial deployment
+# This forces browsers to check for updates instead of using old cached files
+
+# Don't cache HTML files - always check for updates
+<FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</FilesMatch>
+
+# Don't cache JavaScript files - always check for updates
+<FilesMatch "\.(js)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+</FilesMatch>
+
+# Cache CSS for 1 hour (safe to cache longer since changes are less frequent)
+<FilesMatch "\.(css)$">
+    Header set Cache-Control "max-age=3600, must-revalidate"
+</FilesMatch>
+
+# Cache images and fonts for 1 day (these rarely change)
+<FilesMatch "\.(jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$">
+    Header set Cache-Control "max-age=86400"
+</FilesMatch>
