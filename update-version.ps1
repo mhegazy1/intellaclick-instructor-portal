@@ -28,7 +28,7 @@ foreach ($file in $files) {
     # Write back to file
     Set-Content -Path $file.FullName -Value $newContent -NoNewline
 
-    Write-Host "✓ Updated: $($file.Name)" -ForegroundColor Green
+    Write-Host "Updated: $($file.Name)" -ForegroundColor Green
 }
 
 Write-Host "----------------------------------------" -ForegroundColor Green
@@ -37,5 +37,5 @@ Write-Host ""
 Write-Host "Next steps:"
 Write-Host "1. Review changes: git diff"
 Write-Host "2. Commit: git add ."
-Write-Host "   Then: git commit -m 'Update cache-busting version to $NEW_VERSION'"
-Write-Host "3. Push: git push"
+Write-Host "3. Commit message: git commit -m `"Update cache-busting version`""
+Write-Host "4. Push: git push"
