@@ -174,9 +174,13 @@
     </div>
 
     <script type="module">
-        import { classes as classesAPI, gamification } from './utils/api.js';
-        import toast from './utils/toast.js';
-        import logger from './utils/logger.js';
+        // Cache-busting version - Update this before each deployment
+        // Format: YYYY.MM.DD.### (e.g., 2025.01.11.001)
+        const APP_VERSION = '2025.01.11.001';
+
+        import { classes as classesAPI, gamification } from `./utils/api.js?v=${APP_VERSION}`;
+        import toast from `./utils/toast.js?v=${APP_VERSION}`;
+        import logger from `./utils/logger.js?v=${APP_VERSION}`;
 
         let currentInstructorId = null;
         let currentClassId = null;
