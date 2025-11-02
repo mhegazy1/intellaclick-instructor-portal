@@ -36,5 +36,6 @@ Write-Host "Version updated successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:"
 Write-Host "1. Review changes: git diff"
-Write-Host "2. Commit: git add . && git commit -m ""Update cache-busting version to $NEW_VERSION"""
+Write-Host "2. Commit: git add ."
+Write-Host "   Then: git commit -m 'Update cache-busting version to $NEW_VERSION'"
 Write-Host "3. Push: git push"
