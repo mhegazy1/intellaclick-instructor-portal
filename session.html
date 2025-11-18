@@ -219,6 +219,25 @@
                 }
             }
 
+            // NEW: Try to restore queue from sessionStorage first (for same browser session)
+            if (questionQueue.length === 0) {
+                const savedQueue = sessionStorage.getItem('questionQueue_' + sessionCode);
+                const savedIndex = sessionStorage.getItem('questionIndex_' + sessionCode);
+
+                if (savedQueue) {
+                    console.log('[Session] Restoring queue from sessionStorage');
+                    questionQueue = JSON.parse(savedQueue);
+                    currentQuestionIndex = savedIndex ? parseInt(savedIndex) : -1;
+                    updateQueueDisplay();
+                }
+            }
+
+            // NEW: If still empty, try to restore from backend (for crashed/resumed sessions)
+            if (questionQueue.length === 0) {
+                console.log('[Session] Attempting to restore queue from backend');
+                restoreQueueFromBackend();
+            }
+
             checkAuth();
             loadSession();
             startPolling();
@@ -256,6 +275,68 @@
             } catch (error) {
                 logger.error('Error loading session:', error);
                 toast.error('Failed to load session');
+            }
+        }
+
+        // NEW: Restore question queue from backend (for crashed/resumed sessions)
+        async function restoreQueueFromBackend() {
+            try {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/sessions/${sessionId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('[Session] Failed to fetch session data for queue restoration');
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.session.questionQueue && data.session.questionQueue.length > 0) {
+                    questionQueue = data.session.questionQueue;
+                    currentQuestionIndex = data.session.currentQuestionIndex ?? -1;
+
+                    console.log('[Session] Queue restored from backend:', {
+                        queueLength: questionQueue.length,
+                        currentIndex: currentQuestionIndex
+                    });
+
+                    updateQueueDisplay();
+                    toast.success(`Restored ${questionQueue.length} questions from previous session`);
+                } else {
+                    console.log('[Session] No saved queue found in backend');
+                }
+            } catch (error) {
+                console.error('[Session] Error restoring queue from backend:', error);
+            }
+        }
+
+        // NEW: Save question queue to backend (for crash recovery)
+        async function saveQueueToBackend() {
+            try {
+                const response = await fetch(`https://api-modular.intellaclick.com/api/sessions/${sessionId}/question-queue`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        questionQueue: questionQueue,
+                        currentQuestionIndex: currentQuestionIndex
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('[Session] Failed to save queue to backend');
+                    return;
+                }
+
+                console.log('[Session] Queue saved to backend successfully');
+            } catch (error) {
+                console.error('[Session] Error saving queue to backend:', error);
+                // Don't show error to user - this is a background operation
             }
         }
 
@@ -362,9 +443,12 @@
         function updateQueueDisplay() {
             const queueList = document.getElementById('queueList');
 
-            // Save queue to sessionStorage for display view
+            // Save queue to sessionStorage for display view (immediate access)
             sessionStorage.setItem('questionQueue_' + sessionCode, JSON.stringify(questionQueue));
             sessionStorage.setItem('questionIndex_' + sessionCode, currentQuestionIndex.toString());
+
+            // NEW: Save to backend (for crash recovery)
+            saveQueueToBackend();
 
             if (questionQueue.length === 0) {
                 queueList.innerHTML = '<p style="color: var(--text-secondary); font-size: 14px;">No questions in queue. Create a new question or import from a quiz.</p>';
