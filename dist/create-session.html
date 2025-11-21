@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Start Session - IntellaClick</title>
-  <script type="module" crossorigin src="/assets/create-session-DxZUka3Z.js"></script>
+    <title>Start Session - IntellaClick</title>
+  <script type="module" crossorigin src="/assets/create-session-BlP_4HYn.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/toast-93yYkT8V.js">
   <link rel="modulepreload" crossorigin href="/assets/api-Cc5qfUA_.js">
   <link rel="modulepreload" crossorigin href="/assets/logger-gSLuc3Ra.js">
@@ -267,6 +267,50 @@
                     </small>
                 </div>
 
+                <!-- Question Defaults Section -->
+                <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px;">
+                    <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text-primary);">⚙️ Question Defaults</h3>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                        Set default values for questions. These apply automatically to new questions and imported quizzes.
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                        <div>
+                            <label for="defaultTimeLimit" style="font-size: 13px; display: block; margin-bottom: 4px;">
+                                Time Limit (seconds)
+                            </label>
+                            <input
+                                type="number"
+                                id="defaultTimeLimit"
+                                value="60"
+                                min="10"
+                                max="300"
+                                style="width: 100%; padding: 8px;"
+                            >
+                        </div>
+                        <div>
+                            <label for="defaultPoints" style="font-size: 13px; display: block; margin-bottom: 4px;">
+                                Points per Question
+                            </label>
+                            <input
+                                type="number"
+                                id="defaultPoints"
+                                value="10"
+                                min="1"
+                                max="100"
+                                style="width: 100%; padding: 8px;"
+                            >
+                        </div>
+                    </div>
+
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; margin-bottom: 8px;">
+                        <input type="checkbox" id="defaultAwardParticipation" style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-size: 13px;">
+                            Award points for participation (even if answer is wrong)
+                        </span>
+                    </label>
+                </div>
+
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" onclick="cancelSession()">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="startButton">Start Session</button>
@@ -276,6 +320,6 @@
     </div>
 
     <div id="toast" class="toast"></div>
-
+
 </body>
 </html>
