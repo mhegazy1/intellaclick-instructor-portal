@@ -575,12 +575,15 @@
                         timeInput.style.border = '1px solid var(--border-color)';
                         timeInput.style.borderRadius = '4px';
                         timeInput.style.fontSize = '13px';
-                        timeInput.onchange = () => {
+                        // Use both onchange (when focus lost) and onblur (when clicking away)
+                        const updateTime = () => {
                             const newTime = parseInt(timeInput.value) || 60;
                             question.timeLimit = newTime;
                             console.log(`✏️ Updated question ${index + 1} time limit:`, newTime, 'Full question:', question);
                             saveQueueToBackend();
                         };
+                        timeInput.onchange = updateTime;
+                        timeInput.onblur = updateTime;
 
                         const timeUnit = document.createElement('span');
                         timeUnit.style.color = 'var(--text-secondary)';
@@ -603,12 +606,15 @@
                         pointsInput.style.border = '1px solid var(--border-color)';
                         pointsInput.style.borderRadius = '4px';
                         pointsInput.style.fontSize = '13px';
-                        pointsInput.onchange = () => {
+                        // Use both onchange (when focus lost) and onblur (when clicking away)
+                        const updatePoints = () => {
                             const newPoints = parseInt(pointsInput.value) || 10;
                             question.points = newPoints;
                             console.log(`✏️ Updated question ${index + 1} points:`, newPoints, 'Full question:', question);
                             saveQueueToBackend();
                         };
+                        pointsInput.onchange = updatePoints;
+                        pointsInput.onblur = updatePoints;
 
                         const pointsUnit = document.createElement('span');
                         pointsUnit.style.color = 'var(--text-secondary)';
@@ -873,8 +879,23 @@
 
             const question = questionQueue[currentQuestionIndex];
 
+            console.log('🔍 QUESTION FROM QUEUE (before normalization):', {
+                index: currentQuestionIndex,
+                timeLimit: question.timeLimit,
+                points: question.points,
+                awardParticipationPoints: question.awardParticipationPoints,
+                fullQuestion: question
+            });
+
             // Normalize question type for student interface compatibility
             const normalizedQuestion = {...question};
+
+            console.log('🔍 NORMALIZED QUESTION (after spread):', {
+                timeLimit: normalizedQuestion.timeLimit,
+                points: normalizedQuestion.points,
+                awardParticipationPoints: normalizedQuestion.awardParticipationPoints,
+                fullQuestion: normalizedQuestion
+            });
 
             // Remove the original 'type' field to avoid confusion
             delete normalizedQuestion.type;
