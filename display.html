@@ -294,7 +294,11 @@
                 if (questionData.question) {
                     // New question available
                     questionEnded = false; // Reset the flag
-                    if (!currentQuestion || currentQuestion.id !== questionData.question.id) {
+                    // Update if: no current question, different question ID, OR different startedAt time
+                    // This ensures we update even when the same question is re-sent with different settings
+                    if (!currentQuestion ||
+                        currentQuestion.id !== questionData.question.id ||
+                        currentQuestion.startedAt !== questionData.question.startedAt) {
                         displayQuestion(questionData.question);
                     }
                 } else {
