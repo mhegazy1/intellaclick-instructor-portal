@@ -658,30 +658,44 @@
                         actions.style.gap = '6px';
                         actions.style.flexShrink = '0';
 
-                        // Reorder buttons
-                        if (index > currentQuestionIndex + 1) {
-                            const upBtn = document.createElement('button');
-                            upBtn.className = 'btn btn-secondary';
-                            upBtn.style.padding = '6px 10px';
-                            upBtn.style.fontSize = '12px';
-                            upBtn.style.minWidth = '32px';
-                            upBtn.innerHTML = '↑';
-                            upBtn.title = 'Move up';
-                            upBtn.onclick = () => moveQuestion(index, -1);
-                            actions.appendChild(upBtn);
-                        }
+                        // Reorder buttons - always show both, disable when needed
+                        const upBtn = document.createElement('button');
+                        upBtn.className = 'btn btn-secondary';
+                        upBtn.style.padding = '6px 10px';
+                        upBtn.style.fontSize = '12px';
+                        upBtn.style.minWidth = '32px';
+                        upBtn.innerHTML = '↑';
+                        upBtn.title = 'Move up';
 
-                        if (index < questionQueue.length - 1) {
-                            const downBtn = document.createElement('button');
-                            downBtn.className = 'btn btn-secondary';
-                            downBtn.style.padding = '6px 10px';
-                            downBtn.style.fontSize = '12px';
-                            downBtn.style.minWidth = '32px';
-                            downBtn.innerHTML = '↓';
-                            downBtn.title = 'Move down';
-                            downBtn.onclick = () => moveQuestion(index, 1);
-                            actions.appendChild(downBtn);
+                        // Disable up button for first question
+                        const canMoveUp = index > currentQuestionIndex + 1;
+                        if (!canMoveUp) {
+                            upBtn.disabled = true;
+                            upBtn.style.opacity = '0.3';
+                            upBtn.style.cursor = 'not-allowed';
+                        } else {
+                            upBtn.onclick = () => moveQuestion(index, -1);
                         }
+                        actions.appendChild(upBtn);
+
+                        const downBtn = document.createElement('button');
+                        downBtn.className = 'btn btn-secondary';
+                        downBtn.style.padding = '6px 10px';
+                        downBtn.style.fontSize = '12px';
+                        downBtn.style.minWidth = '32px';
+                        downBtn.innerHTML = '↓';
+                        downBtn.title = 'Move down';
+
+                        // Disable down button for last question
+                        const canMoveDown = index < questionQueue.length - 1;
+                        if (!canMoveDown) {
+                            downBtn.disabled = true;
+                            downBtn.style.opacity = '0.3';
+                            downBtn.style.cursor = 'not-allowed';
+                        } else {
+                            downBtn.onclick = () => moveQuestion(index, 1);
+                        }
+                        actions.appendChild(downBtn);
 
                         const editBtn = document.createElement('button');
                         editBtn.className = 'btn btn-secondary';
