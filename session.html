@@ -550,22 +550,19 @@
                         settingsAndActions.style.paddingTop = '10px';
                         settingsAndActions.style.borderTop = '1px solid var(--border-color)';
 
-                        // Settings section (left side)
+                        // Settings section (left side) - Grid layout for perfect alignment
                         const settings = document.createElement('div');
-                        settings.style.display = 'flex';
-                        settings.style.gap = '16px';
+                        settings.style.display = 'grid';
+                        settings.style.gridTemplateColumns = 'auto auto auto';
+                        settings.style.gap = '12px 20px';
                         settings.style.alignItems = 'center';
                         settings.style.fontSize = '13px';
-                        settings.style.flexWrap = 'wrap';
 
-                        // Time limit
-                        const timeContainer = document.createElement('div');
-                        timeContainer.style.display = 'flex';
-                        timeContainer.style.alignItems = 'center';
-                        timeContainer.style.gap = '6px';
-
+                        // Time limit - Row 1
                         const timeLabel = document.createElement('span');
                         timeLabel.style.color = 'var(--text-secondary)';
+                        timeLabel.style.textAlign = 'right';
+                        timeLabel.style.minWidth = '50px';
                         timeLabel.textContent = 'Time:';
 
                         const timeInput = document.createElement('input');
@@ -573,8 +570,8 @@
                         timeInput.value = question.timeLimit || 60;
                         timeInput.min = 10;
                         timeInput.max = 300;
-                        timeInput.style.width = '65px';
-                        timeInput.style.padding = '4px 6px';
+                        timeInput.style.width = '60px';
+                        timeInput.style.padding = '4px 8px';
                         timeInput.style.border = '1px solid var(--border-color)';
                         timeInput.style.borderRadius = '4px';
                         timeInput.style.fontSize = '13px';
@@ -587,18 +584,11 @@
                         timeUnit.style.color = 'var(--text-secondary)';
                         timeUnit.textContent = 'sec';
 
-                        timeContainer.appendChild(timeLabel);
-                        timeContainer.appendChild(timeInput);
-                        timeContainer.appendChild(timeUnit);
-
-                        // Points
-                        const pointsContainer = document.createElement('div');
-                        pointsContainer.style.display = 'flex';
-                        pointsContainer.style.alignItems = 'center';
-                        pointsContainer.style.gap = '6px';
-
+                        // Points - Row 2
                         const pointsLabel = document.createElement('span');
                         pointsLabel.style.color = 'var(--text-secondary)';
+                        pointsLabel.style.textAlign = 'right';
+                        pointsLabel.style.minWidth = '50px';
                         pointsLabel.textContent = 'Points:';
 
                         const pointsInput = document.createElement('input');
@@ -606,8 +596,8 @@
                         pointsInput.value = question.points || 10;
                         pointsInput.min = 1;
                         pointsInput.max = 100;
-                        pointsInput.style.width = '55px';
-                        pointsInput.style.padding = '4px 6px';
+                        pointsInput.style.width = '60px';
+                        pointsInput.style.padding = '4px 8px';
                         pointsInput.style.border = '1px solid var(--border-color)';
                         pointsInput.style.borderRadius = '4px';
                         pointsInput.style.fontSize = '13px';
@@ -616,35 +606,41 @@
                             saveQueueToBackend();
                         };
 
-                        pointsContainer.appendChild(pointsLabel);
-                        pointsContainer.appendChild(pointsInput);
+                        const pointsUnit = document.createElement('span');
+                        pointsUnit.style.color = 'var(--text-secondary)';
+                        pointsUnit.textContent = 'pts';
 
-                        // Participation checkbox
-                        const participationContainer = document.createElement('label');
-                        participationContainer.style.display = 'flex';
-                        participationContainer.style.alignItems = 'center';
-                        participationContainer.style.gap = '6px';
-                        participationContainer.style.cursor = 'pointer';
-                        participationContainer.style.userSelect = 'none';
+                        // Participation - Row 3
+                        const participationLabel = document.createElement('span');
+                        participationLabel.style.color = 'var(--text-secondary)';
+                        participationLabel.style.textAlign = 'right';
+                        participationLabel.style.minWidth = '50px';
+                        participationLabel.textContent = 'Award:';
 
                         const participationCheck = document.createElement('input');
                         participationCheck.type = 'checkbox';
                         participationCheck.checked = question.awardParticipationPoints || false;
                         participationCheck.style.cursor = 'pointer';
+                        participationCheck.style.width = '18px';
+                        participationCheck.style.height = '18px';
                         participationCheck.onchange = () => {
                             question.awardParticipationPoints = participationCheck.checked;
                             saveQueueToBackend();
                         };
 
                         const participationText = document.createElement('span');
-                        participationText.textContent = 'Award participation';
+                        participationText.textContent = 'Participation points';
 
-                        participationContainer.appendChild(participationCheck);
-                        participationContainer.appendChild(participationText);
-
-                        settings.appendChild(timeContainer);
-                        settings.appendChild(pointsContainer);
-                        settings.appendChild(participationContainer);
+                        // Add to grid in row order
+                        settings.appendChild(timeLabel);
+                        settings.appendChild(timeInput);
+                        settings.appendChild(timeUnit);
+                        settings.appendChild(pointsLabel);
+                        settings.appendChild(pointsInput);
+                        settings.appendChild(pointsUnit);
+                        settings.appendChild(participationLabel);
+                        settings.appendChild(participationCheck);
+                        settings.appendChild(participationText);
 
                         // Actions section (right side)
                         const actions = document.createElement('div');
