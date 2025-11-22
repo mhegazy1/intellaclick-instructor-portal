@@ -867,6 +867,13 @@
         }
 
         async function sendNextQuestion() {
+            console.log('🚀 SEND NEXT QUESTION CALLED:', {
+                currentIndex: currentQuestionIndex,
+                queueLength: questionQueue.length,
+                willPassCheck: (currentQuestionIndex + 1 < questionQueue.length),
+                nextQuestion: questionQueue[currentQuestionIndex + 1]
+            });
+
             if (currentQuestionIndex + 1 >= questionQueue.length) {
                 toast.error('No more questions in queue');
                 return;
