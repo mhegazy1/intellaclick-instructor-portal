@@ -576,7 +576,9 @@
                         timeInput.style.borderRadius = '4px';
                         timeInput.style.fontSize = '13px';
                         timeInput.onchange = () => {
-                            question.timeLimit = parseInt(timeInput.value) || 60;
+                            const newTime = parseInt(timeInput.value) || 60;
+                            question.timeLimit = newTime;
+                            console.log(`✏️ Updated question ${index + 1} time limit:`, newTime, 'Full question:', question);
                             saveQueueToBackend();
                         };
 
@@ -602,7 +604,9 @@
                         pointsInput.style.borderRadius = '4px';
                         pointsInput.style.fontSize = '13px';
                         pointsInput.onchange = () => {
-                            question.points = parseInt(pointsInput.value) || 10;
+                            const newPoints = parseInt(pointsInput.value) || 10;
+                            question.points = newPoints;
+                            console.log(`✏️ Updated question ${index + 1} points:`, newPoints, 'Full question:', question);
                             saveQueueToBackend();
                         };
 
@@ -633,6 +637,7 @@
                         participationCheck.style.margin = '0';
                         participationCheck.onchange = () => {
                             question.awardParticipationPoints = participationCheck.checked;
+                            console.log(`✏️ Updated question ${index + 1} awardParticipationPoints:`, participationCheck.checked, 'Full question:', question);
                             saveQueueToBackend();
                         };
 
