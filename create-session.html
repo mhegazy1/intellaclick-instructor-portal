@@ -873,11 +873,14 @@
             // Read timeLimit from the duration input
             const timeLimit = parseInt(document.getElementById('duration').value) || 60;
 
+            // Read points from the defaults (if available)
+            const defaultPoints = parseInt(document.getElementById('defaultPoints').value) || 10;
+
             let question = {
                 text: questionText,
                 type: questionType,
                 timeLimit: timeLimit,
-                points: 10  // Default points
+                points: defaultPoints  // Use default points from settings
             };
 
             // Validate and add question-specific data
