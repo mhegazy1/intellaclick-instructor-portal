@@ -1,4 +1,4 @@
-import"./toast-OawwZGYy.js";/* empty css               */import{s as i}from"./api-Cc5qfUA_.js";import{l as a}from"./logger-P_9I2l6U.js";async function o(){try{if(!localStorage.getItem("token")){window.location.href="login.html";return}const e=await i.getActive();r(e.sessions)}catch(t){a.error("Error loading active sessions:",t),document.getElementById("sessionsContainer").innerHTML=`
+import"./toast-Cbd37M37.js";/* empty css               */import{s as i}from"./api-Cc5qfUA_.js";import{l as a}from"./logger-CXzo1yMG.js";async function o(){try{if(!localStorage.getItem("token")){window.location.href="login.html";return}const e=await i.getActive();r(e.sessions)}catch(t){a.error("Error loading active sessions:",t),document.getElementById("sessionsContainer").innerHTML=`
                     <div class="error">Failed to load active sessions. Please try again.</div>
                 `}}function r(t){const e=document.getElementById("sessionsContainer");if(!t||t.length===0){e.innerHTML=`
                     <div class="empty-state">

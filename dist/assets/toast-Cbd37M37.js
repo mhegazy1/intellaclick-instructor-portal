@@ -8,7 +8,7 @@
     gap: 10px;
     pointer-events: none;
     max-width: calc(100vw - 40px);
-  `,document.body.appendChild(s))}function i(t,n="info",a=8e3){l();const r=document.createElement("div");r.className=`toast toast-${n}`;const e={success:"✓",error:"✗",warning:"⚠",info:"ℹ"},o={success:"#10B981",error:"#EF4444",warning:"#F59E0B",info:"#3B82F6"};r.innerHTML=`
+  `,document.body.appendChild(s))}function i(t,n="info",a=15e3){console.log(`🔔 TOAST: Showing ${n} toast for ${a}ms:`,t),l();const r=document.createElement("div");r.className=`toast toast-${n}`;const e={success:"✓",error:"✗",warning:"⚠",info:"ℹ"},o={success:"#10B981",error:"#EF4444",warning:"#F59E0B",info:"#3B82F6"};r.innerHTML=`
     <div style="
       background: white;
       padding: 12px 20px;
@@ -22,6 +22,7 @@
       pointer-events: auto;
       border-left: 4px solid ${o[n]};
       animation: slideIn 0.3s ease-out;
+      position: relative;
     ">
       <span style="
         display: flex;
@@ -35,9 +36,20 @@
         font-weight: bold;
         flex-shrink: 0;
       ">${e[n]}</span>
-      <span style="color: #374151; font-size: 14px; word-wrap: break-word; overflow-wrap: break-word;">${t}</span>
+      <span style="color: #374151; font-size: 14px; word-wrap: break-word; overflow-wrap: break-word; flex: 1;">${t}</span>
+      <button onclick="this.closest('.toast').remove()" style="
+        background: transparent;
+        border: none;
+        color: #9CA3AF;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 18px;
+        line-height: 1;
+        margin-left: 8px;
+        flex-shrink: 0;
+      ">×</button>
     </div>
-  `,s.appendChild(r),setTimeout(()=>{r.style.animation="slideOut 0.3s ease-out",setTimeout(()=>r.remove(),300)},a)}function d(t){i(t,"success")}function f(t){i(t,"error",1e4)}function u(t){i(t,"warning")}function p(t){i(t,"info")}if(!document.getElementById("toast-animations")){const t=document.createElement("style");t.id="toast-animations",t.textContent=`
+  `,s.appendChild(r),setTimeout(()=>{r.parentElement&&(r.style.animation="slideOut 0.3s ease-out",setTimeout(()=>r.remove(),300))},a)}function d(t){i(t,"success")}function f(t){i(t,"error",2e4)}function p(t){i(t,"warning")}function u(t){i(t,"info")}if(!document.getElementById("toast-animations")){const t=document.createElement("style");t.id="toast-animations",t.textContent=`
     @keyframes slideIn {
       from {
         transform: translateX(400px) translateY(0);
@@ -59,4 +71,4 @@
         opacity: 0;
       }
     }
-  `,document.head.appendChild(t)}const m={show:i,success:d,error:f,warning:u,info:p};export{i as a,f as s,m as t};
+  `,document.head.appendChild(t)}const m={show:i,success:d,error:f,warning:p,info:u};export{i as a,f as s,m as t};

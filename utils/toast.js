@@ -31,9 +31,10 @@ function initToastContainer() {
  * Show toast notification
  * @param {string} message - Toast message
  * @param {string} type - Toast type (success, error, info, warning)
- * @param {number} duration - Duration in milliseconds (default: 8000)
+ * @param {number} duration - Duration in milliseconds (default: 15000)
  */
-export function showToast(message, type = 'info', duration = 8000) {
+export function showToast(message, type = 'info', duration = 15000) {
+  console.log(`🔔 TOAST: Showing ${type} toast for ${duration}ms:`, message);
   initToastContainer();
 
   const toast = document.createElement('div');
@@ -69,6 +70,7 @@ export function showToast(message, type = 'info', duration = 8000) {
       pointer-events: auto;
       border-left: 4px solid ${colors[type]};
       animation: slideIn 0.3s ease-out;
+      position: relative;
     ">
       <span style="
         display: flex;
@@ -82,7 +84,18 @@ export function showToast(message, type = 'info', duration = 8000) {
         font-weight: bold;
         flex-shrink: 0;
       ">${icons[type]}</span>
-      <span style="color: #374151; font-size: 14px; word-wrap: break-word; overflow-wrap: break-word;">${message}</span>
+      <span style="color: #374151; font-size: 14px; word-wrap: break-word; overflow-wrap: break-word; flex: 1;">${message}</span>
+      <button onclick="this.closest('.toast').remove()" style="
+        background: transparent;
+        border: none;
+        color: #9CA3AF;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 18px;
+        line-height: 1;
+        margin-left: 8px;
+        flex-shrink: 0;
+      ">×</button>
     </div>
   `;
 
@@ -90,8 +103,10 @@ export function showToast(message, type = 'info', duration = 8000) {
 
   // Auto-remove after duration
   setTimeout(() => {
-    toast.style.animation = 'slideOut 0.3s ease-out';
-    setTimeout(() => toast.remove(), 300);
+    if (toast.parentElement) {
+      toast.style.animation = 'slideOut 0.3s ease-out';
+      setTimeout(() => toast.remove(), 300);
+    }
   }, duration);
 }
 
@@ -108,7 +123,7 @@ export function showSuccess(message) {
  * @param {string} message - Error message
  */
 export function showError(message) {
-  showToast(message, 'error', 10000); // Errors shown longer (10 seconds)
+  showToast(message, 'error', 20000); // Errors shown longer (20 seconds)
 }
 
 /**
