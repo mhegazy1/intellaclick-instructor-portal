@@ -580,6 +580,8 @@
                             const newTime = parseInt(timeInput.value) || 60;
                             question.timeLimit = newTime;
                             console.log(`✏️ Updated question ${index + 1} time limit:`, newTime, 'Full question:', question);
+                            // Save to sessionStorage so display view gets the updated value
+                            sessionStorage.setItem('questionQueue_' + sessionCode, JSON.stringify(questionQueue));
                             saveQueueToBackend();
                         };
                         timeInput.onchange = updateTime;
@@ -611,6 +613,8 @@
                             const newPoints = parseInt(pointsInput.value) || 10;
                             question.points = newPoints;
                             console.log(`✏️ Updated question ${index + 1} points:`, newPoints, 'Full question:', question);
+                            // Save to sessionStorage so display view gets the updated value
+                            sessionStorage.setItem('questionQueue_' + sessionCode, JSON.stringify(questionQueue));
                             saveQueueToBackend();
                         };
                         pointsInput.onchange = updatePoints;
@@ -644,6 +648,8 @@
                         participationCheck.onchange = () => {
                             question.awardParticipationPoints = participationCheck.checked;
                             console.log(`✏️ Updated question ${index + 1} awardParticipationPoints:`, participationCheck.checked, 'Full question:', question);
+                            // Save to sessionStorage so display view gets the updated value
+                            sessionStorage.setItem('questionQueue_' + sessionCode, JSON.stringify(questionQueue));
                             saveQueueToBackend();
                         };
 
