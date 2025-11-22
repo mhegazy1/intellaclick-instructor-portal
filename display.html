@@ -294,12 +294,32 @@
                 if (questionData.question) {
                     // New question available
                     questionEnded = false; // Reset the flag
+
+                    // Debug logging
+                    console.log('🔍 DISPLAY: Comparing questions:', {
+                        hasCurrentQuestion: !!currentQuestion,
+                        currentId: currentQuestion?.id,
+                        newId: questionData.question.id,
+                        currentStartedAt: currentQuestion?.startedAt,
+                        newStartedAt: questionData.question.startedAt,
+                        currentTimeLimit: currentQuestion?.timeLimit,
+                        newTimeLimit: questionData.question.timeLimit,
+                        idsMatch: currentQuestion?.id === questionData.question.id,
+                        startedAtMatch: currentQuestion?.startedAt === questionData.question.startedAt,
+                        willUpdate: !currentQuestion ||
+                                    currentQuestion.id !== questionData.question.id ||
+                                    currentQuestion.startedAt !== questionData.question.startedAt
+                    });
+
                     // Update if: no current question, different question ID, OR different startedAt time
                     // This ensures we update even when the same question is re-sent with different settings
                     if (!currentQuestion ||
                         currentQuestion.id !== questionData.question.id ||
                         currentQuestion.startedAt !== questionData.question.startedAt) {
+                        console.log('✅ DISPLAY: Updating question display');
                         displayQuestion(questionData.question);
+                    } else {
+                        console.log('❌ DISPLAY: Skipping update - question appears unchanged');
                     }
                 } else {
                     // No current question - only show waiting if we're not keeping results
