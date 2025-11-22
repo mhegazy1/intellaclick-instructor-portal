@@ -617,16 +617,26 @@
                         participationLabel.style.minWidth = '50px';
                         participationLabel.textContent = 'Award:';
 
+                        // Container to align checkbox with inputs above
+                        const participationCheckContainer = document.createElement('div');
+                        participationCheckContainer.style.width = '60px';
+                        participationCheckContainer.style.display = 'flex';
+                        participationCheckContainer.style.alignItems = 'center';
+                        participationCheckContainer.style.paddingLeft = '4px';
+
                         const participationCheck = document.createElement('input');
                         participationCheck.type = 'checkbox';
                         participationCheck.checked = question.awardParticipationPoints || false;
                         participationCheck.style.cursor = 'pointer';
-                        participationCheck.style.width = '18px';
-                        participationCheck.style.height = '18px';
+                        participationCheck.style.width = '16px';
+                        participationCheck.style.height = '16px';
+                        participationCheck.style.margin = '0';
                         participationCheck.onchange = () => {
                             question.awardParticipationPoints = participationCheck.checked;
                             saveQueueToBackend();
                         };
+
+                        participationCheckContainer.appendChild(participationCheck);
 
                         const participationText = document.createElement('span');
                         participationText.textContent = 'Participation points';
@@ -639,7 +649,7 @@
                         settings.appendChild(pointsInput);
                         settings.appendChild(pointsUnit);
                         settings.appendChild(participationLabel);
-                        settings.appendChild(participationCheck);
+                        settings.appendChild(participationCheckContainer);
                         settings.appendChild(participationText);
 
                         // Actions section (right side)
