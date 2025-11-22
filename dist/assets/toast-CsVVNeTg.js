@@ -8,7 +8,7 @@
     gap: 10px;
     pointer-events: none;
     max-width: calc(100vw - 40px);
-  `,document.body.appendChild(s))}function i(t,n="info",a=3e3){l();const r=document.createElement("div");r.className=`toast toast-${n}`;const e={success:"✓",error:"✗",warning:"⚠",info:"ℹ"},o={success:"#10B981",error:"#EF4444",warning:"#F59E0B",info:"#3B82F6"};r.innerHTML=`
+  `,document.body.appendChild(s))}function i(t,n="info",a=5e3){l();const r=document.createElement("div");r.className=`toast toast-${n}`;const e={success:"✓",error:"✗",warning:"⚠",info:"ℹ"},o={success:"#10B981",error:"#EF4444",warning:"#F59E0B",info:"#3B82F6"};r.innerHTML=`
     <div style="
       background: white;
       padding: 12px 20px;
@@ -37,7 +37,7 @@
       ">${e[n]}</span>
       <span style="color: #374151; font-size: 14px; word-wrap: break-word; overflow-wrap: break-word;">${t}</span>
     </div>
-  `,s.appendChild(r),setTimeout(()=>{r.style.animation="slideOut 0.3s ease-out",setTimeout(()=>r.remove(),300)},a)}function d(t){i(t,"success")}function f(t){i(t,"error",4e3)}function u(t){i(t,"warning")}function p(t){i(t,"info")}if(!document.getElementById("toast-animations")){const t=document.createElement("style");t.id="toast-animations",t.textContent=`
+  `,s.appendChild(r),setTimeout(()=>{r.style.animation="slideOut 0.3s ease-out",setTimeout(()=>r.remove(),300)},a)}function d(t){i(t,"success")}function f(t){i(t,"error",6e3)}function u(t){i(t,"warning")}function p(t){i(t,"info")}if(!document.getElementById("toast-animations")){const t=document.createElement("style");t.id="toast-animations",t.textContent=`
     @keyframes slideIn {
       from {
         transform: translateX(400px) translateY(0);
