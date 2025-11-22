@@ -1010,9 +1010,20 @@
                 const queueData = sessionStorage.getItem('questionQueue_' + sessionCode);
                 const indexData = sessionStorage.getItem('questionIndex_' + sessionCode);
 
+                console.log('📦 DISPLAY: Loading queue from sessionStorage:', {
+                    hasQueueData: !!queueData,
+                    queueDataPreview: queueData ? queueData.substring(0, 200) : null
+                });
+
                 if (queueData) {
                     questionQueue = JSON.parse(queueData);
                     currentQuestionIndex = indexData ? parseInt(indexData) : -1;
+
+                    console.log('📦 DISPLAY: Parsed queue:', {
+                        queueLength: questionQueue.length,
+                        firstQuestion: questionQueue[0],
+                        currentIndex: currentQuestionIndex
+                    });
                 }
 
                 // Check if there are questions in the queue
@@ -1028,6 +1039,12 @@
 
                 currentQuestionIndex++;
                 const question = questionQueue[currentQuestionIndex];
+
+                console.log('📤 DISPLAY: Question before normalization:', {
+                    timeLimit: question.timeLimit,
+                    points: question.points,
+                    fullQuestion: question
+                });
 
                 logger.debug('🔍 Question from queue:', JSON.stringify(question, null, 2));
 
