@@ -132,6 +132,7 @@
                     <label for="modalQuestionType">Question Type</label>
                     <select id="modalQuestionType" onchange="updateModalOptions()">
                         <option value="mcq">Multiple Choice</option>
+                        <option value="poll">Poll Question (No Correct Answer)</option>
                         <option value="tf">True/False</option>
                         <option value="matching">Matching</option>
                         <option value="ordering">Put in Order</option>
@@ -513,21 +514,54 @@
                 questionQueue.forEach((question, index) => {
                     const item = document.createElement('div');
                     item.className = 'question-item';
-                    
+                    item.style.display = 'flex';
+                    item.style.flexDirection = 'column';
+                    item.style.gap = '8px';
+
+                    // Top row: question text and main actions
+                    const topRow = document.createElement('div');
+                    topRow.style.display = 'flex';
+                    topRow.style.justifyContent = 'space-between';
+                    topRow.style.alignItems = 'center';
+
                     const text = document.createElement('div');
                     text.className = 'question-item-text';
                     text.innerHTML = `<strong>${index + 1}.</strong> ${question.text || question.questionText}`;
-                    
+
                     const actions = document.createElement('div');
                     actions.className = 'question-item-actions';
-                    
+                    actions.style.display = 'flex';
+                    actions.style.gap = '4px';
+
                     if (index > currentQuestionIndex) {
+                        // Reorder buttons
+                        if (index > currentQuestionIndex + 1) {
+                            const upBtn = document.createElement('button');
+                            upBtn.className = 'btn btn-secondary';
+                            upBtn.style.padding = '4px 8px';
+                            upBtn.style.fontSize = '12px';
+                            upBtn.innerHTML = '↑';
+                            upBtn.title = 'Move up';
+                            upBtn.onclick = () => moveQuestion(index, -1);
+                            actions.appendChild(upBtn);
+                        }
+
+                        if (index < questionQueue.length - 1) {
+                            const downBtn = document.createElement('button');
+                            downBtn.className = 'btn btn-secondary';
+                            downBtn.style.padding = '4px 8px';
+                            downBtn.style.fontSize = '12px';
+                            downBtn.innerHTML = '↓';
+                            downBtn.title = 'Move down';
+                            downBtn.onclick = () => moveQuestion(index, 1);
+                            actions.appendChild(downBtn);
+                        }
+
                         const editBtn = document.createElement('button');
                         editBtn.className = 'btn btn-secondary';
                         editBtn.style.padding = '4px 8px';
                         editBtn.style.fontSize = '12px';
-                        editBtn.style.marginRight = '4px';
-                        editBtn.textContent = 'Edit';
+                        editBtn.textContent = 'Edit Question';
                         editBtn.onclick = () => editQueueQuestion(index);
                         actions.appendChild(editBtn);
 
@@ -539,9 +573,86 @@
                         removeBtn.onclick = () => removeFromQueue(index);
                         actions.appendChild(removeBtn);
                     }
-                    
-                    item.appendChild(text);
-                    item.appendChild(actions);
+
+                    topRow.appendChild(text);
+                    topRow.appendChild(actions);
+
+                    // Bottom row: inline settings (time, points, participation)
+                    if (index > currentQuestionIndex) {
+                        const settingsRow = document.createElement('div');
+                        settingsRow.style.display = 'flex';
+                        settingsRow.style.gap = '12px';
+                        settingsRow.style.alignItems = 'center';
+                        settingsRow.style.fontSize = '12px';
+                        settingsRow.style.paddingLeft = '24px';
+
+                        // Time limit
+                        const timeLabel = document.createElement('label');
+                        timeLabel.textContent = 'Time: ';
+                        timeLabel.style.marginRight = '4px';
+                        const timeInput = document.createElement('input');
+                        timeInput.type = 'number';
+                        timeInput.value = question.timeLimit || 60;
+                        timeInput.min = 10;
+                        timeInput.max = 300;
+                        timeInput.style.width = '60px';
+                        timeInput.style.padding = '2px 4px';
+                        timeInput.onchange = () => {
+                            question.timeLimit = parseInt(timeInput.value) || 60;
+                            saveQueueToBackend();
+                        };
+                        const timeUnit = document.createElement('span');
+                        timeUnit.textContent = 's';
+                        timeUnit.style.marginLeft = '2px';
+
+                        // Points
+                        const pointsLabel = document.createElement('label');
+                        pointsLabel.textContent = 'Points: ';
+                        pointsLabel.style.marginRight = '4px';
+                        const pointsInput = document.createElement('input');
+                        pointsInput.type = 'number';
+                        pointsInput.value = question.points || 10;
+                        pointsInput.min = 1;
+                        pointsInput.max = 100;
+                        pointsInput.style.width = '50px';
+                        pointsInput.style.padding = '2px 4px';
+                        pointsInput.onchange = () => {
+                            question.points = parseInt(pointsInput.value) || 10;
+                            saveQueueToBackend();
+                        };
+
+                        // Participation points checkbox
+                        const participationLabel = document.createElement('label');
+                        participationLabel.style.display = 'flex';
+                        participationLabel.style.alignItems = 'center';
+                        participationLabel.style.gap = '4px';
+                        participationLabel.style.cursor = 'pointer';
+                        const participationCheck = document.createElement('input');
+                        participationCheck.type = 'checkbox';
+                        participationCheck.checked = question.awardParticipationPoints || false;
+                        participationCheck.style.cursor = 'pointer';
+                        participationCheck.onchange = () => {
+                            question.awardParticipationPoints = participationCheck.checked;
+                            saveQueueToBackend();
+                        };
+                        const participationText = document.createElement('span');
+                        participationText.textContent = 'Award participation points';
+                        participationLabel.appendChild(participationCheck);
+                        participationLabel.appendChild(participationText);
+
+                        settingsRow.appendChild(timeLabel);
+                        settingsRow.appendChild(timeInput);
+                        settingsRow.appendChild(timeUnit);
+                        settingsRow.appendChild(pointsLabel);
+                        settingsRow.appendChild(pointsInput);
+                        settingsRow.appendChild(participationLabel);
+
+                        item.appendChild(topRow);
+                        item.appendChild(settingsRow);
+                    } else {
+                        item.appendChild(topRow);
+                    }
+
                     queueList.appendChild(item);
                 });
                 
@@ -554,6 +665,23 @@
             updateQueueDisplay();
         }
 
+        function moveQuestion(index, direction) {
+            const newIndex = index + direction;
+
+            // Prevent moving past boundaries
+            if (newIndex <= currentQuestionIndex || newIndex >= questionQueue.length) {
+                return;
+            }
+
+            // Swap questions
+            const temp = questionQueue[index];
+            questionQueue[index] = questionQueue[newIndex];
+            questionQueue[newIndex] = temp;
+
+            updateQueueDisplay();
+            toast.success('Question moved');
+        }
+
         let editingQuestionIndex = null;
 
         function editQueueQuestion(index) {
@@ -563,24 +691,51 @@
             // Open the question modal
             document.getElementById('questionModal').style.display = 'block';
 
-            // Set question type and text
-            const questionType = question.type || question.questionType || 'mcq';
-            logger.debug('Editing question with type:', questionType);
+            // Detect if this is a poll question (no correct answer)
+            const isPoll = !question.correctAnswer && question.correctAnswer !== 0 && question.correctAnswer !== false;
+            const questionType = isPoll ? 'poll' : (question.type || question.questionType || 'mcq');
+
+            logger.debug('Editing question:', {
+                type: questionType,
+                isPoll,
+                correctAnswer: question.correctAnswer,
+                options: question.options || question.optionTexts
+            });
+
             document.getElementById('modalQuestionType').value = questionType;
             document.getElementById('modalQuestionText').value = question.text || question.questionText || '';
+
+            // Pre-fill time, points, and participation settings
+            document.getElementById('modalTimeLimit').value = question.timeLimit || 60;
+            document.getElementById('modalPoints').value = question.points || 10;
+            document.getElementById('modalAwardParticipation').checked = question.awardParticipationPoints || false;
 
             // Update options display after type is set
             setTimeout(() => updateModalOptions(), 10);
 
             // Pre-fill data based on question type
             setTimeout(() => {
-                switch(question.type) {
-                    case 'mcq':
-                        if (question.optionTexts) {
+                switch(questionType) {
+                    case 'poll':
+                        // Poll questions have options but no correct answer
+                        if (question.options || question.optionTexts) {
+                            const options = question.optionTexts || question.options;
                             ['A', 'B', 'C', 'D'].forEach((letter, idx) => {
                                 const input = document.getElementById(`modalOption${letter}`);
-                                if (input && question.optionTexts[idx]) {
-                                    input.value = question.optionTexts[idx];
+                                if (input && options[idx]) {
+                                    input.value = options[idx];
+                                }
+                            });
+                        }
+                        break;
+
+                    case 'mcq':
+                        if (question.optionTexts || question.options) {
+                            const options = question.optionTexts || question.options;
+                            ['A', 'B', 'C', 'D'].forEach((letter, idx) => {
+                                const input = document.getElementById(`modalOption${letter}`);
+                                if (input && options[idx]) {
+                                    input.value = options[idx];
                                 }
                                 if (question.correctAnswer === letter || question.correctAnswer === idx) {
                                     const radio = document.querySelector(`input[name="modalCorrect"][value="${letter}"]`);
@@ -888,25 +1043,46 @@
         function updateModalOptions() {
             const type = document.getElementById('modalQuestionType').value;
             const optionsDiv = document.getElementById('modalQuestionOptions');
-            
+
             switch(type) {
+                case 'poll':
+                    optionsDiv.innerHTML = `
+                        <label>Poll Options (no correct answer - all answers award participation points)</label>
+                        <div style="margin-top: 8px;">
+                            <input type="text" id="modalOptionA" placeholder="Option A" style="width: 100%; margin-bottom: 8px;">
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <input type="text" id="modalOptionB" placeholder="Option B" style="width: 100%; margin-bottom: 8px;">
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <input type="text" id="modalOptionC" placeholder="Option C" style="width: 100%; margin-bottom: 8px;">
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <input type="text" id="modalOptionD" placeholder="Option D" style="width: 100%;">
+                        </div>
+                        <small style="display: block; margin-top: 8px; color: var(--text-secondary);">
+                            💡 Poll questions have no correct answer. All students who answer receive participation points.
+                        </small>
+                    `;
+                    break;
+
                 case 'mcq':
                     optionsDiv.innerHTML = `
                         <label>Answer Options (select correct answer)</label>
                         <div style="margin-top: 8px;">
-                            <input type="radio" name="modalCorrect" value="A" checked> 
+                            <input type="radio" name="modalCorrect" value="A" checked>
                             <input type="text" id="modalOptionA" placeholder="Option A" style="width: calc(100% - 30px); margin-left: 8px;">
                         </div>
                         <div style="margin-top: 8px;">
-                            <input type="radio" name="modalCorrect" value="B"> 
+                            <input type="radio" name="modalCorrect" value="B">
                             <input type="text" id="modalOptionB" placeholder="Option B" style="width: calc(100% - 30px); margin-left: 8px;">
                         </div>
                         <div style="margin-top: 8px;">
-                            <input type="radio" name="modalCorrect" value="C"> 
+                            <input type="radio" name="modalCorrect" value="C">
                             <input type="text" id="modalOptionC" placeholder="Option C" style="width: calc(100% - 30px); margin-left: 8px;">
                         </div>
                         <div style="margin-top: 8px;">
-                            <input type="radio" name="modalCorrect" value="D"> 
+                            <input type="radio" name="modalCorrect" value="D">
                             <input type="text" id="modalOptionD" placeholder="Option D" style="width: calc(100% - 30px); margin-left: 8px;">
                         </div>
                     `;
@@ -1122,29 +1298,54 @@
             
             // Build question based on type
             switch(questionType) {
+                case 'poll':
+                    // Poll questions have options but no correct answer
+                    const pollOptions = [];
+                    const pollOptionTexts = [];
+
+                    ['A', 'B', 'C', 'D'].forEach(letter => {
+                        const optionInput = document.getElementById(`modalOption${letter}`);
+                        if (optionInput && optionInput.value.trim()) {
+                            pollOptions.push(letter);
+                            pollOptionTexts.push(optionInput.value.trim());
+                        }
+                    });
+
+                    if (pollOptions.length < 2) {
+                        toast.error('Please provide at least 2 options');
+                        return;
+                    }
+
+                    question.type = 'mcq'; // Use mcq type for backend compatibility
+                    question.options = pollOptions;
+                    question.optionTexts = pollOptionTexts;
+                    // No correctAnswer for poll questions
+                    question.awardParticipationPoints = true; // Always award participation for polls
+                    break;
+
                 case 'mcq':
                     const options = [];
                     const optionTexts = [];
                     let correctAnswer = null;
-                    
+
                     ['A', 'B', 'C', 'D'].forEach(letter => {
                         const optionInput = document.getElementById(`modalOption${letter}`);
                         if (optionInput && optionInput.value.trim()) {
                             options.push(letter);
                             optionTexts.push(optionInput.value.trim());
-                            
+
                             const radio = document.querySelector(`input[name="modalCorrect"][value="${letter}"]`);
                             if (radio && radio.checked) {
                                 correctAnswer = letter;
                             }
                         }
                     });
-                    
+
                     if (options.length < 2) {
                         toast.error('Please provide at least 2 options');
                         return;
                     }
-                    
+
                     question.options = options;
                     question.optionTexts = optionTexts;
                     question.correctAnswer = correctAnswer;
