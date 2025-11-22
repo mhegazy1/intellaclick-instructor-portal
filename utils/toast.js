@@ -31,9 +31,9 @@ function initToastContainer() {
  * Show toast notification
  * @param {string} message - Toast message
  * @param {string} type - Toast type (success, error, info, warning)
- * @param {number} duration - Duration in milliseconds (default: 5000)
+ * @param {number} duration - Duration in milliseconds (default: 8000)
  */
-export function showToast(message, type = 'info', duration = 5000) {
+export function showToast(message, type = 'info', duration = 8000) {
   initToastContainer();
 
   const toast = document.createElement('div');
@@ -108,7 +108,7 @@ export function showSuccess(message) {
  * @param {string} message - Error message
  */
 export function showError(message) {
-  showToast(message, 'error', 6000); // Errors shown longer
+  showToast(message, 'error', 10000); // Errors shown longer (10 seconds)
 }
 
 /**
