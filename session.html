@@ -164,7 +164,25 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeQuestionModal()">Cancel</button>
+                <button class="btn btn-outline" onclick="previewModalQuestion()" style="margin-left: auto;">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
                 <button class="btn btn-primary" onclick="addQuestionToQueue()">Add to Queue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Preview Modal -->
+    <div class="preview-modal" id="questionPreviewModal">
+        <div class="preview-content">
+            <div class="preview-header">
+                <h2><i class="fas fa-eye"></i> Question Preview</h2>
+                <button class="preview-close" onclick="closePreviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="preview-body" id="questionPreviewBody">
+                <!-- Preview content will be dynamically inserted here -->
             </div>
         </div>
     </div>
@@ -196,6 +214,12 @@
         import logger from './utils/logger.js';
         import loading from './utils/loading.js';
         import { copyToClipboard } from './utils/clipboard.js';
+        import { generateQuestionPreview, getPreviewStyles } from './utils/questionPreview.js';
+
+        // Inject preview styles
+        const previewStyleElement = document.createElement('style');
+        previewStyleElement.textContent = getPreviewStyles();
+        document.head.appendChild(previewStyleElement);
 
         let sessionId;
         let sessionCode;
@@ -1158,6 +1182,56 @@
             const modalTitle = document.querySelector('#questionModal h2');
             if (modalTitle) modalTitle.textContent = 'Create Question';
         }
+
+        function previewModalQuestion() {
+            // Get question data from modal
+            const questionText = document.getElementById('modalQuestionText').value.trim();
+            if (!questionText) {
+                toast.error('Please enter question text first');
+                return;
+            }
+
+            const questionType = document.getElementById('modalQuestionType').value;
+            const timeLimit = parseInt(document.getElementById('modalTimeLimit').value);
+            const points = parseInt(document.getElementById('modalPoints').value);
+
+            // Collect type-specific data
+            let questionData = {
+                text: questionText,
+                type: questionType,
+                timeLimit: timeLimit,
+                points: points
+            };
+
+            // Get options based on type
+            if (questionType === 'mcq' || questionType === 'poll') {
+                const optionInputs = document.querySelectorAll('#modalQuestionOptions input[type="text"]');
+                questionData.options = Array.from(optionInputs).map(input => input.value.trim()).filter(v => v);
+            } else if (questionType === 'matching') {
+                const itemInputs = document.querySelectorAll('#modalQuestionOptions .matching-item-input');
+                const matchInputs = document.querySelectorAll('#modalQuestionOptions .matching-match-input');
+                questionData.matching = {
+                    items: Array.from(itemInputs).map(input => input.value.trim()).filter(v => v),
+                    matches: Array.from(matchInputs).map(input => input.value.trim()).filter(v => v)
+                };
+            } else if (questionType === 'ordering') {
+                const orderInputs = document.querySelectorAll('#modalQuestionOptions .ordering-item-input');
+                questionData.ordering = Array.from(orderInputs).map(input => input.value.trim()).filter(v => v);
+            }
+
+            // Generate and show preview
+            const previewHTML = generateQuestionPreview(questionData);
+            document.getElementById('questionPreviewBody').innerHTML = previewHTML;
+            document.getElementById('questionPreviewModal').classList.add('active');
+        }
+
+        function closePreviewModal() {
+            document.getElementById('questionPreviewModal').classList.remove('active');
+        }
+
+        // Make functions global for onclick handlers
+        window.previewModalQuestion = previewModalQuestion;
+        window.closePreviewModal = closePreviewModal;
 
         function showImportModal() {
             document.getElementById('importModal').style.display = 'block';

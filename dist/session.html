@@ -6,7 +6,7 @@
     <title>Session Management - IntellaClick</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <!-- Modular CSS -->
-  <script type="module" crossorigin src="/assets/session--wr9NBhi.js"></script>
+  <script type="module" crossorigin src="/assets/session-BoGl3kg-.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/toast-Cbd37M37.js">
   <link rel="modulepreload" crossorigin href="/assets/logger-CXzo1yMG.js">
   <link rel="stylesheet" crossorigin href="/assets/session-CecWfiqS.css">
@@ -167,7 +167,25 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeQuestionModal()">Cancel</button>
+                <button class="btn btn-outline" onclick="previewModalQuestion()" style="margin-left: auto;">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
                 <button class="btn btn-primary" onclick="addQuestionToQueue()">Add to Queue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Preview Modal -->
+    <div class="preview-modal" id="questionPreviewModal">
+        <div class="preview-content">
+            <div class="preview-header">
+                <h2><i class="fas fa-eye"></i> Question Preview</h2>
+                <button class="preview-close" onclick="closePreviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="preview-body" id="questionPreviewBody">
+                <!-- Preview content will be dynamically inserted here -->
             </div>
         </div>
     </div>
