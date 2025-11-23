@@ -1404,6 +1404,12 @@
                     if (typeof answer === 'string' && answer.length === 1 && answer >= 'A' && answer <= 'Z') {
                         answer = answer.charCodeAt(0) - 'A'.charCodeAt(0);
                     }
+                    // Convert boolean string answers to indices
+                    else if (questionType === 'boolean') {
+                        if (answer === 'true' || answer === true) answer = 0;
+                        else if (answer === 'false' || answer === false) answer = 1;
+                    }
+                    // For matching, ordering, fill_blank - keep as-is for now (displayed in table only)
 
                     answerCounts[answer] = (answerCounts[answer] || 0) + 1;
                 });
@@ -1417,8 +1423,8 @@
                     questionType
                 });
 
-                // Show answer distribution for multiple choice and polls
-                if (questionType === 'multiple_choice' || questionType === 'mcq' || questionType === 'poll') {
+                // Show answer distribution for multiple choice, polls, and boolean
+                if (questionType === 'multiple_choice' || questionType === 'mcq' || questionType === 'poll' || questionType === 'boolean') {
                     html += '<div style="margin-bottom: 20px;">';
                     options.forEach((option, index) => {
                         const count = answerCounts[index] || 0;
@@ -1460,6 +1466,28 @@
                             answerIndex = answerIndex.charCodeAt(0) - 'A'.charCodeAt(0);
                         }
                         answerText = options[answerIndex] || r.answer;
+                    } else if (questionType === 'boolean') {
+                        // Display boolean as True/False
+                        answerText = r.answer === 'true' || r.answer === true ? 'True' : 'False';
+                    } else if (questionType === 'matching') {
+                        // Display matching pairs
+                        if (typeof r.answer === 'object' && r.answer !== null) {
+                            answerText = Object.entries(r.answer)
+                                .map(([left, right]) => `${left} → ${right}`)
+                                .join(', ');
+                        } else {
+                            answerText = JSON.stringify(r.answer);
+                        }
+                    } else if (questionType === 'ordering') {
+                        // Display ordered list
+                        if (Array.isArray(r.answer)) {
+                            answerText = r.answer.join(', ');
+                        } else {
+                            answerText = r.answer;
+                        }
+                    } else if (questionType === 'fill_blank') {
+                        // Display as plain text
+                        answerText = r.answer;
                     } else {
                         answerText = r.answer;
                     }
