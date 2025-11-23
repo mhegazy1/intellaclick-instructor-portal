@@ -1112,7 +1112,17 @@
                 const questionText = question?.text || question?.questionText || 'Question text not found';
                 const questionType = question?.type || question?.questionType || 'unknown';
                 const options = question?.options || [];
-                const correctAnswer = question?.correctAnswer;
+                let correctAnswer = question?.correctAnswer;
+
+                // Convert letter answer (A, B, C, D) to numeric index (0, 1, 2, 3)
+                if (typeof correctAnswer === 'string' && correctAnswer.length === 1 && correctAnswer >= 'A' && correctAnswer <= 'Z') {
+                    correctAnswer = correctAnswer.charCodeAt(0) - 'A'.charCodeAt(0);
+                }
+                // Convert boolean string answer to index
+                else if (questionType === 'boolean' && typeof correctAnswer === 'string') {
+                    if (correctAnswer === 'true' || correctAnswer === 'True') correctAnswer = 0;
+                    else if (correctAnswer === 'false' || correctAnswer === 'False') correctAnswer = 1;
+                }
 
                 html += `
                     <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
