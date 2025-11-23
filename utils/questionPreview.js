@@ -4,6 +4,20 @@
  */
 
 /**
+ * Fisher-Yates shuffle algorithm for randomizing arrays
+ * @param {Array} array - Array to shuffle
+ * @returns {Array} Shuffled copy of the array
+ */
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+/**
  * Generate preview HTML for a question
  * @param {Object} questionData - Question data object
  * @param {string} questionData.text - Question text
@@ -113,6 +127,7 @@ function generateMatchingPreview(matching) {
         return '<div class="alert alert-info">Add items and matches to preview</div>';
     }
 
+    // Keep items in order (left column)
     let itemsHTML = '<div class="preview-matching-column"><h4>Items to Match</h4>';
     items.forEach((item, idx) => {
         const text = item.trim() || `Item ${idx + 1}`;
@@ -120,8 +135,10 @@ function generateMatchingPreview(matching) {
     });
     itemsHTML += '</div>';
 
+    // Shuffle matches (right column) to simulate live question behavior
+    const shuffledMatches = shuffleArray(matches);
     let matchesHTML = '<div class="preview-matching-column"><h4>Match Options</h4>';
-    matches.forEach((match, idx) => {
+    shuffledMatches.forEach((match, idx) => {
         const letter = String.fromCharCode(65 + idx);
         const text = match.trim() || `Match ${letter}`;
         matchesHTML += `<div class="preview-matching-item"><strong>${letter}.</strong> ${text}</div>`;
@@ -129,7 +146,7 @@ function generateMatchingPreview(matching) {
     matchesHTML += '</div>';
 
     return `
-        <div class="alert alert-info"><i class="fas fa-info-circle"></i> Match each item on the left with the correct option on the right</div>
+        <div class="alert alert-info"><i class="fas fa-info-circle"></i> Match each item on the left with the correct option on the right (matches randomized)</div>
         <div class="preview-matching-grid">
             ${itemsHTML}
             ${matchesHTML}
@@ -142,9 +159,12 @@ function generateOrderingPreview(ordering) {
         return '<div class="alert alert-info">Add items to put in order</div>';
     }
 
-    let html = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Put these items in the correct order</div>';
+    // Shuffle items to simulate live question behavior
+    const shuffledItems = shuffleArray(ordering);
+
+    let html = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Put these items in the correct order (items randomized)</div>';
     html += '<div class="preview-ordering-items">';
-    ordering.forEach((item, idx) => {
+    shuffledItems.forEach((item, idx) => {
         const text = item.trim() || `Item ${idx + 1}`;
         html += `
             <div class="preview-ordering-item">
