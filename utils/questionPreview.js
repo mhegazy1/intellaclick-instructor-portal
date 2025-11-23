@@ -20,8 +20,10 @@ export function generateQuestionPreview(questionData) {
 
     let previewHTML = '';
 
-    // Question text
-    previewHTML += `<div class="preview-question">${text || 'No question text'}</div>`;
+    // Question text (skip for fillblank as it's shown with blanks replaced)
+    if (type !== 'fillblank') {
+        previewHTML += `<div class="preview-question">${text || 'No question text'}</div>`;
+    }
 
     // Generate type-specific content
     switch (type) {
