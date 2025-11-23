@@ -1467,17 +1467,24 @@
                 } else if (questionType === 'matching') {
                     console.log('🔍 Matching question debug:', {
                         question,
+                        pairs: question?.pairs,
                         leftColumn: question?.leftColumn,
                         rightColumn: question?.rightColumn,
                         correctPairs: question?.correctPairs,
                         correctAnswer: question?.correctAnswer
                     });
 
+                    // Build leftColumn from pairs array if not available
+                    let leftColumn = question?.leftColumn || [];
+                    if (leftColumn.length === 0 && question?.pairs && Array.isArray(question.pairs)) {
+                        leftColumn = question.pairs.map(pair => pair.left);
+                        console.log('📝 Built leftColumn from pairs:', leftColumn);
+                    }
+
                     const correctPairs = question?.correctPairs || question?.correctAnswer;
                     if (correctPairs) {
                         html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
                         html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong><br>';
-                        const leftColumn = question?.leftColumn || [];
                         const correctPairsText = Object.entries(correctPairs)
                             .map(([index, right]) => {
                                 const leftItem = leftColumn[parseInt(index)] || index;
@@ -1522,7 +1529,12 @@
                     } else if (questionType === 'matching') {
                         // Display matching pairs - map indices to actual left column items
                         if (typeof r.answer === 'object' && r.answer !== null) {
-                            const leftColumn = question?.leftColumn || [];
+                            // Build leftColumn from pairs array if not available
+                            let leftColumn = question?.leftColumn || [];
+                            if (leftColumn.length === 0 && question?.pairs && Array.isArray(question.pairs)) {
+                                leftColumn = question.pairs.map(pair => pair.left);
+                            }
+
                             console.log('🔍 Processing matching answer:', {
                                 answer: r.answer,
                                 leftColumn,
