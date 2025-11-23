@@ -1,9 +1,7 @@
 FROM nginx:alpine
 
-# Copy all files to nginx default location
-COPY *.html /usr/share/nginx/html/
-COPY styles /usr/share/nginx/html/styles
-COPY utils /usr/share/nginx/html/utils
+# Copy built files from dist directory
+COPY dist/ /usr/share/nginx/html/
 
 # Use default nginx config with minor adjustments
 RUN echo 'server { \
