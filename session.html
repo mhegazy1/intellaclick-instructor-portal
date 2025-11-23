@@ -1398,7 +1398,13 @@
                 // Count answers for visualization
                 const answerCounts = {};
                 questionResponses.forEach(r => {
-                    const answer = r.answer;
+                    let answer = r.answer;
+
+                    // Convert letter answers (A, B, C, D) to numeric indices (0, 1, 2, 3)
+                    if (typeof answer === 'string' && answer.length === 1 && answer >= 'A' && answer <= 'Z') {
+                        answer = answer.charCodeAt(0) - 'A'.charCodeAt(0);
+                    }
+
                     answerCounts[answer] = (answerCounts[answer] || 0) + 1;
                 });
 
