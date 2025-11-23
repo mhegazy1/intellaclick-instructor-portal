@@ -154,8 +154,8 @@
 
                     <label for="questionText">Add Question</label>
                     <textarea id="questionText" rows="3" placeholder="Enter your question here..."></textarea>
-                    <button type="button" class="btn btn-secondary" onclick="insertBlank()" style="margin-top: 8px; font-size: 0.9rem; padding: 0.5rem 1rem;">
-                        Insert [blank] at cursor
+                    <button type="button" id="insertBlankBtn" class="btn btn-secondary" onclick="insertBlank()" style="margin-top: 8px; font-size: 0.9rem; padding: 0.5rem 1rem; display: none;">
+                        <i class="fas fa-plus-circle"></i> Insert [blank] at cursor
                     </button>
 
                     <label style="margin-top: 16px;">Question Type</label>
@@ -858,6 +858,14 @@
             document.getElementById('matchingOptions').style.display = 'none';
             document.getElementById('orderingOptions').style.display = 'none';
             document.getElementById('fillblankOptions').style.display = 'none';
+
+            // Show/hide Insert [blank] button
+            const insertBlankBtn = document.getElementById('insertBlankBtn');
+            if (questionType === 'fillblank') {
+                insertBlankBtn.style.display = 'block';
+            } else {
+                insertBlankBtn.style.display = 'none';
+            }
 
             // Show the selected one
             switch(questionType) {
