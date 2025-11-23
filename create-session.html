@@ -243,8 +243,10 @@
                     <!-- Fill in the Blank Options -->
                     <div id="fillblankOptions" style="margin-top: 16px; display: none;">
                         <label>Correct Answer(s)</label>
-                        <input type="text" id="blankAnswer" placeholder="Enter the correct answer" style="margin-top: 8px;">
-                        <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Use [blank] in your question text where the answer should go</small>
+                        <div id="blankAnswersContainer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                            <!-- Answer fields will be added dynamically based on number of [blank] tags -->
+                        </div>
+                        <small style="color: var(--text-secondary); margin-top: 8px; display: block;">Click "Insert [blank]" button above to add blanks to your question. An answer field will appear for each blank.</small>
                     </div>
 
                     <!-- Add Question Button -->
@@ -876,6 +878,7 @@
                     break;
                 case 'fillblank':
                     document.getElementById('fillblankOptions').style.display = 'block';
+                    updateBlankAnswerFields();
                     break;
             }
         }
@@ -1003,18 +1006,26 @@
                         break;
 
                     case 'fillblank':
-                        const blankAnswer = document.getElementById('blankAnswer').value.trim();
-                        if (!blankAnswer) {
-                            toast.error('Please provide the correct answer');
+                        const blankCount = (questionText.match(/\[blank\]/gi) || []).length;
+
+                        if (blankCount === 0) {
+                            toast.error('Please include at least one [blank] in your question');
                             return;
                         }
 
-                        if (!questionText.includes('[blank]')) {
-                            toast.error('Please include [blank] in your question where the answer should go');
-                            return;
+                        const blankAnswers = [];
+                        for (let i = 1; i <= blankCount; i++) {
+                            const answerInput = document.getElementById(`blankAnswer${i}`);
+                            const answer = answerInput ? answerInput.value.trim() : '';
+                            if (!answer) {
+                                toast.error(`Please provide answer for blank ${i}`);
+                                return;
+                            }
+                            blankAnswers.push(answer);
                         }
 
-                        question.correctAnswer = blankAnswer;
+                        // Store as array if multiple blanks, or single value if one blank
+                        question.correctAnswer = blankAnswers.length === 1 ? blankAnswers[0] : blankAnswers;
                         break;
                 }
 
@@ -1076,8 +1087,9 @@
                 if (order) order.value = '';
             }
 
-            const blankAnswer = document.getElementById('blankAnswer');
-            if (blankAnswer) blankAnswer.value = '';
+            // Clear blank answer fields (will be regenerated when needed)
+            const blankAnswersContainer = document.getElementById('blankAnswersContainer');
+            if (blankAnswersContainer) blankAnswersContainer.innerHTML = '';
         }
 
         function removeQuickPollQuestion(index) {
@@ -1190,9 +1202,15 @@
                         break;
 
                     case 'fillblank':
-                        // Set fill-in-blank answer
-                        const blankInput = document.getElementById('blankAnswer');
-                        if (blankInput) blankInput.value = question.correctAnswer;
+                        // updateBlankAnswerFields was already called by updateQuestionOptions
+                        // Now populate the answer fields
+                        setTimeout(() => {
+                            const answers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
+                            answers.forEach((answer, i) => {
+                                const input = document.getElementById(`blankAnswer${i + 1}`);
+                                if (input) input.value = answer;
+                            });
+                        }, 50);
                         break;
                 }
 
@@ -1456,6 +1474,35 @@
             // Move cursor after [blank]
             textarea.selectionStart = textarea.selectionEnd = start + 7;
             textarea.focus();
+
+            // Update answer fields if fillblank type is selected
+            if (document.getElementById('questionType').value === 'fillblank') {
+                updateBlankAnswerFields();
+            }
+        }
+
+        function updateBlankAnswerFields() {
+            const questionText = document.getElementById('questionText').value;
+            const blankCount = (questionText.match(/\[blank\]/gi) || []).length;
+            const container = document.getElementById('blankAnswersContainer');
+
+            // Clear existing answer fields
+            container.innerHTML = '';
+
+            if (blankCount === 0) {
+                container.innerHTML = '<small style="color: var(--text-secondary);">No blanks found. Click "Insert [blank]" button to add blanks to your question.</small>';
+                return;
+            }
+
+            // Create answer field for each blank
+            for (let i = 0; i < blankCount; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `blankAnswer${i + 1}`;
+                input.placeholder = `Answer for blank ${i + 1}`;
+                input.style.marginTop = '0';
+                container.appendChild(input);
+            }
         }
 
         async function autoSaveQuestions(sessionName, questions) {
@@ -1590,6 +1637,7 @@
         window.selectSessionType = selectSessionType;
         window.goToSavedQuestions = goToSavedQuestions;
         window.insertBlank = insertBlank;
+        window.updateBlankAnswerFields = updateBlankAnswerFields;
         window.updateQuestionOptions = updateQuestionOptions;
         window.addQuickPollQuestion = addQuickPollQuestion;
         window.cancelSession = cancelSession;
