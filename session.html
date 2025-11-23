@@ -126,8 +126,11 @@
                 <div class="form-group">
                     <label for="modalQuestionText">Question</label>
                     <textarea id="modalQuestionText" rows="3" placeholder="Enter your question here..."></textarea>
+                    <button type="button" id="modalInsertBlankBtn" class="btn btn-secondary" onclick="insertModalBlank()" style="margin-top: 8px; font-size: 0.9rem; padding: 0.5rem 1rem; display: none;">
+                        <i class="fas fa-plus-circle"></i> Insert [blank] at cursor
+                    </button>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="modalQuestionType">Question Type</label>
                     <select id="modalQuestionType" onchange="updateModalOptions()">
@@ -904,8 +907,15 @@
                         break;
 
                     case 'fillblank':
-                        const answerInput = document.getElementById('modalBlankAnswer');
-                        if (answerInput) answerInput.value = question.correctAnswer || '';
+                        // updateModalBlankAnswerFields was already called by updateModalOptions
+                        // Now populate the answer fields
+                        setTimeout(() => {
+                            const answers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
+                            answers.forEach((answer, i) => {
+                                const input = document.getElementById(`modalBlankAnswer${i + 1}`);
+                                if (input) input.value = answer;
+                            });
+                        }, 50);
                         break;
                 }
             }, 100);
@@ -1387,6 +1397,14 @@
             const type = document.getElementById('modalQuestionType').value;
             const optionsDiv = document.getElementById('modalQuestionOptions');
 
+            // Show/hide Insert [blank] button
+            const insertBlankBtn = document.getElementById('modalInsertBlankBtn');
+            if (type === 'fillblank') {
+                insertBlankBtn.style.display = 'block';
+            } else {
+                insertBlankBtn.style.display = 'none';
+            }
+
             switch(type) {
                 case 'poll':
                     optionsDiv.innerHTML = `
@@ -1481,11 +1499,61 @@
                     
                 case 'fillblank':
                     optionsDiv.innerHTML = `
-                        <label>Correct Answer</label>
-                        <input type="text" id="modalBlankAnswer" placeholder="Enter the correct answer" style="margin-top: 8px;">
-                        <small style="display: block; margin-top: 8px; color: var(--text-secondary);">Use [blank] in your question where the answer should go</small>
+                        <label>Correct Answer(s)</label>
+                        <div id="modalBlankAnswersContainer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                            <!-- Answer fields will be added dynamically based on number of [blank] tags -->
+                        </div>
+                        <small style="display: block; margin-top: 8px; color: var(--text-secondary);">Click "Insert [blank]" button above to add blanks to your question. An answer field will appear for each blank.</small>
                     `;
+                    updateModalBlankAnswerFields();
                     break;
+            }
+        }
+
+        function insertModalBlank() {
+            const textarea = document.getElementById('modalQuestionText');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+
+            // Insert [blank] at cursor position
+            const newText = text.substring(0, start) + '[blank]' + text.substring(end);
+            textarea.value = newText;
+
+            // Move cursor after [blank]
+            textarea.selectionStart = textarea.selectionEnd = start + 7;
+            textarea.focus();
+
+            // Update answer fields if fillblank type is selected
+            if (document.getElementById('modalQuestionType').value === 'fillblank') {
+                updateModalBlankAnswerFields();
+            }
+        }
+
+        function updateModalBlankAnswerFields() {
+            const questionText = document.getElementById('modalQuestionText').value;
+            const blankCount = (questionText.match(/\[blank\]/gi) || []).length;
+            const container = document.getElementById('modalBlankAnswersContainer');
+
+            if (!container) return; // Container not yet created
+
+            // Clear existing answer fields
+            container.innerHTML = '';
+
+            if (blankCount === 0) {
+                container.innerHTML = '<small style="color: var(--text-secondary);">No blanks found. Click "Insert [blank]" button to add blanks to your question.</small>';
+                return;
+            }
+
+            // Create answer field for each blank
+            for (let i = 0; i < blankCount; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `modalBlankAnswer${i + 1}`;
+                input.placeholder = `Answer for blank ${i + 1}`;
+                input.style.marginTop = '0';
+                input.style.width = '100%';
+                container.appendChild(input);
             }
         }
 
@@ -2039,18 +2107,26 @@
                     break;
                     
                 case 'fillblank':
-                    const answer = document.getElementById('modalBlankAnswer').value.trim();
-                    if (!answer) {
-                        toast.error('Please provide the correct answer');
+                    const blankCount = (questionText.match(/\[blank\]/gi) || []).length;
+
+                    if (blankCount === 0) {
+                        toast.error('Please include at least one [blank] in your question');
                         return;
                     }
-                    
-                    if (!questionText.includes('[blank]')) {
-                        toast.error('Please include [blank] in your question');
-                        return;
+
+                    const blankAnswers = [];
+                    for (let i = 1; i <= blankCount; i++) {
+                        const answerInput = document.getElementById(`modalBlankAnswer${i}`);
+                        const answer = answerInput ? answerInput.value.trim() : '';
+                        if (!answer) {
+                            toast.error(`Please provide answer for blank ${i}`);
+                            return;
+                        }
+                        blankAnswers.push(answer);
                     }
-                    
-                    question.correctAnswer = answer;
+
+                    // Store as array if multiple blanks, or single value if one blank
+                    question.correctAnswer = blankAnswers.length === 1 ? blankAnswers[0] : blankAnswers;
                     break;
             }
             
@@ -2212,6 +2288,8 @@
         window.importSelectedQuiz = importSelectedQuiz;
         window.copyJoinUrl = copyJoinUrl;
         window.updateModalOptions = updateModalOptions;
+        window.insertModalBlank = insertModalBlank;
+        window.updateModalBlankAnswerFields = updateModalBlankAnswerFields;
     </script>
 </body>
 </html>

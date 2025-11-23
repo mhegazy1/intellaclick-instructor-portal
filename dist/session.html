@@ -6,7 +6,7 @@
     <title>Session Management - IntellaClick</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <!-- Modular CSS -->
-  <script type="module" crossorigin src="/assets/session-D7J4eoc_.js"></script>
+  <script type="module" crossorigin src="/assets/session-DRaiidR3.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/toast-Cbd37M37.js">
   <link rel="modulepreload" crossorigin href="/assets/logger-CXzo1yMG.js">
   <link rel="modulepreload" crossorigin href="/assets/questionPreview-ChZvlnqt.js">
@@ -130,8 +130,11 @@
                 <div class="form-group">
                     <label for="modalQuestionText">Question</label>
                     <textarea id="modalQuestionText" rows="3" placeholder="Enter your question here..."></textarea>
+                    <button type="button" id="modalInsertBlankBtn" class="btn btn-secondary" onclick="insertModalBlank()" style="margin-top: 8px; font-size: 0.9rem; padding: 0.5rem 1rem; display: none;">
+                        <i class="fas fa-plus-circle"></i> Insert [blank] at cursor
+                    </button>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="modalQuestionType">Question Type</label>
                     <select id="modalQuestionType" onchange="updateModalOptions()">
