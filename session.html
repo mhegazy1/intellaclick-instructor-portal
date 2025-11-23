@@ -1300,6 +1300,13 @@
                 const sessionResponse = await fetch(`https://api-modular.intellaclick.com/api/sessions/code/${sessionCode}`);
                 const sessionInfo = await sessionResponse.json();
 
+                console.log('📊 Results data:', {
+                    responses: data.responses,
+                    responsesByQuestion: data.responsesByQuestion,
+                    sessionQuestions: sessionInfo.session?.questions,
+                    currentQuestion: sessionInfo.session?.currentQuestion
+                });
+
                 // Display the responses section
                 document.getElementById('responsesSection').style.display = 'block';
 
@@ -1331,18 +1338,32 @@
 
             // Group by question
             for (const [questionId, questionResponses] of Object.entries(responsesByQuestion)) {
-                // Find the question from all possible sources
+                // Strategy 1: Find in session questions array
                 let question = fullSessionData?.questions?.find(q => q._id?.toString() === questionId);
 
+                // Strategy 2: Check if it's the current question
                 if (!question && fullSessionData?.currentQuestion?._id?.toString() === questionId) {
                     question = fullSessionData.currentQuestion;
                 }
 
-                // If still not found, check the response data itself for question details
+                // Strategy 3: Look in the first response's questionData field
                 if (!question && questionResponses.length > 0) {
-                    // Try to get question info from the first response
                     const sampleResponse = responses.find(r => r.questionId === questionId);
-                    question = sampleResponse?.question;
+                    // Try multiple possible field names
+                    question = sampleResponse?.questionData || sampleResponse?.question || sampleResponse?.questionDetails;
+                }
+
+                // Strategy 4: Build question from response metadata
+                if (!question && questionResponses.length > 0 && questionResponses[0]) {
+                    const firstResp = questionResponses[0];
+                    if (firstResp.questionText || firstResp.text) {
+                        question = {
+                            text: firstResp.questionText || firstResp.text,
+                            type: firstResp.questionType || firstResp.type,
+                            options: firstResp.options,
+                            correctAnswer: firstResp.correctAnswer
+                        };
+                    }
                 }
 
                 // Debug logging to understand what we're finding
@@ -1351,8 +1372,8 @@
                     foundInQuestions: !!fullSessionData?.questions?.find(q => q._id?.toString() === questionId),
                     foundInCurrent: fullSessionData?.currentQuestion?._id?.toString() === questionId,
                     questionObject: question,
-                    text: question?.text,
-                    questionText: question?.questionText
+                    firstResponse: questionResponses[0],
+                    allResponseFields: responses.find(r => r.questionId === questionId)
                 });
 
                 const questionText = question?.text || question?.questionText || 'Question text not found';

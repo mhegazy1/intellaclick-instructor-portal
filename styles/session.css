@@ -72,12 +72,9 @@
 }
 
 .response-chart {
-    height: 300px;
+    min-height: 200px;
     background-color: var(--background);
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--text-secondary);
 }
 
