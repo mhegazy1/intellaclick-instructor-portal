@@ -249,6 +249,9 @@
 
                     <!-- Add Question Button -->
                     <div style="margin-top: 16px; display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-outline" onclick="previewQuestion()" style="margin-left: auto;">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
                         <button type="button" id="addQuestionBtn" class="btn btn-primary" onclick="addQuickPollQuestion()">+ Add This Question</button>
                         <button type="button" id="cancelEditBtn" class="btn btn-secondary" onclick="cancelEdit()" style="display: none;">Cancel</button>
                     </div>
@@ -310,6 +313,21 @@
         </div>
     </div>
 
+    <!-- Preview Modal -->
+    <div class="preview-modal" id="questionPreviewModal" onclick="if(event.target === this) closePreviewModal()">
+        <div class="preview-content">
+            <div class="preview-header">
+                <h2><i class="fas fa-eye"></i> Question Preview</h2>
+                <button class="preview-close" onclick="closePreviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="preview-body" id="questionPreviewBody">
+                <!-- Preview content will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script type="module">
@@ -317,6 +335,12 @@
         import toast from './utils/toast.js';
         import logger from './utils/logger.js';
         import loading from './utils/loading.js';
+        import { generateQuestionPreview, getPreviewStyles } from './utils/questionPreview.js';
+
+        // Inject preview styles
+        const previewStyleElement = document.createElement('style');
+        previewStyleElement.textContent = getPreviewStyles();
+        document.head.appendChild(previewStyleElement);
 
         let classId;
         let classData;
@@ -1489,6 +1513,79 @@
             }
         }
 
+        function previewQuestion() {
+            const questionText = document.getElementById('questionText').value.trim();
+            if (!questionText) {
+                toast.error('Please enter question text first');
+                return;
+            }
+
+            const questionType = document.getElementById('questionType').value;
+            const defaultTimeLimit = parseInt(document.getElementById('defaultTimeLimit').value) || 60;
+            const defaultPoints = parseInt(document.getElementById('defaultPoints').value) || 10;
+
+            let questionData = {
+                text: questionText,
+                type: questionType,
+                timeLimit: defaultTimeLimit,
+                points: defaultPoints
+            };
+
+            // Get options based on type
+            if (questionType === 'mcq' || questionType === 'poll') {
+                const optionInputs = [];
+                for (let i = 0; i < (questionType === 'mcq' ? mcqOptionCount : pollOptionCount); i++) {
+                    const letter = String.fromCharCode(65 + i);
+                    const input = document.getElementById(questionType === 'mcq' ? `option${letter}` : `pollOption${letter}`);
+                    if (input && input.value.trim()) {
+                        optionInputs.push(input.value.trim());
+                    }
+                }
+                questionData.options = optionInputs;
+            } else if (questionType === 'matching') {
+                const items = [];
+                const matches = [];
+                for (let i = 1; i <= matchingPairCount; i++) {
+                    const leftInput = document.getElementById(`match${i}Left`);
+                    const rightInput = document.getElementById(`match${i}Right`);
+                    if (leftInput && leftInput.value.trim()) {
+                        items.push(leftInput.value.trim());
+                    }
+                    if (rightInput && rightInput.value.trim()) {
+                        matches.push(rightInput.value.trim());
+                    }
+                }
+                questionData.matching = { items, matches };
+            } else if (questionType === 'ordering') {
+                const orderItems = [];
+                for (let i = 1; i <= orderingItemCount; i++) {
+                    const input = document.getElementById(`order${i}`);
+                    if (input && input.value.trim()) {
+                        orderItems.push(input.value.trim());
+                    }
+                }
+                questionData.ordering = orderItems;
+            }
+
+            const previewHTML = generateQuestionPreview(questionData);
+            document.getElementById('questionPreviewBody').innerHTML = previewHTML;
+            document.getElementById('questionPreviewModal').classList.add('active');
+        }
+
+        function closePreviewModal() {
+            document.getElementById('questionPreviewModal').classList.remove('active');
+        }
+
+        // Add ESC key handler for preview modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const previewModal = document.getElementById('questionPreviewModal');
+                if (previewModal && previewModal.classList.contains('active')) {
+                    closePreviewModal();
+                }
+            }
+        });
+
         // Expose functions to window object for onclick handlers
         window.selectSessionType = selectSessionType;
         window.goToSavedQuestions = goToSavedQuestions;
@@ -1507,6 +1604,8 @@
         window.removeMatchingPair = removeMatchingPair;
         window.addOrderingItem = addOrderingItem;
         window.removeOrderingItem = removeOrderingItem;
+        window.previewQuestion = previewQuestion;
+        window.closePreviewModal = closePreviewModal;
     </script>
 </body>
 </html>

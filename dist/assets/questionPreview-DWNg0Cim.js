@@ -1,83 +1,9 @@
-/**
- * Question Preview Utility
- * Shared preview functionality for questions across the application
- */
-
-/**
- * Generate preview HTML for a question
- * @param {Object} questionData - Question data object
- * @param {string} questionData.text - Question text
- * @param {string} questionData.type - Question type (mcq, poll, tf, matching, ordering, fillblank)
- * @param {Array} questionData.options - Question options (for MCQ, poll, etc.)
- * @param {Object} questionData.matching - Matching data {items, matches}
- * @param {Array} questionData.ordering - Ordering items
- * @param {number} questionData.timeLimit - Time limit in seconds
- * @param {number} questionData.points - Points for question
- * @returns {string} HTML string for preview
- */
-export function generateQuestionPreview(questionData) {
-    const { text, type, options, matching, ordering, timeLimit, points } = questionData;
-
-    let previewHTML = '';
-
-    // Question text
-    previewHTML += `<div class="preview-question">${text || 'No question text'}</div>`;
-
-    // Generate type-specific content
-    switch (type) {
-        case 'mcq':
-        case 'poll':
-            previewHTML += generateMultipleChoicePreview(options, type === 'poll');
-            break;
-        case 'tf':
-            previewHTML += generateTrueFalsePreview();
-            break;
-        case 'fillblank':
-            previewHTML += generateFillBlankPreview(text);
-            break;
-        case 'matching':
-            previewHTML += generateMatchingPreview(matching);
-            break;
-        case 'ordering':
-            previewHTML += generateOrderingPreview(ordering);
-            break;
-        default:
-            previewHTML += '<div class="alert alert-info">Preview not available for this question type</div>';
-    }
-
-    // Add metadata footer
-    previewHTML += generateMetadataFooter(timeLimit, points, type);
-
-    return previewHTML;
-}
-
-function generateMultipleChoicePreview(options, isPoll = false) {
-    if (!options || options.length === 0) {
-        return '<div class="alert alert-info">No options added yet</div>';
-    }
-
-    let html = '<div class="preview-options">';
-    options.forEach((opt, idx) => {
-        const letter = String.fromCharCode(65 + idx);
-        const text = opt.trim() || `Option ${letter}`;
-        html += `
+function f(e){const{text:r,type:i,options:t,matching:a,ordering:o,timeLimit:s,points:l}=e;let n="";switch(n+=`<div class="preview-question">${r||"No question text"}</div>`,i){case"mcq":case"poll":n+=d(t,i==="poll");break;case"tf":n+=p();break;case"fillblank":n+=c(r);break;case"matching":n+=v(a);break;case"ordering":n+=m(o);break;default:n+='<div class="alert alert-info">Preview not available for this question type</div>'}return n+=g(s,l,i),n}function d(e,r=!1){if(!e||e.length===0)return'<div class="alert alert-info">No options added yet</div>';let i='<div class="preview-options">';return e.forEach((t,a)=>{const o=String.fromCharCode(65+a),s=t.trim()||`Option ${o}`;i+=`
             <div class="preview-option">
-                <input type="radio" name="preview-answer" value="${idx}">
-                <div class="preview-option-text"><strong>${letter}.</strong> ${text}</div>
+                <input type="radio" name="preview-answer" value="${a}">
+                <div class="preview-option-text"><strong>${o}.</strong> ${s}</div>
             </div>
-        `;
-    });
-    html += '</div>';
-
-    if (isPoll) {
-        html += '<div class="alert alert-info" style="margin-top: 1rem;"><i class="fas fa-info-circle"></i> This is a poll question - no correct answer</div>';
-    }
-
-    return html;
-}
-
-function generateTrueFalsePreview() {
-    return `
+        `}),i+="</div>",r&&(i+='<div class="alert alert-info" style="margin-top: 1rem;"><i class="fas fa-info-circle"></i> This is a poll question - no correct answer</div>'),i}function p(){return`
         <div class="preview-options">
             <div class="preview-option">
                 <input type="radio" name="preview-answer" value="true">
@@ -88,108 +14,20 @@ function generateTrueFalsePreview() {
                 <div class="preview-option-text"><strong>False</strong></div>
             </div>
         </div>
-    `;
-}
-
-function generateFillBlankPreview(questionText) {
-    // Replace [blank] tags with input fields
-    const previewText = questionText.replace(/\[blank\]/gi, '<input type="text" class="preview-blank-input" placeholder="___">');
-
-    return `
-        <div class="preview-fill-blank">${previewText}</div>
-    `;
-}
-
-function generateMatchingPreview(matching) {
-    if (!matching || !matching.items || !matching.matches) {
-        return '<div class="alert alert-info">Add items and matches to preview</div>';
-    }
-
-    const { items, matches } = matching;
-
-    if (items.length === 0 || matches.length === 0) {
-        return '<div class="alert alert-info">Add items and matches to preview</div>';
-    }
-
-    let itemsHTML = '<div class="preview-matching-column"><h4>Items to Match</h4>';
-    items.forEach((item, idx) => {
-        const text = item.trim() || `Item ${idx + 1}`;
-        itemsHTML += `<div class="preview-matching-item"><strong>${idx + 1}.</strong> ${text}</div>`;
-    });
-    itemsHTML += '</div>';
-
-    let matchesHTML = '<div class="preview-matching-column"><h4>Match Options</h4>';
-    matches.forEach((match, idx) => {
-        const letter = String.fromCharCode(65 + idx);
-        const text = match.trim() || `Match ${letter}`;
-        matchesHTML += `<div class="preview-matching-item"><strong>${letter}.</strong> ${text}</div>`;
-    });
-    matchesHTML += '</div>';
-
-    return `
+    `}function c(e){return`
+        <div class="preview-fill-blank">${e.replace(/\[blank\]/gi,'<input type="text" class="preview-blank-input" placeholder="___">')}</div>
+    `}function v(e){if(!e||!e.items||!e.matches)return'<div class="alert alert-info">Add items and matches to preview</div>';const{items:r,matches:i}=e;if(r.length===0||i.length===0)return'<div class="alert alert-info">Add items and matches to preview</div>';let t='<div class="preview-matching-column"><h4>Items to Match</h4>';r.forEach((o,s)=>{const l=o.trim()||`Item ${s+1}`;t+=`<div class="preview-matching-item"><strong>${s+1}.</strong> ${l}</div>`}),t+="</div>";let a='<div class="preview-matching-column"><h4>Match Options</h4>';return i.forEach((o,s)=>{const l=String.fromCharCode(65+s),n=o.trim()||`Match ${l}`;a+=`<div class="preview-matching-item"><strong>${l}.</strong> ${n}</div>`}),a+="</div>",`
         <div class="alert alert-info"><i class="fas fa-info-circle"></i> Match each item on the left with the correct option on the right</div>
         <div class="preview-matching-grid">
-            ${itemsHTML}
-            ${matchesHTML}
+            ${t}
+            ${a}
         </div>
-    `;
-}
-
-function generateOrderingPreview(ordering) {
-    if (!ordering || ordering.length === 0) {
-        return '<div class="alert alert-info">Add items to put in order</div>';
-    }
-
-    let html = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Put these items in the correct order</div>';
-    html += '<div class="preview-ordering-items">';
-    ordering.forEach((item, idx) => {
-        const text = item.trim() || `Item ${idx + 1}`;
-        html += `
+    `}function m(e){if(!e||e.length===0)return'<div class="alert alert-info">Add items to put in order</div>';let r='<div class="alert alert-info"><i class="fas fa-info-circle"></i> Put these items in the correct order</div>';return r+='<div class="preview-ordering-items">',e.forEach((i,t)=>{const a=i.trim()||`Item ${t+1}`;r+=`
             <div class="preview-ordering-item">
                 <i class="fas fa-grip-vertical preview-ordering-handle"></i>
-                <div>${text}</div>
+                <div>${a}</div>
             </div>
-        `;
-    });
-    html += '</div>';
-
-    return html;
-}
-
-function generateMetadataFooter(timeLimit, points, type) {
-    let html = '<div class="preview-metadata">';
-
-    if (timeLimit) {
-        html += `<div class="preview-meta-item"><i class="fas fa-clock"></i> <strong>Time:</strong> ${timeLimit}s</div>`;
-    }
-
-    if (points) {
-        html += `<div class="preview-meta-item"><i class="fas fa-star"></i> <strong>Points:</strong> ${points}</div>`;
-    }
-
-    const typeNames = {
-        'mcq': 'Multiple Choice',
-        'poll': 'Poll Question',
-        'tf': 'True/False',
-        'fillblank': 'Fill in the Blank',
-        'matching': 'Matching',
-        'ordering': 'Put in Order'
-    };
-
-    if (type && typeNames[type]) {
-        html += `<div class="preview-meta-item"><i class="fas fa-question-circle"></i> <strong>Type:</strong> ${typeNames[type]}</div>`;
-    }
-
-    html += '</div>';
-    return html;
-}
-
-/**
- * Get preview CSS styles
- * @returns {string} CSS styles for preview modal
- */
-export function getPreviewStyles() {
-    return `
+        `}),r+="</div>",r}function g(e,r,i){let t='<div class="preview-metadata">';e&&(t+=`<div class="preview-meta-item"><i class="fas fa-clock"></i> <strong>Time:</strong> ${e}s</div>`),r&&(t+=`<div class="preview-meta-item"><i class="fas fa-star"></i> <strong>Points:</strong> ${r}</div>`);const a={mcq:"Multiple Choice",poll:"Poll Question",tf:"True/False",fillblank:"Fill in the Blank",matching:"Matching",ordering:"Put in Order"};return i&&a[i]&&(t+=`<div class="preview-meta-item"><i class="fas fa-question-circle"></i> <strong>Type:</strong> ${a[i]}</div>`),t+="</div>",t}function w(){return`
         /* Preview Modal */
         .preview-modal {
             position: fixed;
@@ -401,13 +239,4 @@ export function getPreviewStyles() {
         .alert i {
             flex-shrink: 0;
         }
-    `;
-}
-
-/**
- * Default export
- */
-export default {
-    generateQuestionPreview,
-    getPreviewStyles
-};
+    `}export{f as a,w as g};

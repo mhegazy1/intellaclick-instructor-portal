@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Start Session - IntellaClick</title>
-  <script type="module" crossorigin src="/assets/create-session-Cy_vp24L.js"></script>
+  <script type="module" crossorigin src="/assets/create-session-CO5DmkNv.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/toast-Cbd37M37.js">
   <link rel="modulepreload" crossorigin href="/assets/api-Cc5qfUA_.js">
   <link rel="modulepreload" crossorigin href="/assets/logger-CXzo1yMG.js">
+  <link rel="modulepreload" crossorigin href="/assets/questionPreview-DWNg0Cim.js">
   <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
   <link rel="stylesheet" crossorigin href="/assets/create-session-DUaZa5Ix.css">
 </head>
@@ -253,6 +254,9 @@
 
                     <!-- Add Question Button -->
                     <div style="margin-top: 16px; display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-outline" onclick="previewQuestion()" style="margin-left: auto;">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
                         <button type="button" id="addQuestionBtn" class="btn btn-primary" onclick="addQuickPollQuestion()">+ Add This Question</button>
                         <button type="button" id="cancelEditBtn" class="btn btn-secondary" onclick="cancelEdit()" style="display: none;">Cancel</button>
                     </div>
@@ -311,6 +315,21 @@
                     <button type="submit" class="btn btn-primary" id="startButton">Start Session</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="preview-modal" id="questionPreviewModal" onclick="if(event.target === this) closePreviewModal()">
+        <div class="preview-content">
+            <div class="preview-header">
+                <h2><i class="fas fa-eye"></i> Question Preview</h2>
+                <button class="preview-close" onclick="closePreviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="preview-body" id="questionPreviewBody">
+                <!-- Preview content will be dynamically inserted here -->
+            </div>
         </div>
     </div>
 
