@@ -1176,19 +1176,44 @@
                     html += '</div>';
                 }
 
-                // Show correct answer for matching, ordering, and fill_blank
-                if (questionType === 'matching' && question?.correctPairs) {
-                    html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
-                    html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong><br>';
-                    const leftColumn = question.leftColumn || [];
-                    const correctPairsText = Object.entries(question.correctPairs)
-                        .map(([index, right]) => {
-                            const leftItem = leftColumn[parseInt(index)] || index;
-                            return `${leftItem} → ${right}`;
-                        })
-                        .join(', ');
-                    html += `<span style="margin-top: 4px; display: block;">${correctPairsText}</span>`;
-                    html += '</div>';
+                // Show correct answer for all question types
+                if (questionType === 'multiple_choice' || questionType === 'mcq') {
+                    if (correctAnswer !== undefined && options[correctAnswer]) {
+                        html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
+                        html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong> ';
+                        html += `<span>${options[correctAnswer]}</span>`;
+                        html += '</div>';
+                    }
+                } else if (questionType === 'boolean') {
+                    if (correctAnswer !== undefined && options[correctAnswer]) {
+                        html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
+                        html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong> ';
+                        html += `<span>${options[correctAnswer]}</span>`;
+                        html += '</div>';
+                    }
+                } else if (questionType === 'matching') {
+                    console.log('🔍 Matching question debug:', {
+                        question,
+                        leftColumn: question?.leftColumn,
+                        rightColumn: question?.rightColumn,
+                        correctPairs: question?.correctPairs,
+                        correctAnswer: question?.correctAnswer
+                    });
+
+                    const correctPairs = question?.correctPairs || question?.correctAnswer;
+                    if (correctPairs) {
+                        html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
+                        html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong><br>';
+                        const leftColumn = question?.leftColumn || [];
+                        const correctPairsText = Object.entries(correctPairs)
+                            .map(([index, right]) => {
+                                const leftItem = leftColumn[parseInt(index)] || index;
+                                return `${leftItem} → ${right}`;
+                            })
+                            .join(', ');
+                        html += `<span style="margin-top: 4px; display: block;">${correctPairsText}</span>`;
+                        html += '</div>';
+                    }
                 } else if (questionType === 'ordering' && question?.correctOrder) {
                     html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
                     html += '<strong style="color: var(--secondary-color);">Correct Order:</strong><br>';
@@ -1225,9 +1250,15 @@
                         // Display matching pairs - map indices to actual left column items
                         if (typeof r.answer === 'object' && r.answer !== null) {
                             const leftColumn = question?.leftColumn || [];
+                            console.log('🔍 Processing matching answer:', {
+                                answer: r.answer,
+                                leftColumn,
+                                participantName: r.participantName
+                            });
                             answerText = Object.entries(r.answer)
                                 .map(([index, right]) => {
                                     const leftItem = leftColumn[parseInt(index)] || index;
+                                    console.log(`   Mapping: index=${index}, right=${right}, leftItem=${leftItem}`);
                                     return `${leftItem} → ${right}`;
                                 })
                                 .join(', ');
