@@ -246,6 +246,7 @@
         import logger from '../utils/logger.js';
         import loading from '../utils/loading.js';
         import confirm from '../utils/confirm.js';
+        import { copyToClipboard } from '../utils/clipboard.js';
 
         let sessionId;
         let sessionCode;
@@ -1403,46 +1404,12 @@
 
 
         function copyJoinUrl(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                toast.success('Link copied to clipboard!');
-            }).catch(err => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = url;
-                textArea.style.position = 'fixed';
-                textArea.style.left = '-999999px';
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    toast.success('Link copied to clipboard!');
-                } catch (err) {
-                    toast.error('Failed to copy link');
-                }
-                document.body.removeChild(textArea);
-            });
+            copyToClipboard(url, 'Join link');
         }
 
         function copySessionCode() {
             const code = document.getElementById('sessionCode').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                toast.success('Session code copied!');
-            }).catch(err => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = code;
-                textArea.style.position = 'fixed';
-                textArea.style.left = '-999999px';
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    toast.success('Session code copied!');
-                } catch (err) {
-                    toast.error('Failed to copy code');
-                }
-                document.body.removeChild(textArea);
-            });
+            copyToClipboard(code, 'Session code');
         }
 
         // Add Question to Queue

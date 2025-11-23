@@ -231,6 +231,7 @@
         import toast from './utils/toast.js?v=2';
         import logger from './utils/logger.js?v=2';
         import loading from './utils/loading.js?v=2';
+        import { copyToClipboard } from './utils/clipboard.js?v=2';
 
         let currentUser = null;
         let classes = [];
@@ -798,18 +799,7 @@
         
         function copyText(event, text, label = 'Text') {
             event.stopPropagation();
-            navigator.clipboard.writeText(text).then(() => {
-                toast.success(`${label} copied to clipboard!`);
-            }).catch(() => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                toast.success(`${label} copied!`);
-            });
+            copyToClipboard(text, label);
         }
 
         function viewClassDetails(classId) {
@@ -1062,9 +1052,7 @@
             
             // Add click to copy functionality
             urlDisplay.onclick = function() {
-                navigator.clipboard.writeText(joinUrl).then(() => {
-                    toast.info('URL copied to clipboard!');
-                });
+                copyToClipboard(joinUrl, 'URL');
             };
         }
         
