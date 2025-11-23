@@ -1451,6 +1451,13 @@
 
                 // Show correct answer for all question types
                 if (questionType === 'multiple_choice' || questionType === 'mcq') {
+                    console.log('🔍 MCQ correct answer check:', {
+                        questionType,
+                        correctAnswer,
+                        options,
+                        hasCorrectAnswer: correctAnswer !== undefined,
+                        optionAtIndex: options[correctAnswer]
+                    });
                     if (correctAnswer !== undefined && options[correctAnswer]) {
                         html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
                         html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong> ';
@@ -1458,6 +1465,13 @@
                         html += '</div>';
                     }
                 } else if (questionType === 'boolean') {
+                    console.log('🔍 Boolean correct answer check:', {
+                        questionType,
+                        correctAnswer,
+                        options,
+                        hasCorrectAnswer: correctAnswer !== undefined,
+                        optionAtIndex: options[correctAnswer]
+                    });
                     if (correctAnswer !== undefined && options[correctAnswer]) {
                         html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
                         html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong> ';
