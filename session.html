@@ -1402,6 +1402,15 @@
                     answerCounts[answer] = (answerCounts[answer] || 0) + 1;
                 });
 
+                // Debug: Show what we're counting
+                console.log('📊 Answer counting:', {
+                    questionId,
+                    questionResponses,
+                    answerCounts,
+                    options,
+                    questionType
+                });
+
                 // Show answer distribution for multiple choice
                 if (questionType === 'multiple_choice' || questionType === 'mcq') {
                     html += '<div style="margin-bottom: 20px;">';
