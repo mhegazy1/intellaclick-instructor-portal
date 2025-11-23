@@ -805,14 +805,20 @@
             // Open the question modal
             document.getElementById('questionModal').style.display = 'block';
 
-            // Detect if this is a poll question (no correct answer)
-            const isPoll = !question.correctAnswer && question.correctAnswer !== 0 && question.correctAnswer !== false;
-            const questionType = isPoll ? 'poll' : (question.type || question.questionType || 'mcq');
+            // Detect question type properly
+            let questionType = question.type || question.questionType || 'mcq';
+
+            // Special handling: if type is 'mcq' but no correctAnswer and has options, it's a poll
+            if (questionType === 'mcq' && !question.correctAnswer && question.correctAnswer !== 0 && question.correctAnswer !== false && (question.options || question.optionTexts)) {
+                questionType = 'poll';
+            }
 
             logger.debug('Editing question:', {
                 type: questionType,
-                isPoll,
+                originalType: question.type,
                 correctAnswer: question.correctAnswer,
+                pairs: question.pairs,
+                correctOrder: question.correctOrder,
                 options: question.options || question.optionTexts
             });
 
@@ -867,6 +873,12 @@
 
                     case 'matching':
                         if (question.pairs) {
+                            // Add extra pairs if needed (beyond the default 3)
+                            while (window.modalMatchingCount < question.pairs.length && window.modalMatchingCount < 10) {
+                                addModalMatchingPair();
+                            }
+
+                            // Fill in the values
                             question.pairs.forEach((pair, idx) => {
                                 const leftInput = document.getElementById(`modalMatch${idx + 1}Left`);
                                 const rightInput = document.getElementById(`modalMatch${idx + 1}Right`);
@@ -878,6 +890,12 @@
 
                     case 'ordering':
                         if (question.correctOrder) {
+                            // Add extra items if needed (beyond the default 4)
+                            while (window.modalOrderingCount < question.correctOrder.length && window.modalOrderingCount < 10) {
+                                addModalOrderingItem();
+                            }
+
+                            // Fill in the values
                             question.correctOrder.forEach((item, idx) => {
                                 const input = document.getElementById(`modalOrder${idx + 1}`);
                                 if (input) input.value = item || '';
