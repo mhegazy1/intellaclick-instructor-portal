@@ -1326,8 +1326,8 @@
             let html = `<h3>Session Results Summary</h3>`;
             html += `<p style="margin-bottom: 20px; color: var(--text-secondary);">Total Responses: ${responses.length}</p>`;
 
-            // Create horizontal scrolling container
-            html += '<div style="display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px;">';
+            // Create vertical container for question cards
+            html += '<div style="padding-bottom: 20px;">';
 
             // Group by question
             for (const [questionId, questionResponses] of Object.entries(responsesByQuestion)) {
@@ -1345,13 +1345,23 @@
                     question = sampleResponse?.question;
                 }
 
-                const questionText = question?.text || question?.questionText || `Question ${questionId.substring(0, 8)}...`;
+                // Debug logging to understand what we're finding
+                console.log('🔍 Question lookup:', {
+                    questionId,
+                    foundInQuestions: !!fullSessionData?.questions?.find(q => q._id?.toString() === questionId),
+                    foundInCurrent: fullSessionData?.currentQuestion?._id?.toString() === questionId,
+                    questionObject: question,
+                    text: question?.text,
+                    questionText: question?.questionText
+                });
+
+                const questionText = question?.text || question?.questionText || 'Question text not found';
                 const questionType = question?.type || question?.questionType || 'unknown';
                 const options = question?.options || [];
                 const correctAnswer = question?.correctAnswer;
 
                 html += `
-                    <div style="background: white; border-radius: 8px; padding: 20px; min-width: 400px; max-width: 500px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <h4 style="margin-bottom: 16px; word-wrap: break-word;">${questionText}</h4>
                         <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
                             ${questionResponses.length} response${questionResponses.length !== 1 ? 's' : ''}
