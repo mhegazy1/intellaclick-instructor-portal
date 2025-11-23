@@ -1296,11 +1296,15 @@
                     return;
                 }
 
+                // Also fetch session data to get question details
+                const sessionResponse = await fetch(`https://api-modular.intellaclick.com/api/sessions/code/${sessionCode}`);
+                const sessionInfo = await sessionResponse.json();
+
                 // Display the responses section
                 document.getElementById('responsesSection').style.display = 'block';
 
-                // Render results
-                renderResults(data.responses, data.responsesByQuestion);
+                // Render results with full session data
+                renderResults(data.responses, data.responsesByQuestion, sessionInfo.session);
 
                 // Scroll to results
                 document.getElementById('responsesSection').scrollIntoView({ behavior: 'smooth' });
@@ -1311,7 +1315,7 @@
             }
         }
 
-        function renderResults(responses, responsesByQuestion) {
+        function renderResults(responses, responsesByQuestion, fullSessionData) {
             const chartDiv = document.getElementById('responseChart');
 
             if (!responses || responses.length === 0) {
@@ -1322,18 +1326,33 @@
             let html = `<h3>Session Results Summary</h3>`;
             html += `<p style="margin-bottom: 20px; color: var(--text-secondary);">Total Responses: ${responses.length}</p>`;
 
+            // Create horizontal scrolling container
+            html += '<div style="display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px;">';
+
             // Group by question
             for (const [questionId, questionResponses] of Object.entries(responsesByQuestion)) {
-                // Find the question text from session data
-                const question = sessionData.questions?.find(q => q._id === questionId) || sessionData.currentQuestion;
-                const questionText = question?.text || 'Unknown Question';
-                const questionType = question?.type || 'unknown';
+                // Find the question from all possible sources
+                let question = fullSessionData?.questions?.find(q => q._id?.toString() === questionId);
+
+                if (!question && fullSessionData?.currentQuestion?._id?.toString() === questionId) {
+                    question = fullSessionData.currentQuestion;
+                }
+
+                // If still not found, check the response data itself for question details
+                if (!question && questionResponses.length > 0) {
+                    // Try to get question info from the first response
+                    const sampleResponse = responses.find(r => r.questionId === questionId);
+                    question = sampleResponse?.question;
+                }
+
+                const questionText = question?.text || question?.questionText || `Question ${questionId.substring(0, 8)}...`;
+                const questionType = question?.type || question?.questionType || 'unknown';
                 const options = question?.options || [];
                 const correctAnswer = question?.correctAnswer;
 
                 html += `
-                    <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h4 style="margin-bottom: 16px;">${questionText}</h4>
+                    <div style="background: white; border-radius: 8px; padding: 20px; min-width: 400px; max-width: 500px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="margin-bottom: 16px; word-wrap: break-word;">${questionText}</h4>
                         <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
                             ${questionResponses.length} response${questionResponses.length !== 1 ? 's' : ''}
                         </p>
@@ -1394,8 +1413,10 @@
                 });
 
                 html += '</table></div></details>';
-                html += '</div>';
+                html += '</div>'; // Close question card
             }
+
+            html += '</div>'; // Close horizontal container
 
             chartDiv.innerHTML = html;
         }
