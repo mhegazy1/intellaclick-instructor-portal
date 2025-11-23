@@ -1199,6 +1199,9 @@
             // Reset modal title
             const modalTitle = document.querySelector('#questionModal h2');
             if (modalTitle) modalTitle.textContent = 'Create Question';
+            // Reset counters to default
+            window.modalMatchingCount = 3;
+            window.modalOrderingCount = 4;
         }
 
         function previewModalQuestion() {
@@ -1454,9 +1457,10 @@
                             <button type="button" class="btn btn-secondary btn-small" onclick="removeModalMatchingPair()">- Remove Last</button>
                         </div>
                     `;
-                    if (!window.modalMatchingCount) window.modalMatchingCount = 3;
+                    // Always reset counter to match the HTML (3 pairs)
+                    window.modalMatchingCount = 3;
                     break;
-                    
+
                 case 'ordering':
                     optionsDiv.innerHTML = `
                         <label>Items in Correct Order</label>
@@ -1471,7 +1475,8 @@
                             <button type="button" class="btn btn-secondary btn-small" onclick="removeModalOrderingItem()">- Remove Last</button>
                         </div>
                     `;
-                    if (!window.modalOrderingCount) window.modalOrderingCount = 4;
+                    // Always reset counter to match the HTML (4 items)
+                    window.modalOrderingCount = 4;
                     break;
                     
                 case 'fillblank':
