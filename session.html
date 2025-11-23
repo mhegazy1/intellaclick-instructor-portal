@@ -1417,24 +1417,25 @@
                     questionType
                 });
 
-                // Show answer distribution for multiple choice
-                if (questionType === 'multiple_choice' || questionType === 'mcq') {
+                // Show answer distribution for multiple choice and polls
+                if (questionType === 'multiple_choice' || questionType === 'mcq' || questionType === 'poll') {
                     html += '<div style="margin-bottom: 20px;">';
                     options.forEach((option, index) => {
                         const count = answerCounts[index] || 0;
                         const percentage = Math.round((count / questionResponses.length) * 100) || 0;
                         const isCorrect = correctAnswer === index;
+                        const showCorrectMark = (questionType === 'multiple_choice' || questionType === 'mcq') && isCorrect;
 
                         html += `
                             <div style="margin-bottom: 12px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                     <span style="font-weight: 500;">
-                                        ${option} ${isCorrect ? '<span style="color: var(--secondary-color);">✓ Correct</span>' : ''}
+                                        ${option} ${showCorrectMark ? '<span style="color: var(--secondary-color);">✓ Correct</span>' : ''}
                                     </span>
                                     <span style="color: var(--text-secondary);">${count} (${percentage}%)</span>
                                 </div>
                                 <div style="background: #E5E7EB; height: 8px; border-radius: 4px; overflow: hidden;">
-                                    <div style="background: ${isCorrect ? 'var(--secondary-color)' : 'var(--primary-color)'}; height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                                    <div style="background: ${showCorrectMark ? 'var(--secondary-color)' : 'var(--primary-color)'}; height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
                                 </div>
                             </div>
                         `;
@@ -1450,9 +1451,19 @@
                 html += '<tr style="background: #F9FAFB;"><th style="text-align: left; padding: 8px;">Student</th><th style="text-align: left; padding: 8px;">Answer</th><th style="text-align: left; padding: 8px;">Time</th></tr>';
 
                 questionResponses.forEach(r => {
-                    const answerText = questionType === 'multiple_choice' || questionType === 'mcq'
-                        ? options[r.answer] || r.answer
-                        : r.answer;
+                    let answerText;
+
+                    if (questionType === 'multiple_choice' || questionType === 'mcq' || questionType === 'poll') {
+                        // Convert letter answer to index
+                        let answerIndex = r.answer;
+                        if (typeof answerIndex === 'string' && answerIndex.length === 1 && answerIndex >= 'A' && answerIndex <= 'Z') {
+                            answerIndex = answerIndex.charCodeAt(0) - 'A'.charCodeAt(0);
+                        }
+                        answerText = options[answerIndex] || r.answer;
+                    } else {
+                        answerText = r.answer;
+                    }
+
                     const time = r.submittedAt ? new Date(r.submittedAt).toLocaleTimeString() : 'N/A';
 
                     html += `
