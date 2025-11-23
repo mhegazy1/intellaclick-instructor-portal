@@ -1013,9 +1013,259 @@
         }
 
         async function showResults() {
-            document.getElementById('responsesSection').style.display = 'block';
-            // TODO: Implement results display
-            toast.info('Results feature coming soon');
+            try {
+                // Fetch responses from backend
+                const response = await fetch(`https://api-modular.intellaclick.com/api/sessions/code/${sessionCode}/responses`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    toast.error('Failed to load results');
+                    return;
+                }
+
+                // Also fetch session data to get question details
+                const sessionResponse = await fetch(`https://api-modular.intellaclick.com/api/sessions/code/${sessionCode}`);
+                const sessionInfo = await sessionResponse.json();
+
+                console.log('📊 Results data:', {
+                    responses: data.responses,
+                    responsesByQuestion: data.responsesByQuestion,
+                    sessionQuestions: sessionInfo.session?.questions,
+                    currentQuestion: sessionInfo.session?.currentQuestion
+                });
+
+                // Display the responses section
+                document.getElementById('responsesSection').style.display = 'block';
+
+                // Render results with full session data
+                renderResults(data.responses, data.responsesByQuestion, sessionInfo.session);
+
+                // Scroll to results
+                document.getElementById('responsesSection').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error('Error fetching results:', error);
+                toast.error('Failed to load results');
+            }
+        }
+
+        function renderResults(responses, responsesByQuestion, fullSessionData) {
+            const chartDiv = document.getElementById('responseChart');
+
+            if (!responses || responses.length === 0) {
+                chartDiv.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No responses yet</p>';
+                return;
+            }
+
+            let html = `<h3>Session Results Summary</h3>`;
+            html += `<p style="margin-bottom: 20px; color: var(--text-secondary);">Total Responses: ${responses.length}</p>`;
+
+            // Create vertical container for question cards
+            html += '<div style="padding-bottom: 20px;">';
+
+            // Group by question
+            for (const [questionId, questionResponses] of Object.entries(responsesByQuestion)) {
+                // Strategy 1: Find in session questions array (try both _id and questionId fields)
+                let question = fullSessionData?.questions?.find(q =>
+                    q._id?.toString() === questionId ||
+                    q.questionId === questionId ||
+                    q.id === questionId
+                );
+
+                // Strategy 2: Check in questionQueue
+                if (!question && fullSessionData?.questionQueue) {
+                    question = fullSessionData.questionQueue.find(q =>
+                        q._id?.toString() === questionId ||
+                        q.questionId === questionId ||
+                        q.id === questionId
+                    );
+                }
+
+                // Strategy 3: Check if it's the current question
+                if (!question && fullSessionData?.currentQuestion) {
+                    const curr = fullSessionData.currentQuestion;
+                    if (curr._id?.toString() === questionId ||
+                        curr.questionId === questionId ||
+                        curr.id === questionId) {
+                        question = curr;
+                    }
+                }
+
+                // Strategy 4: Look in the response data itself
+                if (!question && questionResponses.length > 0) {
+                    const sampleResponse = responses.find(r => r.questionId === questionId);
+                    if (sampleResponse) {
+                        question = sampleResponse.questionData || sampleResponse.question || sampleResponse.questionDetails;
+                    }
+                }
+
+                // Debug logging to understand what we're finding
+                console.log('🔍 Question lookup:', {
+                    questionId,
+                    questionsArray: fullSessionData?.questions,
+                    questionQueue: fullSessionData?.questionQueue,
+                    foundQuestion: question,
+                    firstResponse: questionResponses[0],
+                    fullResponse: responses.find(r => r.questionId === questionId)
+                });
+
+                const questionText = question?.text || question?.questionText || 'Question text not found';
+                const questionType = question?.type || question?.questionType || 'unknown';
+                const options = question?.options || [];
+                const correctAnswer = question?.correctAnswer;
+
+                html += `
+                    <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="margin-bottom: 16px; word-wrap: break-word;">${questionText}</h4>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+                            ${questionResponses.length} response${questionResponses.length !== 1 ? 's' : ''}
+                        </p>
+                `;
+
+                // Count answers for visualization
+                const answerCounts = {};
+                questionResponses.forEach(r => {
+                    let answer = r.answer;
+
+                    // Convert letter answers (A, B, C, D) to numeric indices (0, 1, 2, 3)
+                    if (typeof answer === 'string' && answer.length === 1 && answer >= 'A' && answer <= 'Z') {
+                        answer = answer.charCodeAt(0) - 'A'.charCodeAt(0);
+                    }
+                    // Convert boolean string answers to indices
+                    else if (questionType === 'boolean') {
+                        if (answer === 'true' || answer === true) answer = 0;
+                        else if (answer === 'false' || answer === false) answer = 1;
+                    }
+                    // For matching, ordering, fill_blank - keep as-is for now (displayed in table only)
+
+                    answerCounts[answer] = (answerCounts[answer] || 0) + 1;
+                });
+
+                // Debug: Show what we're counting
+                console.log('📊 Answer counting:', {
+                    questionId,
+                    questionResponses,
+                    answerCounts,
+                    options,
+                    questionType
+                });
+
+                // Show answer distribution for multiple choice, polls, and boolean
+                if (questionType === 'multiple_choice' || questionType === 'mcq' || questionType === 'poll' || questionType === 'boolean') {
+                    html += '<div style="margin-bottom: 20px;">';
+                    options.forEach((option, index) => {
+                        const count = answerCounts[index] || 0;
+                        const percentage = Math.round((count / questionResponses.length) * 100) || 0;
+                        const isCorrect = correctAnswer === index;
+                        const showCorrectMark = (questionType === 'multiple_choice' || questionType === 'mcq') && isCorrect;
+
+                        html += `
+                            <div style="margin-bottom: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-weight: 500;">
+                                        ${option} ${showCorrectMark ? '<span style="color: var(--secondary-color);">✓ Correct</span>' : ''}
+                                    </span>
+                                    <span style="color: var(--text-secondary);">${count} (${percentage}%)</span>
+                                </div>
+                                <div style="background: #E5E7EB; height: 8px; border-radius: 4px; overflow: hidden;">
+                                    <div style="background: ${showCorrectMark ? 'var(--secondary-color)' : 'var(--primary-color)'}; height: 100%; width: ${percentage}%; transition: width 0.3s;"></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                // Show correct answer for matching, ordering, and fill_blank
+                if (questionType === 'matching' && question?.correctPairs) {
+                    html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
+                    html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong><br>';
+                    const leftColumn = question.leftColumn || [];
+                    const correctPairsText = Object.entries(question.correctPairs)
+                        .map(([index, right]) => {
+                            const leftItem = leftColumn[parseInt(index)] || index;
+                            return `${leftItem} → ${right}`;
+                        })
+                        .join(', ');
+                    html += `<span style="margin-top: 4px; display: block;">${correctPairsText}</span>`;
+                    html += '</div>';
+                } else if (questionType === 'ordering' && question?.correctOrder) {
+                    html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
+                    html += '<strong style="color: var(--secondary-color);">Correct Order:</strong><br>';
+                    html += `<span style="margin-top: 4px; display: block;">${question.correctOrder.join(', ')}</span>`;
+                    html += '</div>';
+                } else if (questionType === 'fill_blank' && question?.correctAnswer) {
+                    html += '<div style="background: #F0FDF4; border-left: 4px solid var(--secondary-color); padding: 12px; margin-bottom: 16px; border-radius: 4px;">';
+                    html += '<strong style="color: var(--secondary-color);">Correct Answer:</strong><br>';
+                    html += `<span style="margin-top: 4px; display: block;">${question.correctAnswer}</span>`;
+                    html += '</div>';
+                }
+
+                // Show student responses
+                html += '<details style="margin-top: 16px;">';
+                html += '<summary style="cursor: pointer; color: var(--primary-color); font-weight: 500;">View individual responses</summary>';
+                html += '<div style="margin-top: 12px; max-height: 300px; overflow-y: auto;">';
+                html += '<table style="width: 100%; border-collapse: collapse;">';
+                html += '<tr style="background: #F9FAFB;"><th style="text-align: left; padding: 8px;">Student</th><th style="text-align: left; padding: 8px;">Answer</th><th style="text-align: left; padding: 8px;">Time</th></tr>';
+
+                questionResponses.forEach(r => {
+                    let answerText;
+
+                    if (questionType === 'multiple_choice' || questionType === 'mcq' || questionType === 'poll') {
+                        // Convert letter answer to index
+                        let answerIndex = r.answer;
+                        if (typeof answerIndex === 'string' && answerIndex.length === 1 && answerIndex >= 'A' && answerIndex <= 'Z') {
+                            answerIndex = answerIndex.charCodeAt(0) - 'A'.charCodeAt(0);
+                        }
+                        answerText = options[answerIndex] || r.answer;
+                    } else if (questionType === 'boolean') {
+                        // Display boolean as True/False
+                        answerText = r.answer === 'true' || r.answer === true ? 'True' : 'False';
+                    } else if (questionType === 'matching') {
+                        // Display matching pairs - map indices to actual left column items
+                        if (typeof r.answer === 'object' && r.answer !== null) {
+                            const leftColumn = question?.leftColumn || [];
+                            answerText = Object.entries(r.answer)
+                                .map(([index, right]) => {
+                                    const leftItem = leftColumn[parseInt(index)] || index;
+                                    return `${leftItem} → ${right}`;
+                                })
+                                .join(', ');
+                        } else {
+                            answerText = JSON.stringify(r.answer);
+                        }
+                    } else if (questionType === 'ordering') {
+                        // Display ordered list
+                        if (Array.isArray(r.answer)) {
+                            answerText = r.answer.join(', ');
+                        } else {
+                            answerText = r.answer;
+                        }
+                    } else if (questionType === 'fill_blank') {
+                        // Display as plain text
+                        answerText = r.answer;
+                    } else {
+                        answerText = r.answer;
+                    }
+
+                    const time = r.submittedAt ? new Date(r.submittedAt).toLocaleTimeString() : 'N/A';
+
+                    html += `
+                        <tr style="border-bottom: 1px solid #E5E7EB;">
+                            <td style="padding: 8px;">${r.participantName}</td>
+                            <td style="padding: 8px;">${answerText}</td>
+                            <td style="padding: 8px; color: var(--text-secondary);">${time}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</table></div></details>';
+                html += '</div>'; // Close question card
+            }
+
+            html += '</div>'; // Close horizontal container
+
+            chartDiv.innerHTML = html;
         }
 
         async function endSession() {
