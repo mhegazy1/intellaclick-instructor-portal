@@ -1470,10 +1470,14 @@
                         // Display boolean as True/False
                         answerText = r.answer === 'true' || r.answer === true ? 'True' : 'False';
                     } else if (questionType === 'matching') {
-                        // Display matching pairs
+                        // Display matching pairs - map indices to actual left column items
                         if (typeof r.answer === 'object' && r.answer !== null) {
+                            const leftColumn = question?.leftColumn || [];
                             answerText = Object.entries(r.answer)
-                                .map(([left, right]) => `${left} → ${right}`)
+                                .map(([index, right]) => {
+                                    const leftItem = leftColumn[parseInt(index)] || index;
+                                    return `${leftItem} → ${right}`;
+                                })
                                 .join(', ');
                         } else {
                             answerText = JSON.stringify(r.answer);
