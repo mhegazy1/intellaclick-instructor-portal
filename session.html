@@ -173,7 +173,7 @@
     </div>
 
     <!-- Question Preview Modal -->
-    <div class="preview-modal" id="questionPreviewModal">
+    <div class="preview-modal" id="questionPreviewModal" onclick="if(event.target === this) closePreviewModal()">
         <div class="preview-content">
             <div class="preview-header">
                 <h2><i class="fas fa-eye"></i> Question Preview</h2>
@@ -1232,6 +1232,16 @@
         // Make functions global for onclick handlers
         window.previewModalQuestion = previewModalQuestion;
         window.closePreviewModal = closePreviewModal;
+
+        // Add ESC key handler for preview modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const previewModal = document.getElementById('questionPreviewModal');
+                if (previewModal && previewModal.classList.contains('active')) {
+                    closePreviewModal();
+                }
+            }
+        });
 
         function showImportModal() {
             document.getElementById('importModal').style.display = 'block';
