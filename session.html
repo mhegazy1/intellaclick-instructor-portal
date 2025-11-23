@@ -1338,42 +1338,48 @@
 
             // Group by question
             for (const [questionId, questionResponses] of Object.entries(responsesByQuestion)) {
-                // Strategy 1: Find in session questions array
-                let question = fullSessionData?.questions?.find(q => q._id?.toString() === questionId);
+                // Strategy 1: Find in session questions array (try both _id and questionId fields)
+                let question = fullSessionData?.questions?.find(q =>
+                    q._id?.toString() === questionId ||
+                    q.questionId === questionId ||
+                    q.id === questionId
+                );
 
-                // Strategy 2: Check if it's the current question
-                if (!question && fullSessionData?.currentQuestion?._id?.toString() === questionId) {
-                    question = fullSessionData.currentQuestion;
+                // Strategy 2: Check in questionQueue
+                if (!question && fullSessionData?.questionQueue) {
+                    question = fullSessionData.questionQueue.find(q =>
+                        q._id?.toString() === questionId ||
+                        q.questionId === questionId ||
+                        q.id === questionId
+                    );
                 }
 
-                // Strategy 3: Look in the first response's questionData field
+                // Strategy 3: Check if it's the current question
+                if (!question && fullSessionData?.currentQuestion) {
+                    const curr = fullSessionData.currentQuestion;
+                    if (curr._id?.toString() === questionId ||
+                        curr.questionId === questionId ||
+                        curr.id === questionId) {
+                        question = curr;
+                    }
+                }
+
+                // Strategy 4: Look in the response data itself
                 if (!question && questionResponses.length > 0) {
                     const sampleResponse = responses.find(r => r.questionId === questionId);
-                    // Try multiple possible field names
-                    question = sampleResponse?.questionData || sampleResponse?.question || sampleResponse?.questionDetails;
-                }
-
-                // Strategy 4: Build question from response metadata
-                if (!question && questionResponses.length > 0 && questionResponses[0]) {
-                    const firstResp = questionResponses[0];
-                    if (firstResp.questionText || firstResp.text) {
-                        question = {
-                            text: firstResp.questionText || firstResp.text,
-                            type: firstResp.questionType || firstResp.type,
-                            options: firstResp.options,
-                            correctAnswer: firstResp.correctAnswer
-                        };
+                    if (sampleResponse) {
+                        question = sampleResponse.questionData || sampleResponse.question || sampleResponse.questionDetails;
                     }
                 }
 
                 // Debug logging to understand what we're finding
                 console.log('🔍 Question lookup:', {
                     questionId,
-                    foundInQuestions: !!fullSessionData?.questions?.find(q => q._id?.toString() === questionId),
-                    foundInCurrent: fullSessionData?.currentQuestion?._id?.toString() === questionId,
-                    questionObject: question,
+                    questionsArray: fullSessionData?.questions,
+                    questionQueue: fullSessionData?.questionQueue,
+                    foundQuestion: question,
                     firstResponse: questionResponses[0],
-                    allResponseFields: responses.find(r => r.questionId === questionId)
+                    fullResponse: responses.find(r => r.questionId === questionId)
                 });
 
                 const questionText = question?.text || question?.questionText || 'Question text not found';
