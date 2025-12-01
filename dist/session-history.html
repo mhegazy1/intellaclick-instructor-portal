@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="version" content="1.0.10-filters-fixed">
     <title>Session History - IntellaClick</title>
-  <script type="module" crossorigin src="/assets/session-history-CTuK9hvg.js"></script>
+  <script type="module" crossorigin src="/assets/session-history-CGDop2w8.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/toast-Cbd37M37.js">
-  <link rel="modulepreload" crossorigin href="/assets/api-Cc5qfUA_.js">
+  <link rel="modulepreload" crossorigin href="/assets/api-C1P2uT89.js">
   <link rel="modulepreload" crossorigin href="/assets/logger-CXzo1yMG.js">
   <link rel="stylesheet" crossorigin href="/assets/session-history-K1JkrZlH.css">
   <link rel="stylesheet" crossorigin href="/assets/common-ABeTdMwf.css">
@@ -97,6 +97,11 @@
             <div class="modal-header">
                 <h2 id="modalTitle">Session Details</h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalActions" style="padding: 0 1.5rem; margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button id="enableParticipationBtn" class="btn btn-secondary" onclick="enableParticipationPointsForAll()" style="font-size: 0.9rem;">
+                    <span style="margin-right: 6px;">🎯</span> Award Participation Points (All Questions)
+                </button>
             </div>
             <div id="modalBody">
                 <!-- Session details will be loaded here -->

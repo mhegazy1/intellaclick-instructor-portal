@@ -94,6 +94,11 @@
                 <h2 id="modalTitle">Session Details</h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
+            <div id="modalActions" style="padding: 0 1.5rem; margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button id="enableParticipationBtn" class="btn btn-secondary" onclick="enableParticipationPointsForAll()" style="font-size: 0.9rem;">
+                    <span style="margin-right: 6px;">🎯</span> Award Participation Points (All Questions)
+                </button>
+            </div>
             <div id="modalBody">
                 <!-- Session details will be loaded here -->
             </div>
@@ -511,6 +516,21 @@
 
                 displaySessionDetails(currentSession);
                 document.getElementById('sessionModal').classList.add('active');
+
+                // Update the participation button state
+                const allEnabled = currentSession.questions?.every(q => q.awardParticipationPoints === true);
+                const btn = document.getElementById('enableParticipationBtn');
+                if (allEnabled) {
+                    btn.innerHTML = '<span style="margin-right: 6px;">✅</span> Participation Points Enabled';
+                    btn.style.background = '#10B981';
+                    btn.style.color = 'white';
+                    btn.disabled = false;
+                } else {
+                    btn.innerHTML = '<span style="margin-right: 6px;">🎯</span> Award Participation Points (All Questions)';
+                    btn.style.background = '';
+                    btn.style.color = '';
+                    btn.disabled = false;
+                }
             } catch (error) {
                 logger.error('Error loading session:', error);
                 alert(`Failed to load session details: ${error.message}`);
@@ -672,10 +692,21 @@
 
             questions.forEach((question, index) => {
                 const questionResponses = responses.filter(r => r.questionId === question.questionId);
+                const hasParticipationPoints = question.awardParticipationPoints === true;
 
                 html += `
                     <div style="margin: 1.5rem 0; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px;">
-                        <h4>Question ${index + 1}: ${question.questionText}</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                            <h4 style="margin: 0;">Question ${index + 1}: ${question.questionText}</h4>
+                            <button
+                                onclick="toggleQuestionParticipationPoints('${question.questionId}', ${hasParticipationPoints})"
+                                class="btn ${hasParticipationPoints ? 'btn-success' : 'btn-secondary'}"
+                                style="font-size: 0.75rem; padding: 0.25rem 0.5rem; ${hasParticipationPoints ? 'background: #10B981; color: white;' : ''}"
+                                title="${hasParticipationPoints ? 'Click to disable participation points' : 'Click to enable participation points'}"
+                            >
+                                ${hasParticipationPoints ? '✅ Participation Points' : '⚪ No Participation Points'}
+                            </button>
+                        </div>
                         <p><strong>Type:</strong> ${formatQuestionType(question.questionType)} | <strong>Points:</strong> ${question.points}</p>
 
                         <table class="responses-table">
@@ -1013,6 +1044,93 @@
             }
         }
 
+        // ========== RETROACTIVE PARTICIPATION POINTS ==========
+
+        async function enableParticipationPointsForAll() {
+            if (!currentSession) {
+                toast.error('No session loaded');
+                return;
+            }
+
+            const questionCount = currentSession.questions?.length || 0;
+            if (questionCount === 0) {
+                toast.error('This session has no questions');
+                return;
+            }
+
+            // Check if already enabled
+            const alreadyEnabled = currentSession.questions.every(q => q.awardParticipationPoints === true);
+            if (alreadyEnabled) {
+                toast.info('Participation points are already enabled for all questions');
+                return;
+            }
+
+            const confirmMsg = `This will enable participation points for all ${questionCount} questions in this session.\n\nStudents who answered (regardless of correctness) will receive points.\n\nContinue?`;
+
+            if (!window.confirm(confirmMsg)) {
+                return;
+            }
+
+            const btn = document.getElementById('enableParticipationBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span style="margin-right: 6px;">⏳</span> Updating...';
+            btn.disabled = true;
+
+            try {
+                await sessions.updateAllParticipationPoints(currentSession._id, true);
+
+                // Update local data
+                currentSession.questions.forEach(q => {
+                    q.awardParticipationPoints = true;
+                });
+
+                toast.success(`Participation points enabled for ${questionCount} questions!`);
+
+                // Refresh the display to show updated points
+                displaySessionDetails(currentSession);
+
+                btn.innerHTML = '<span style="margin-right: 6px;">✅</span> Participation Points Enabled';
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-success');
+                btn.style.background = '#10B981';
+                btn.style.color = 'white';
+
+            } catch (error) {
+                logger.error('Error enabling participation points:', error);
+                toast.error(`Failed to update: ${error.message}`);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function toggleQuestionParticipationPoints(questionId, currentValue) {
+            if (!currentSession) {
+                toast.error('No session loaded');
+                return;
+            }
+
+            const newValue = !currentValue;
+
+            try {
+                await sessions.updateQuestionParticipationPoints(currentSession._id, questionId, newValue);
+
+                // Update local data
+                const question = currentSession.questions.find(q => q.questionId === questionId);
+                if (question) {
+                    question.awardParticipationPoints = newValue;
+                }
+
+                toast.success(`Participation points ${newValue ? 'enabled' : 'disabled'} for this question`);
+
+                // Refresh the display
+                displaySessionDetails(currentSession);
+
+            } catch (error) {
+                logger.error('Error toggling participation points:', error);
+                toast.error(`Failed to update: ${error.message}`);
+            }
+        }
+
         // Expose functions to window object for onclick handlers
         window.toggleSelectAll = toggleSelectAll;
         window.deleteSelected = deleteSelected;
@@ -1028,6 +1146,8 @@
         window.endSession = endSession;
         window.exportSession = exportSession;
         window.deleteSession = deleteSession;
+        window.enableParticipationPointsForAll = enableParticipationPointsForAll;
+        window.toggleQuestionParticipationPoints = toggleQuestionParticipationPoints;
     </script>
 </body>
 </html>

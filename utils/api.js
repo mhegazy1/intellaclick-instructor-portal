@@ -232,6 +232,31 @@ export const sessions = {
       method: 'POST',
       body: JSON.stringify({ questions })
     });
+  },
+
+  /**
+   * Update participation points for a specific question
+   * @param {string} sessionId - Session ID
+   * @param {string} questionId - Question ID
+   * @param {boolean} awardParticipationPoints - Whether to award points for participation
+   */
+  async updateQuestionParticipationPoints(sessionId, questionId, awardParticipationPoints) {
+    return request(`/sessions/${sessionId}/questions/${questionId}/participation-points`, {
+      method: 'PATCH',
+      body: JSON.stringify({ awardParticipationPoints })
+    });
+  },
+
+  /**
+   * Bulk update participation points for all questions in a session
+   * @param {string} sessionId - Session ID
+   * @param {boolean} awardParticipationPoints - Whether to award points for participation
+   */
+  async updateAllParticipationPoints(sessionId, awardParticipationPoints) {
+    return request(`/sessions/${sessionId}/participation-points`, {
+      method: 'PATCH',
+      body: JSON.stringify({ awardParticipationPoints })
+    });
   }
 };
 
